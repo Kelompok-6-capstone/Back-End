@@ -3,6 +3,7 @@ package main
 import (
 	"calmind/config"
 	"calmind/controller"
+	"calmind/middleware"
 	"calmind/repository"
 	"calmind/routes"
 	"calmind/service"
@@ -24,36 +25,41 @@ func main() {
 		log.Fatalf("Gagal menginisialisasi database: %v", err)
 	}
 
-	// jwt
-	jwtsecret := config.NewJWTConfig()
-	jwtservice := service.NewJWTService(jwtsecret)
+	// Konfigurasi JWT
+	jwtSecret := config.NewJWTConfig()
+	jwtService := service.NewJWTService(jwtSecret)
 
-	// state user
-	userAuthRepo := repository.NewAuthRepository(DB)
-	userAuthUsecase := usecase.NewAuthUsecase(userAuthRepo, jwtservice)
-	userAuthcontroller := controller.NewAuthController(userAuthUsecase)
+	// Repositori, usecase, dan controller untuk User
+	userRepo := repository.NewAuthRepository(DB)
+	userUsecase := usecase.NewAuthUsecase(userRepo, jwtService)
+	userController := controller.NewAuthController(userUsecase)
 
-	// state admin
-	adminAuthRepo := repository.NewAdminAuthRepository(DB)
-	adminAuthUsecase := usecase.NewAdminAuthUsecase(adminAuthRepo, jwtservice)
-	adminAuthcontroller := controller.NewAdminAuthController(adminAuthUsecase)
+	// Repositori, usecase, dan controller untuk Admin
+	adminRepo := repository.NewAdminAuthRepository(DB)
+	adminUsecase := usecase.NewAdminAuthUsecase(adminRepo, jwtService)
+	adminController := controller.NewAdminAuthController(adminUsecase)
 
+	// Repositori, usecase, dan controller untuk Admin management
+	adminRepoManagement := repository.NewAdminManagementRepo(DB)
+	adminUsecaseManagement := usecase.NewAdminManagementUsecase(adminRepoManagement)
+	adminControllerManagement := controller.NewAdminManagementController(adminUsecaseManagement)
+
+	// Middleware
+	jwtMiddleware := middleware.NewJWTMiddleware(jwtSecret)
+
+	// Echo instance
 	e := echo.New()
 
-	// middleware
-	// middlewareJwt := middleware.NewJWTMiddleware(jwtsecret)
+	// Routes untuk User
+	userGroup := e.Group("/user")
+	routes.UserAuthRoutes(userGroup, userController)
 
-	// middleware user
-	eAuthUser := e.Group("/user")
-	// eAuthUser.Use(middlewareJwt.HandlerUser)
+	// Routes untuk Admin
+	adminGroup := e.Group("")
+	adminGroup.Use(jwtMiddleware.HandlerAdmin)
+	routes.AdminAuthRoutes(e, adminController)
+	routes.AdminManagementRoutes(adminGroup, adminControllerManagement)
 
-	// middleware admin
-	eAuthAdmin := e.Group("/admin")
-	// eAuthAdmin.Use(middlewareJwt.HandlerAdmin)
-
-	// routes
-	routes.UserAuthRoutes(eAuthUser, userAuthcontroller)
-	routes.AdminAuthRoutes(eAuthAdmin, adminAuthcontroller)
-
-	e.Start(":8000")
+	// Mulai server
+	log.Fatal(e.Start(":8000"))
 }
