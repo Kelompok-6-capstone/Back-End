@@ -38,6 +38,11 @@ func main() {
 	adminAuthUsecase := usecase.NewAdminAuthUsecase(adminAuthRepo, jwtservice)
 	adminAuthcontroller := controller.NewAdminAuthController(adminAuthUsecase)
 
+	// state doctor
+	docterAuthRepo := repository.NewDoctorAuthRepository(DB)
+	doctorAuthUsecase := usecase.NewDoctorAuthUsecase(docterAuthRepo, jwtservice)
+	doctorAuthcontroller := controller.NewDoctorAuthController(doctorAuthUsecase)
+
 	e := echo.New()
 
 	// middleware
@@ -51,9 +56,14 @@ func main() {
 	eAuthAdmin := e.Group("/admin")
 	// eAuthAdmin.Use(middlewareJwt.HandlerAdmin)
 
+	// middleware admin
+	eAuthDoctor := e.Group("/doctor")
+	// eAuthAdmin.Use(middlewareJwt.HandlerAdmin)
+
 	// routes
 	routes.UserAuthRoutes(eAuthUser, userAuthcontroller)
 	routes.AdminAuthRoutes(eAuthAdmin, adminAuthcontroller)
+	routes.DoctorAuthRoutes(eAuthDoctor, doctorAuthcontroller)
 
 	e.Start(":8000")
 }

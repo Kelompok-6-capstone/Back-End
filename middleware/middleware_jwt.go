@@ -91,3 +91,40 @@ func (m *JWTMiddleware) HandlerAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 		return next(c)
 	}
 }
+
+func (m *JWTMiddleware) HandlerDoctor(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		// Ambil token dari cookie
+		h, err := c.Cookie("token_doctor")
+		if err != nil {
+			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "gagal login token tidak ditemukan")
+		}
+
+		tokenString := h.Value
+		claims := &service.JwtCustomClaims{}
+
+		// Parse dan validasi token
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
+			return []byte(m.config.SecretKey), nil
+		})
+
+		if err != nil {
+			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "invalid token")
+		}
+
+		// Pastikan token valid
+		if !token.Valid {
+			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "invalid token")
+		}
+
+		// Validasi role user
+		if claims.Role != "doctor" {
+			return helper.JSONErrorResponse(c, http.StatusForbidden, "access forbidden")
+		}
+
+		// Simpan klaim di context untuk digunakan di handler berikutnya
+		c.Set("doctor", claims)
+
+		return next(c)
+	}
+}

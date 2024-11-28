@@ -20,4 +20,5 @@ func DoctorAuthRoutes(e *echo.Group, authController *controller.DoctorAuthContro
 	e.POST("/register", authController.RegisterDoctor)
 	e.POST("/login", authController.LoginDoctor)
 	e.GET("/logout", authController.LogoutDoctor)
+
 }
