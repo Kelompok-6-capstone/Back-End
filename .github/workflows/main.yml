@@ -91,7 +91,7 @@ jobs:
 
           # Run the new container
           echo "Starting new container..."
-          sudo docker run -d --name capstone_project -p 8080:8080 $IMAGE_URI
+          sudo docker run -d --name capstone_project -p 8000:8000 $IMAGE_URI
           EOF
 
 
