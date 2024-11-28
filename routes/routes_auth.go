@@ -15,3 +15,9 @@ func UserAuthRoutes(e *echo.Group, authController *controller.AuthController) {
 	e.POST("/login", authController.LoginUser)
 	e.GET("/logout", authController.LogoutUser)
 }
+
+func DoctorAuthRoutes(e *echo.Group, authController *controller.DoctorAuthController) {
+	e.POST("/register", authController.RegisterDoctor)
+	e.POST("/login", authController.LoginDoctor)
+	e.GET("/logout", authController.LogoutDoctor)
+}
