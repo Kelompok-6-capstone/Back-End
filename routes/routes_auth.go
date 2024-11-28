@@ -23,8 +23,8 @@ func AdminManagementRoutes(e *echo.Group, adminmanagement *controller.AdminManag
 	e.DELETE("admin/users/:id", adminmanagement.DeleteUser) // Hapus User
 }
 
-func DoctorAuthRoutes(e *echo.Group, authController *controller.DoctorAuthController) {
-	e.POST("/register", authController.RegisterDoctor)
-	e.POST("/login", authController.LoginDoctor)
-	e.GET("/logout", authController.LogoutDoctor)
+func DoctorAuthRoutes(e *echo.Echo, authController *controller.DoctorAuthController) {
+	e.POST("/doctor/register", authController.RegisterDoctor)
+	e.POST("/doctor/login", authController.LoginDoctor)
+	e.GET("/doctor/logout", authController.LogoutDoctor)
 }

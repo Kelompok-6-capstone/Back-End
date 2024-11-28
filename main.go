@@ -44,6 +44,11 @@ func main() {
 	adminUsecaseManagement := usecase.NewAdminManagementUsecase(adminRepoManagement)
 	adminControllerManagement := controller.NewAdminManagementController(adminUsecaseManagement)
 
+	// Repositori, usecase, dan controller untuk dokter
+	doctorRepoManagement := repository.NewDoctorAuthRepository(DB)
+	doctorUsecaseManagement := usecase.NewDoctorAuthUsecase(doctorRepoManagement, jwtService)
+	doctorControllerManagement := controller.NewDoctorAuthController(doctorUsecaseManagement)
+
 	// Middleware
 	jwtMiddleware := middleware.NewJWTMiddleware(jwtSecret)
 
@@ -52,13 +57,17 @@ func main() {
 
 	// Routes untuk User
 	userGroup := e.Group("/user")
+
 	routes.UserAuthRoutes(userGroup, userController)
+	routes.AdminAuthRoutes(e, adminController)
 
 	// Routes untuk Admin
 	adminGroup := e.Group("")
 	adminGroup.Use(jwtMiddleware.HandlerAdmin)
-	routes.AdminAuthRoutes(e, adminController)
 	routes.AdminManagementRoutes(adminGroup, adminControllerManagement)
+
+	// Routes untuk Dokter
+	routes.DoctorAuthRoutes(e, doctorControllerManagement)
 
 	// Mulai server
 	log.Fatal(e.Start(":8000"))
