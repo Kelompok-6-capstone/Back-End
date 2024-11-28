@@ -1,76 +1,95 @@
-name: deploy capstone
+name: Deployment Workflow
 
-on: 
+on:
   push:
     branches:
       - development
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
+      # Checkout the code
       - name: Checkout the code
         uses: actions/checkout@v2
-        
+
+      # Setup Go environment
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
           go-version: '1.21'
-        
-      - name: Run tests
+
+      # Run tests
+      - name: Run Tests
         run: go test -v ./...
 
   build-and-push-docker:
     runs-on: ubuntu-latest
-    needs: build
+    needs: test
     steps:
+      # Checkout the code
       - name: Checkout the code
         uses: actions/checkout@v2
 
+      # Create .env file from secret
       - name: Create .env file
-        run: echo "${{ secrets.ENV }}" >> .env
+        run: echo "${{ secrets.ENV }}" > .env
 
-      - name: Build Docker image
-        run: docker build -t ${{ secrets.DOCKER_USER }}/clean_architectur_test:terbaru .
-
-      - name: Docker Hub login
+      # Login to Docker Hub
+      - name: Docker Hub Login
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Push Docker image
-        run: docker push ${{ secrets.DOCKER_USER }}/clean_architectur_test:terbaru
+      # Build Docker image
+      - name: Build Docker Image
+        run: docker build -t ${{ secrets.DOCKER_USER }}/capstone_project:latest .
 
-  deploy:
-    # needs: build-and-push-docker
+      # Push Docker image to Docker Hub
+      - name: Push Docker Image
+        run: docker push ${{ secrets.DOCKER_USER }}/capstone_project:latest
+
+  deploy-to-ec2:
+    needs: build-and-push-docker
     runs-on: ubuntu-latest
     env:
-        IMAGE_URI: '${{ secrets.DOCKER_USER }}/clean_architectur_test:terbaru'
-        EC2_HOST: ${{ secrets.EC2_HOST }}
-        EC2_USER: ${{ secrets.EC2_USER }}
+      IMAGE_URI: '${{ secrets.DOCKER_USER }}/capstone_project:latest'
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      EC2_USER: ${{ secrets.EC2_USER }}
+
     steps:
-    - name: Check out the code
-      uses: actions/checkout@v2
-    - name: Create PEM file from secret
-      run: |
-        echo "${{ secrets.EC2_PEM }}" > ec2-key.pem
-        chmod 600 ec2-key.pem  # Set appropriate permissions
+      # Checkout the code
+      - name: Checkout the Code
+        uses: actions/checkout@v2
 
-    - name: Deploy to EC2
-      run: |
+      # Create PEM file from secret
+      - name: Create PEM File
+        run: |
+          echo "${{ secrets.EC2_PEM }}" > ec2-key.pem
+          chmod 600 ec2-key.pem
 
-        ssh -i ec2-key.pem -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << EOF
+      # Deploy to EC2
+      - name: Deploy to EC2
+        run: |
+          ssh -i ec2-key.pem -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << EOF
+            # Stop and remove the current container if running
+            CONTAINER_ID=\$(sudo docker ps -q --filter "name=capstone_project")
+            if [ -n "\$CONTAINER_ID" ]; then
+              sudo docker stop \$CONTAINER_ID
+              sudo docker rm \$CONTAINER_ID
+            fi
 
-          # Stop the current container if running
-          sudo docker ps -q --filter "name=capstone-project" | grep -q . && docker stop capstone-project || true
-          sudo docker rm capstone-project || true
+            # Remove dangling images to free up space
+            sudo docker images -f "dangling=true" -q | xargs -r sudo docker rmi
 
-          # Pull the latest image from ECR
-          sudo docker pull $IMAGE_URI
+            # Pull the latest image from Docker Hub
+            sudo docker pull $IMAGE_URI
 
-          # Run the new container
-          sudo docker run -d --name capstone-project -p 8080:8080 $IMAGE_URI
-        EOF
-    - name: Clean up PEM file
-      run: rm -f ec2-key.pem
+            # Run the new container
+            sudo docker run -d --name capstone_project -p 8080:8080 $IMAGE_URI
+          EOF
+
+      # Clean up PEM file
+      - name: Clean up PEM File
+        run: rm -f ec2-key.pem
