@@ -30,6 +30,12 @@ func (u *AuthUsecase) Register(user *model.User) error {
 	if user.Password == "" {
 		return errors.New("password is required")
 	}
+	if user.NoHp == "" {
+		return errors.New("no handphone is required")
+	}
+	if user.Username == "" {
+		return errors.New("username is required")
+	}
 
 	user.Role = "user"
 

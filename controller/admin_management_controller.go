@@ -9,6 +9,13 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+type UserResponse struct {
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	NoHp     string `json:"no_hp"`
+}
+
 type AdminManagementController struct {
 	AdminUsecase usecase.AdminManagementUsecase
 }
@@ -22,7 +29,18 @@ func (ac *AdminManagementController) GetAllUsers(c echo.Context) error {
 	if err != nil {
 		return helper.JSONErrorResponse(c, http.StatusInternalServerError, "Failed to fetch users")
 	}
-	return helper.JSONSuccessResponse(c, users)
+
+	var userResponses []UserResponse
+	for _, user := range users {
+		userResponses = append(userResponses, UserResponse{
+			ID:       user.ID,
+			Username: user.Username,
+			Email:    user.Email,
+			NoHp:     user.NoHp,
+		})
+	}
+
+	return helper.JSONSuccessResponse(c, userResponses)
 }
 
 func (ac *AdminManagementController) DeleteUser(c echo.Context) error {
@@ -31,13 +49,10 @@ func (ac *AdminManagementController) DeleteUser(c echo.Context) error {
 		return helper.JSONErrorResponse(c, http.StatusBadRequest, "Invalid user ID")
 	}
 
-	user, err := ac.AdminUsecase.DeleteUsers(id)
+	_, err = ac.AdminUsecase.DeleteUsers(id)
 	if err != nil {
 		return helper.JSONErrorResponse(c, http.StatusInternalServerError, "Failed to delete user")
 	}
 
-	return helper.JSONSuccessResponse(c, map[string]interface{}{
-		"message": "Data users berhasil dihapus",
-		"data":    user,
-	})
+	return helper.JSONSuccessResponse(c, "User data successfully deleted")
 }

@@ -26,8 +26,24 @@ func (c *ProfilController) GetProfile(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil profil: "+err.Error())
 	}
 
-	user.Password = ""
-	user.Role = ""
+	type UserProfileResponse struct {
+		ID       int    `json:"id"`
+		Username string `json:"username"`
+		NoHp     string `json:"no_hp"`
+		Email    string `json:"email"`
+		Avatar   string `json:"avatar"`
+		FullName string `json:"full_name"`
+		Bio      string `json:"bio"`
+	}
 
-	return helper.JSONSuccessResponse(ctx, user)
+	userProfile := UserProfileResponse{
+		ID:       user.ID,
+		Username: user.Username,
+		NoHp:     user.NoHp,
+		Email:    user.Email,
+		Avatar:   user.Avatar,
+		Bio:      user.Bio,
+	}
+
+	return helper.JSONSuccessResponse(ctx, userProfile)
 }
