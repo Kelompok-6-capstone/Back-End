@@ -49,6 +49,11 @@ func main() {
 	doctorUsecaseManagement := usecase.NewDoctorAuthUsecase(doctorRepoManagement, jwtService)
 	doctorControllerManagement := controller.NewDoctorAuthController(doctorUsecaseManagement)
 
+	//	Repositori, usecase, dan controller untuk Profil User
+	userProfilRepo := repository.NewUserProfilRepository(DB)
+	userProfilUsecase := usecase.NewUserProfilUsecaseImpl(userProfilRepo)
+	userProfilController := controller.NewProfilController(userProfilUsecase)
+
 	// Middleware
 	jwtMiddleware := middleware.NewJWTMiddleware(jwtSecret)
 
@@ -58,7 +63,7 @@ func main() {
 	// Routes untuk User
 	userGroup := e.Group("/user")
 
-	routes.UserAuthRoutes(userGroup, userController)
+	routes.UserAuthRoutes(userGroup, userController, userProfilController)
 	routes.AdminAuthRoutes(e, adminController)
 
 	// Routes untuk Admin
