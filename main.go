@@ -60,19 +60,17 @@ func main() {
 	// Echo instance
 	e := echo.New()
 
-	// Routes untuk User
+	// routes auth
+	routes.UserAuthRoutes(e, userController)               // user
+	routes.AdminAuthRoutes(e, adminController)             // admin
+	routes.DoctorAuthRoutes(e, doctorControllerManagement) // dokter
+
+	// routes grup login role
 	userGroup := e.Group("/user")
+	adminGroup := e.Group("/admin", jwtMiddleware.HandlerAdmin)
 
-	routes.UserAuthRoutes(userGroup, userController, userProfilController)
-	routes.AdminAuthRoutes(e, adminController)
-
-	// Routes untuk Admin
-	adminGroup := e.Group("")
-	adminGroup.Use(jwtMiddleware.HandlerAdmin)
 	routes.AdminManagementRoutes(adminGroup, adminControllerManagement)
-
-	// Routes untuk Dokter
-	routes.DoctorAuthRoutes(e, doctorControllerManagement)
+	routes.UserProfil(userGroup, userProfilController)
 
 	// Mulai server
 	log.Fatal(e.Start(":8000"))

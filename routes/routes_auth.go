@@ -7,12 +7,13 @@ import (
 )
 
 // Routes untuk User
-func UserAuthRoutes(e *echo.Group, authController *controller.AuthController, profilController *controller.ProfilController) {
+func UserAuthRoutes(e *echo.Echo, authController *controller.AuthController) {
 	e.POST("/register", authController.RegisterUser) // Daftar User
 	e.POST("/login", authController.LoginUser)       // Login User
 	e.GET("/logout", authController.LogoutUser)      // Logout User
-	e.GET("/profile", profilController.GetProfile)   // Profil User
-
+}
+func UserProfil(e *echo.Group, profilController *controller.ProfilController) {
+	e.GET("/profile", profilController.GetProfile) // Profil User
 }
 
 // Routes untuk Admin
