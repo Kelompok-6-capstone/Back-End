@@ -66,7 +66,7 @@ func main() {
 	routes.DoctorAuthRoutes(e, doctorControllerManagement) // dokter
 
 	// routes grup login role
-	userGroup := e.Group("/user")
+	userGroup := e.Group("/user", jwtMiddleware.HandlerUser)
 	adminGroup := e.Group("/admin", jwtMiddleware.HandlerAdmin)
 
 	routes.AdminManagementRoutes(adminGroup, adminControllerManagement)
