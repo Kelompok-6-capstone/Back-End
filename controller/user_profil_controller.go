@@ -2,8 +2,9 @@ package controller
 
 import (
 	"calmind/helper"
-	"calmind/model"
+	"calmind/service"
 	"calmind/usecase"
+	"log"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -17,13 +18,16 @@ func NewProfilController(ProfilUsecase usecase.UserProfilUsecase) *ProfilControl
 	return &ProfilController{ProfilUsecase: ProfilUsecase}
 }
 func (c *ProfilController) GetProfile(ctx echo.Context) error {
-	userClaims := ctx.Get("user").(*model.User)
+	claims, _ := ctx.Get("user").(*service.JwtCustomClaims)
 
-	// Mendapatkan data profil user berdasarkan ID
-	user, err := c.ProfilUsecase.GetUserProfile(userClaims.ID)
+	user, err := c.ProfilUsecase.GetUserProfile(claims.UserID)
 	if err != nil {
+		log.Println("Failed to fetch user profile:", err)
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil profil: "+err.Error())
 	}
+
+	user.Password = ""
+	user.Role = ""
 
 	return helper.JSONSuccessResponse(ctx, user)
 }
