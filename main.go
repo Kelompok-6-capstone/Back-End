@@ -28,10 +28,12 @@ func main() {
 	// Konfigurasi JWT
 	jwtSecret := config.NewJWTConfig()
 	jwtService := service.NewJWTService(jwtSecret)
+	otpService := service.NewOtpService()
 
 	// Repositori, usecase, dan controller untuk User
 	userRepo := repository.NewAuthRepository(DB)
-	userUsecase := usecase.NewAuthUsecase(userRepo, jwtService)
+	otpRepo := repository.NewOtpRepository(DB)
+	userUsecase := usecase.NewAuthUsecase(userRepo, jwtService, otpRepo, otpService)
 	userController := controller.NewAuthController(userUsecase)
 
 	// Repositori, usecase, dan controller untuk Admin

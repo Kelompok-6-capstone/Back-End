@@ -10,6 +10,7 @@ import (
 func UserAuthRoutes(e *echo.Echo, authController *controller.AuthController) {
 	e.POST("/user/register", authController.RegisterUser) // Daftar User
 	e.POST("/user/login", authController.LoginUser)       // Login User
+	e.POST("/user/verify-otp", authController.VerifyOtp)  // verivikasi otp
 	e.GET("/user/logout", authController.LogoutUser)      // Logout User
 }
 

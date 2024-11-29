@@ -10,6 +10,7 @@ import (
 type UserRepository interface {
 	GetByUsername(email string) (*model.User, error)
 	CreateUser(*model.User) error
+	UpdateUserVerificationStatus(email string, isVerified bool) error
 }
 
 type userRepositorystate struct {
@@ -36,4 +37,8 @@ func (r *userRepositorystate) GetByUsername(email string) (*model.User, error) {
 	var user model.User
 	err := r.DB.Where("email = ?", email).First(&user).Error
 	return &user, err
+}
+
+func (r *userRepositorystate) UpdateUserVerificationStatus(email string, isVerified bool) error {
+	return r.DB.Model(&model.User{}).Where("email = ?", email).Update("is_verified", isVerified).Error
 }

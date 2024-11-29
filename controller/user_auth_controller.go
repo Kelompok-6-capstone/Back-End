@@ -60,6 +60,18 @@ func (c *AuthController) LoginUser(ctx echo.Context) error {
 	})
 }
 
+func (c *AuthController) VerifyOtp(ctx echo.Context) error {
+	var otp model.Otp
+	if err := ctx.Bind(&otp); err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid input: "+err.Error())
+	}
+	err := c.AuthUsecase.VerifyOtp(otp.Email, otp.Code)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "OTP verification failed: "+err.Error())
+	}
+	return helper.JSONSuccessResponse(ctx, "OTP verified successfully")
+}
+
 func (c *AuthController) LogoutUser(ctx echo.Context) error {
 	cookie := &http.Cookie{
 		Name:     "token_user",

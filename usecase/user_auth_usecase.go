@@ -1,10 +1,13 @@
 package usecase
 
 import (
+	"calmind/helper"
 	"calmind/model"
 	"calmind/repository"
 	"calmind/service"
 	"errors"
+	"log"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -12,15 +15,18 @@ import (
 type UserUsecase interface {
 	Register(*model.User) error
 	Login(email string, password string) (string, error)
+	VerifyOtp(email string, code string) error
 }
 
 type AuthUsecase struct {
 	UserRepo   repository.UserRepository
 	JWTService service.JWTService
+	OtpRepo    repository.OtpRepository
+	OtpService service.OtpService
 }
 
-func NewAuthUsecase(repo repository.UserRepository, jwtService service.JWTService) UserUsecase {
-	return &AuthUsecase{UserRepo: repo, JWTService: jwtService}
+func NewAuthUsecase(repo repository.UserRepository, jwtService service.JWTService, otpRepo repository.OtpRepository, otpService service.OtpService) UserUsecase {
+	return &AuthUsecase{UserRepo: repo, JWTService: jwtService, OtpRepo: otpRepo, OtpService: otpService}
 }
 
 func (u *AuthUsecase) Register(user *model.User) error {
@@ -45,7 +51,23 @@ func (u *AuthUsecase) Register(user *model.User) error {
 	}
 	user.Password = string(hashPassword)
 
-	return u.UserRepo.CreateUser(user)
+	u.UserRepo.CreateUser(user)
+	// Generate OTP
+	otpCode := u.OtpService.GenerateOtp()
+	expiry := time.Now().Add(5 * time.Minute)
+
+	err = u.OtpRepo.GenerateOtp(user.Email, otpCode, expiry)
+	if err != nil {
+		return err
+	}
+
+	err = helper.SendEmail(user.Email, otpCode)
+	if err != nil {
+		log.Printf("Gagal mengirim email ke %s: %v", user.Email, err)
+	}
+	log.Println("Proses selesai")
+
+	return nil
 }
 
 func (u *AuthUsecase) Login(email, password string) (string, error) {
@@ -56,6 +78,10 @@ func (u *AuthUsecase) Login(email, password string) (string, error) {
 	user, err := u.UserRepo.GetByUsername(email)
 	if err != nil || user == nil {
 		return "", errors.New("invalid credentials")
+	}
+
+	if !user.IsVerified {
+		return "", errors.New("account not verified. Please verify your OTP")
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
@@ -69,4 +95,37 @@ func (u *AuthUsecase) Login(email, password string) (string, error) {
 	}
 
 	return token, nil
+}
+
+func (a *AuthUsecase) VerifyOtp(email string, code string) error {
+	otp, err := a.OtpRepo.GetOtpByEmail(email)
+	if err != nil {
+		return err
+	}
+
+	if otp == nil {
+		return errors.New("otp not found")
+	}
+
+	if a.OtpService.IsOtpExpired(otp.ExpiresAt) {
+		return errors.New("otp expired")
+	}
+
+	if otp.Code != code {
+		return errors.New("invalid otp")
+	}
+
+	// OTP valid, hapus OTP
+	err = a.OtpRepo.DeleteOtpByEmail(email)
+	if err != nil {
+		return err
+	}
+
+	// Perbarui status pengguna menjadi verified
+	err = a.UserRepo.UpdateUserVerificationStatus(email, true)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
