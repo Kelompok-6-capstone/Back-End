@@ -2,6 +2,7 @@ package controller
 
 import (
 	"calmind/helper"
+	"calmind/model"
 	"calmind/service"
 	"calmind/usecase"
 	"log"
@@ -17,9 +18,9 @@ type ProfilController struct {
 func NewProfilController(ProfilUsecase usecase.UserProfilUsecase) *ProfilController {
 	return &ProfilController{ProfilUsecase: ProfilUsecase}
 }
+
 func (c *ProfilController) GetProfile(ctx echo.Context) error {
 	claims, _ := ctx.Get("user").(*service.JwtCustomClaims)
-
 	user, err := c.ProfilUsecase.GetUserProfile(claims.UserID)
 	if err != nil {
 		log.Println("Failed to fetch user profile:", err)
@@ -46,4 +47,23 @@ func (c *ProfilController) GetProfile(ctx echo.Context) error {
 	}
 
 	return helper.JSONSuccessResponse(ctx, userProfile)
+}
+
+func (c *ProfilController) UpdateProfile(ctx echo.Context) error {
+	claims, _ := ctx.Get("user").(*service.JwtCustomClaims)
+	var user model.User
+
+	if err := ctx.Bind(&user); err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan data: "+err.Error())
+	}
+
+	user.Email = ""
+	user.Password = ""
+
+	updatedUser, err := c.ProfilUsecase.UpdateUserProfile(claims.UserID, &user)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate profil: "+err.Error())
+	}
+
+	return helper.JSONSuccessResponse(ctx, updatedUser)
 }

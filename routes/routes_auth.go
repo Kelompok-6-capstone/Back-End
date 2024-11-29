@@ -14,7 +14,8 @@ func UserAuthRoutes(e *echo.Echo, authController *controller.AuthController) {
 }
 
 func UserProfil(e *echo.Group, profilController *controller.ProfilController) {
-	e.GET("/profile", profilController.GetProfile) // Profil User
+	e.GET("/profile", profilController.GetProfile)    // Profil User
+	e.PUT("/profile", profilController.UpdateProfile) // Profil User
 }
 
 // Routes untuk Admin

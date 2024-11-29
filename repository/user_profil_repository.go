@@ -8,6 +8,7 @@ import (
 
 type UserProfilRepository interface {
 	GetByID(id int) (*model.User, error)
+	UpdateByID(id int, user *model.User) (*model.User, error)
 }
 
 type userProfilRepositoryImpl struct {
@@ -25,4 +26,32 @@ func (r *userProfilRepositoryImpl) GetByID(id int) (*model.User, error) {
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (r *userProfilRepositoryImpl) UpdateByID(id int, user *model.User) (*model.User, error) {
+	var existingUser model.User
+	err := r.DB.Where("id = ?", id).First(&existingUser).Error
+	if err != nil {
+		return nil, err
+	}
+
+	if user.Username != "" {
+		existingUser.Username = user.Username
+	}
+	if user.NoHp != "" {
+		existingUser.NoHp = user.NoHp
+	}
+	if user.Avatar != "" {
+		existingUser.Avatar = user.Avatar
+	}
+	if user.Bio != "" {
+		existingUser.Bio = user.Bio
+	}
+
+	err = r.DB.Save(&existingUser).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &existingUser, nil
 }
