@@ -1,11 +1,10 @@
 package model
 
-// Model untuk Doctor
 type Doctor struct {
-	ID       int    `json:"id" gorm:"primaryKey"`
-	Usename  string `json:"username"`
-	No_Hp    string `json:"no_hp"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Role     string `json:"role"`
+	ID       int    `json:"id" gorm:"primaryKey;autoIncrement"`
+	Username string `gorm:"not null" json:"username"`
+	NoHp     string `gorm:"not null" json:"no_hp"`
+	Email    string `gorm:"unique;not null" json:"email"`
+	Password string `gorm:"not null" json:"password"`
+	Role     string `gorm:"not null" json:"role"`
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"calmind/config"
 	"calmind/controller"
+	"calmind/middleware"
 	"calmind/repository"
 	"calmind/routes"
 	"calmind/service"
@@ -24,46 +25,54 @@ func main() {
 		log.Fatalf("Gagal menginisialisasi database: %v", err)
 	}
 
-	// jwt
-	jwtsecret := config.NewJWTConfig()
-	jwtservice := service.NewJWTService(jwtsecret)
+	// Konfigurasi JWT
+	jwtSecret := config.NewJWTConfig()
+	jwtService := service.NewJWTService(jwtSecret)
 
-	// state user
-	userAuthRepo := repository.NewAuthRepository(DB)
-	userAuthUsecase := usecase.NewAuthUsecase(userAuthRepo, jwtservice)
-	userAuthcontroller := controller.NewAuthController(userAuthUsecase)
+	// Repositori, usecase, dan controller untuk User
+	userRepo := repository.NewAuthRepository(DB)
+	userUsecase := usecase.NewAuthUsecase(userRepo, jwtService)
+	userController := controller.NewAuthController(userUsecase)
 
-	// state admin
-	adminAuthRepo := repository.NewAdminAuthRepository(DB)
-	adminAuthUsecase := usecase.NewAdminAuthUsecase(adminAuthRepo, jwtservice)
-	adminAuthcontroller := controller.NewAdminAuthController(adminAuthUsecase)
+	// Repositori, usecase, dan controller untuk Admin
+	adminRepo := repository.NewAdminAuthRepository(DB)
+	adminUsecase := usecase.NewAdminAuthUsecase(adminRepo, jwtService)
+	adminController := controller.NewAdminAuthController(adminUsecase)
 
-	// state doctor
-	docterAuthRepo := repository.NewDoctorAuthRepository(DB)
-	doctorAuthUsecase := usecase.NewDoctorAuthUsecase(docterAuthRepo, jwtservice)
-	doctorAuthcontroller := controller.NewDoctorAuthController(doctorAuthUsecase)
+	// Repositori, usecase, dan controller untuk Admin management
+	adminRepoManagement := repository.NewAdminManagementRepo(DB)
+	adminUsecaseManagement := usecase.NewAdminManagementUsecase(adminRepoManagement)
+	adminControllerManagement := controller.NewAdminManagementController(adminUsecaseManagement)
 
+	// Repositori, usecase, dan controller untuk dokter
+	doctorRepoManagement := repository.NewDoctorAuthRepository(DB)
+	doctorUsecaseManagement := usecase.NewDoctorAuthUsecase(doctorRepoManagement, jwtService)
+	doctorControllerManagement := controller.NewDoctorAuthController(doctorUsecaseManagement)
+
+	//	Repositori, usecase, dan controller untuk Profil User
+	userProfilRepo := repository.NewUserProfilRepository(DB)
+	userProfilUsecase := usecase.NewUserProfilUsecaseImpl(userProfilRepo)
+	userProfilController := controller.NewProfilController(userProfilUsecase)
+
+	// Middleware
+	jwtMiddleware := middleware.NewJWTMiddleware(jwtSecret)
+
+	// Echo instance
 	e := echo.New()
 
-	// middleware
-	// middlewareJwt := middleware.NewJWTMiddleware(jwtsecret)
+	// routes auth
+	routes.UserAuthRoutes(e, userController)               // user
+	routes.AdminAuthRoutes(e, adminController)             // admin
+	routes.DoctorAuthRoutes(e, doctorControllerManagement) // dokter
 
-	// middleware user
-	eAuthUser := e.Group("/user")
-	// eAuthUser.Use(middlewareJwt.HandlerUser)
+	// Group untuk user, dengan middleware yang memastikan hanya user yang login dapat mengaksesnya
+	userGroup := e.Group("/user", jwtMiddleware.HandlerUser)
+	adminGroup := e.Group("/admin", jwtMiddleware.HandlerAdmin)
 
-	// middleware admin
-	eAuthAdmin := e.Group("/admin")
-	// eAuthAdmin.Use(middlewareJwt.HandlerAdmin)
+	// Routing group auth
+	routes.UserProfil(userGroup, userProfilController)                  // Profil User
+	routes.AdminManagementRoutes(adminGroup, adminControllerManagement) // Admin management
 
-	// middleware admin
-	eAuthDoctor := e.Group("/doctor")
-	// eAuthAdmin.Use(middlewareJwt.HandlerAdmin)
-
-	// routes
-	routes.UserAuthRoutes(eAuthUser, userAuthcontroller)
-	routes.AdminAuthRoutes(eAuthAdmin, adminAuthcontroller)
-	routes.DoctorAuthRoutes(eAuthDoctor, doctorAuthcontroller)
-
-	e.Start(":8000")
+	// Mulai server
+	log.Fatal(e.Start(":8000"))
 }

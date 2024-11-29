@@ -1,6 +1,6 @@
 module calmind
 
-go 1.22.2
+go 1.21
 
 require (
 	github.com/go-sql-driver/mysql v1.7.0 // indirect

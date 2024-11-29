@@ -1,11 +1,12 @@
 package model
 
-// Model untuk User
 type User struct {
-	ID       int    `json:"id" gorm:"primaryKey"`
-	Usename  string `json:"username"`
-	No_Hp    string `json:"no_hp"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Role     string `json:"role"`
+	ID       int    `json:"id" gorm:"primaryKey;autoIncrement"`
+	Username string `gorm:"not null" json:"username"`
+	NoHp     string `gorm:"not null" json:"no_hp"`
+	Email    string `gorm:"unique;not null" json:"email"`
+	Password string `gorm:"not null" json:"password"`
+	Role     string `gorm:"not null" json:"role"`
+	Avatar   string `gorm:"" json:"avatar"`
+	Bio      string `gorm:"" json:"bio"`
 }
