@@ -65,12 +65,13 @@ func main() {
 	routes.AdminAuthRoutes(e, adminController)             // admin
 	routes.DoctorAuthRoutes(e, doctorControllerManagement) // dokter
 
-	// routes grup login role
+	// Group untuk user, dengan middleware yang memastikan hanya user yang login dapat mengaksesnya
 	userGroup := e.Group("/user", jwtMiddleware.HandlerUser)
 	adminGroup := e.Group("/admin", jwtMiddleware.HandlerAdmin)
 
-	routes.AdminManagementRoutes(adminGroup, adminControllerManagement)
-	routes.UserProfil(userGroup, userProfilController)
+	// Routing group auth
+	routes.UserProfil(userGroup, userProfilController)                  // Profil User
+	routes.AdminManagementRoutes(adminGroup, adminControllerManagement) // Admin management
 
 	// Mulai server
 	log.Fatal(e.Start(":8000"))
