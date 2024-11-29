@@ -60,10 +60,10 @@ func (c *ProfilController) UpdateProfile(ctx echo.Context) error {
 	user.Email = ""
 	user.Password = ""
 
-	updatedUser, err := c.ProfilUsecase.UpdateUserProfile(claims.UserID, &user)
+	_, err := c.ProfilUsecase.UpdateUserProfile(claims.UserID, &user)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate profil: "+err.Error())
 	}
 
-	return helper.JSONSuccessResponse(ctx, updatedUser)
+	return helper.JSONSuccessResponse(ctx, "Berhasul update profil")
 }
