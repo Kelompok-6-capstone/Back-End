@@ -18,9 +18,10 @@ func NewOtpService() OtpService {
 }
 
 func (s *OtpServiceImpl) GenerateOtp() string {
-	b := make([]byte, 5)
+	b := make([]byte, 3)
 	rand.Read(b)
-	return base32.StdEncoding.EncodeToString(b)
+	encoded := base32.StdEncoding.EncodeToString(b)
+	return encoded[:4]
 }
 
 func (s *OtpServiceImpl) IsOtpExpired(expiry time.Time) bool {
