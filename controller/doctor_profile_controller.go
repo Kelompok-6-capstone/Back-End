@@ -44,7 +44,7 @@ func (c *DoctorProfileController) GetProfile(ctx echo.Context) error {
 		Email:    doctor.Email,
 		NoHp:     doctor.NoHp,
 		Avatar:   doctor.Avatar,
-		Birth:    doctor.DateOfBirth, 
+		Birth:    doctor.DateOfBirth,
 		Address:  doctor.Address,
 		Schedule: doctor.Schedule,
 	}
