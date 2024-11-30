@@ -28,22 +28,25 @@ func (c *ProfilController) GetProfile(ctx echo.Context) error {
 	}
 
 	type UserProfileResponse struct {
-		ID       int    `json:"id"`
-		Username string `json:"username"`
-		NoHp     string `json:"no_hp"`
-		Email    string `json:"email"`
-		Avatar   string `json:"avatar"`
-		FullName string `json:"full_name"`
-		Bio      string `json:"bio"`
+		ID           int    `json:"id"`
+		Avatar       string `json:"avatar"`
+		Username     string `json:"username"`
+		Email        string `json:"email"`
+		NoHp         string `json:"no_hp"`
+		Alamat       string `json:"alamat"`
+		Tgl_lahir    string `json:"tgl_lahir"`
+		JenisKelamin string `json:"jenis_kelamin"`
 	}
 
 	userProfile := UserProfileResponse{
-		ID:       user.ID,
-		Username: user.Username,
-		NoHp:     user.NoHp,
-		Email:    user.Email,
-		Avatar:   user.Avatar,
-		Bio:      user.Bio,
+		ID:           user.ID,
+		Avatar:       user.Avatar,
+		Username:     user.Username,
+		Email:        user.Email,
+		NoHp:         user.NoHp,
+		Alamat:       user.Alamat,
+		Tgl_lahir:    user.Tgl_lahir,
+		JenisKelamin: user.JenisKelamin,
 	}
 
 	return helper.JSONSuccessResponse(ctx, userProfile)
