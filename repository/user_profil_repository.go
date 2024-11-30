@@ -35,18 +35,13 @@ func (r *userProfilRepositoryImpl) UpdateByID(id int, user *model.User) (*model.
 		return nil, err
 	}
 
-	if user.Username != "" {
-		existingUser.Username = user.Username
-	}
-	if user.NoHp != "" {
-		existingUser.NoHp = user.NoHp
-	}
-	if user.Avatar != "" {
-		existingUser.Avatar = user.Avatar
-	}
-	if user.Bio != "" {
-		existingUser.Bio = user.Bio
-	}
+	existingUser.Avatar = user.Avatar
+	existingUser.Username = user.Username
+	existingUser.Email = user.Email
+	existingUser.NoHp = user.NoHp
+	existingUser.Alamat = user.Alamat
+	existingUser.Tgl_lahir = user.Tgl_lahir
+	existingUser.JenisKelamin = user.JenisKelamin
 
 	err = r.DB.Save(&existingUser).Error
 	if err != nil {
