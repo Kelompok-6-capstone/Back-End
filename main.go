@@ -3,7 +3,7 @@ package main
 import (
 	"calmind/config"
 	"calmind/controller"
-	"calmind/middleware"
+	"calmind/middlewares"
 	"calmind/repository"
 	"calmind/routes"
 	"calmind/service"
@@ -58,7 +58,7 @@ func main() {
 	userProfilController := controller.NewProfilController(userProfilUsecase)
 
 	// Middleware
-	jwtMiddleware := middleware.NewJWTMiddleware(jwtSecret)
+	jwtMiddleware := middlewares.NewJWTMiddleware(jwtSecret)
 
 	// Echo instance
 	e := echo.New()
