@@ -40,15 +40,14 @@ func (c *DoctorProfileController) GetProfile(ctx echo.Context) error {
 	}
 
 	doctorProfile := DoctorProfileResponse{
-		ID:           doctor.ID,
-		Avatar:       doctor.Avatar,
-		Username:     doctor.Username,
-		Email:        doctor.Email,
-		NoHp:         doctor.NoHp,
-		Alamat:       doctor.Address,
-		Tgl_lahir:    doctor.DateOfBirth,
-		JenisKelamin: doctor.Gender,
-		Schedule:     doctor.Schedule,
+		ID:        doctor.ID,
+		Avatar:    doctor.Avatar,
+		Username:  doctor.Username,
+		Email:     doctor.Email,
+		NoHp:      doctor.NoHp,
+		Alamat:    doctor.Address,
+		Tgl_lahir: doctor.DateOfBirth,
+		Schedule:  doctor.Schedule,
 	}
 
 	return helper.JSONSuccessResponse(ctx, doctorProfile)
