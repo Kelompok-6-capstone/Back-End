@@ -28,26 +28,25 @@ func (c *DoctorProfileController) GetProfile(ctx echo.Context) error {
 	}
 
 	type DoctorProfileResponse struct {
-		ID           int    `json:"id"`
-		Avatar       string `json:"avatar"`
-		Username     string `json:"username"`
-		Email        string `json:"email"`
-		NoHp         string `json:"no_hp"`
-		Alamat       string `json:"alamat"`
-		Tgl_lahir    string `json:"tgl_lahir"`
-		JenisKelamin string `json:"jenis_kelamin"`
-		Schedule     string `json:"schedule"`
+		ID       int    `json:"id"`
+		Username string `json:"username"`
+		Avatar   string `json:"avatar"`
+		Email    string `json:"email"`
+		NoHp     string `json:"no_hp"`
+		Birth    string `json:"date_of_birth"`
+		Address  string `json:"address"`
+		Schedule string `json:"schedule"`
 	}
 
 	doctorProfile := DoctorProfileResponse{
-		ID:        doctor.ID,
-		Avatar:    doctor.Avatar,
-		Username:  doctor.Username,
-		Email:     doctor.Email,
-		NoHp:      doctor.NoHp,
-		Alamat:    doctor.Address,
-		Tgl_lahir: doctor.DateOfBirth,
-		Schedule:  doctor.Schedule,
+		ID:       doctor.ID,
+		Username: doctor.Username,
+		Email:    doctor.Email,
+		NoHp:     doctor.NoHp,
+		Avatar:   doctor.Avatar,
+		Birth:    doctor.DateOfBirth,
+		Address:  doctor.Address,
+		Schedule: doctor.Schedule,
 	}
 
 	return helper.JSONSuccessResponse(ctx, doctorProfile)

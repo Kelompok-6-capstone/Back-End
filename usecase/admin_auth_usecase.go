@@ -36,7 +36,7 @@ func (u *AdminAuthUsecaseImpl) LoginAdmin(email, password string) (string, error
 		return "", errors.New("invalid credentials")
 	}
 
-	token, err := u.JWTService.GenerateJWT(user.Email, user.ID, user.Role)
+	token, err := u.JWTService.GenerateJWT(user.Email, user.ID, user.Role, true)
 	if err != nil {
 		return "", err
 	}

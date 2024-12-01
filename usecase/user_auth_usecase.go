@@ -71,10 +71,6 @@ func (u *AuthUsecase) Register(user *model.User) error {
 }
 
 func (u *AuthUsecase) Login(email, password string) (string, error) {
-	if email == "" {
-		return "", errors.New("email is required")
-	}
-
 	user, err := u.UserRepo.GetByUsername(email)
 	if err != nil || user == nil {
 		return "", errors.New("invalid credentials")
@@ -89,7 +85,7 @@ func (u *AuthUsecase) Login(email, password string) (string, error) {
 		return "", errors.New("invalid credentials")
 	}
 
-	token, err := u.JWTService.GenerateJWT(user.Email, user.ID, user.Role)
+	token, err := u.JWTService.GenerateJWT(user.Email, user.ID, user.Role, user.IsVerified)
 	if err != nil {
 		return "", err
 	}

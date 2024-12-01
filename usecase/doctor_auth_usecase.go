@@ -87,29 +87,21 @@ func (u *doctorUsecase) Register(doctor *model.Doctor) error {
 
 // Login handles doctor authentication
 func (u *doctorUsecase) Login(email, password string) (string, error) {
-	if email == "" {
-		return "", errors.New("email is required")
-	}
-
-	// Retrieve doctor by email
 	doctor, err := u.DoctorRepo.GetByEmail(email)
 	if err != nil || doctor == nil {
 		return "", errors.New("invalid credentials")
 	}
 
-	// Check if the doctor is verified
 	if !doctor.IsVerified {
 		return "", errors.New("account not verified. Please verify your OTP")
 	}
 
-	// Compare password hash
 	err = bcrypt.CompareHashAndPassword([]byte(doctor.Password), []byte(password))
 	if err != nil {
 		return "", errors.New("invalid credentials")
 	}
 
-	// Generate JWT token
-	token, err := u.JWTService.GenerateJWT(doctor.Email, doctor.ID, doctor.Role)
+	token, err := u.JWTService.GenerateJWT(doctor.Email, doctor.ID, doctor.Role, doctor.IsVerified)
 	if err != nil {
 		return "", err
 	}

@@ -9,14 +9,15 @@ import (
 )
 
 type JwtCustomClaims struct {
-	UserID int    `json:"user_id"`
-	Email  string `json:"email"`
-	Role   string `json:"role"`
+	UserID     int    `json:"user_id"`
+	Email      string `json:"email"`
+	Role       string `json:"role"`
+	IsVerified bool   `json:"is_verified"`
 	jwt.RegisteredClaims
 }
 
 type JWTService interface {
-	GenerateJWT(email string, userID int, role string) (string, error)
+	GenerateJWT(email string, userID int, role string, isVerified bool) (string, error)
 }
 
 type jwtService struct {
@@ -26,15 +27,16 @@ type jwtService struct {
 func NewJWTService(cfg *config.JWTConfig) JWTService {
 	return &jwtService{config: cfg}
 }
-func (s *jwtService) GenerateJWT(email string, id int, role string) (string, error) {
+func (s *jwtService) GenerateJWT(email string, id int, role string, isVerified bool) (string, error) {
 	if s.config.SecretKey == "" {
 		return "", errors.New("secret key is required")
 	}
 
 	claims := &JwtCustomClaims{
-		UserID: id,
-		Email:  email,
-		Role:   role,
+		UserID:     id,
+		Email:      email,
+		Role:       role,
+		IsVerified: isVerified,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(72 * time.Hour)),
 		},
