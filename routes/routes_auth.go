@@ -36,3 +36,8 @@ func DoctorAuthRoutes(e *echo.Echo, authController *controller.DoctorAuthControl
 	e.POST("/doctor/login", authController.LoginDoctor)
 	e.GET("/doctor/logout", authController.LogoutDoctor)
 }
+
+func DoctorProfil(e *echo.Group, profilController *controller.DoctorProfileController) {
+	e.GET("/profile", profilController.GetProfile)          // Profil Doctor
+	e.PUT("/profile", profilController.DoctorUpdateProfile) // Profil Doctor
+}

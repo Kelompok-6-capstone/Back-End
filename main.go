@@ -57,6 +57,11 @@ func main() {
 	userProfilUsecase := usecase.NewUserProfilUsecaseImpl(userProfilRepo)
 	userProfilController := controller.NewProfilController(userProfilUsecase)
 
+	//	Repositori, usecase, dan controller untuk Profil doctor
+	doctorProfilRepo := repository.NewDoctorProfilRepository(DB)
+	doctorProfilUsecase := usecase.NewDoctorProfileUseCase(doctorProfilRepo)
+	doctorProfilController := controller.NewDoctorProfileController(doctorProfilUsecase)
+
 	// Middleware
 	jwtMiddleware := middlewares.NewJWTMiddleware(jwtSecret)
 
@@ -72,10 +77,12 @@ func main() {
 	// Group untuk user, dengan middleware yang memastikan hanya user yang login dapat mengaksesnya
 	userGroup := e.Group("/user", jwtMiddleware.HandlerUser)
 	adminGroup := e.Group("/admin", jwtMiddleware.HandlerAdmin)
+	doctorGroup := e.Group("/profil", jwtMiddleware.HandlerAdmin)
 
 	// Routing group auth
 	routes.UserProfil(userGroup, userProfilController)                  // Profil User
 	routes.AdminManagementRoutes(adminGroup, adminControllerManagement) // Admin management
+	routes.DoctorProfil(doctorGroup, doctorProfilController)            // Doctor Profile
 
 	// Mulai server
 	log.Fatal(e.Start(":8000"))
