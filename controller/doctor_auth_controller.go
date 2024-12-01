@@ -60,6 +60,20 @@ func (c *DoctorAuthController) LoginDoctor(ctx echo.Context) error {
 	})
 }
 
+func (c *DoctorAuthController) VerifyOtp(ctx echo.Context) error {
+	var otp model.Otp
+	if err := ctx.Bind(&otp); err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid input: "+err.Error())
+	}
+
+	err := c.DoctorUsecase.VerifyOtp(otp.Email, otp.Code)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "OTP verification failed: "+err.Error())
+	}
+
+	return helper.JSONSuccessResponse(ctx, "OTP verified successfully")
+}
+
 func (c *DoctorAuthController) LogoutDoctor(ctx echo.Context) error {
 	cookie := &http.Cookie{
 		Name:     "token_doctor",
@@ -74,5 +88,3 @@ func (c *DoctorAuthController) LogoutDoctor(ctx echo.Context) error {
 
 	return helper.JSONSuccessResponse(ctx, "Berhasil Logout Dokter")
 }
-
-

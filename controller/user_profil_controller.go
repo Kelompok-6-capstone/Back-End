@@ -68,5 +68,5 @@ func (c *ProfilController) UpdateProfile(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate profil: "+err.Error())
 	}
 
-	return helper.JSONSuccessResponse(ctx, "Berhasul update profil")
+	return helper.JSONSuccessResponse(ctx, "Berhasil update profil")
 }

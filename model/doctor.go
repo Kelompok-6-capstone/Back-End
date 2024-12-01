@@ -11,4 +11,6 @@ type Doctor struct {
 	DateOfBirth string `json:"date_of_birth"`
 	Address     string `json:"address"`
 	Schedule    string `json:"schedule"`
+	Gender      string `gorm:"type:enum('Laki-laki', 'Perempuan');" json:"jenis_kelamin"`
+	IsVerified  bool   `json:"is_verified" gorm:"default:false"`
 }

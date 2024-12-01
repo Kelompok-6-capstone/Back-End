@@ -10,6 +10,7 @@ import (
 type DoctorRepository interface {
 	GetByEmail(email string) (*model.Doctor, error)
 	CreateDoctor(*model.Doctor) error
+	UpdateDokterVerificationStatus(email string, isVerified bool) error
 }
 
 type doctorRepositoryState struct {
@@ -41,3 +42,6 @@ func (r *doctorRepositoryState) GetByEmail(email string) (*model.Doctor, error) 
 	return &doctor, nil
 }
 
+func (r *doctorRepositoryState) UpdateDokterVerificationStatus(email string, isVerified bool) error {
+	return r.DB.Model(&model.Doctor{}).Where("email = ?", email).Update("is_verified", isVerified).Error
+}

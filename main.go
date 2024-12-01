@@ -49,7 +49,7 @@ func main() {
 
 	// Repositori, usecase, dan controller untuk dokter
 	doctorRepoManagement := repository.NewDoctorAuthRepository(DB)
-	doctorUsecaseManagement := usecase.NewDoctorAuthUsecase(doctorRepoManagement, jwtService)
+	doctorUsecaseManagement := usecase.NewDoctorAuthUsecase(doctorRepoManagement, jwtService, otpRepo, otpService)
 	doctorControllerManagement := controller.NewDoctorAuthController(doctorUsecaseManagement)
 
 	//	Repositori, usecase, dan controller untuk Profil User

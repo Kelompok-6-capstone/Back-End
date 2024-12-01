@@ -12,47 +12,49 @@ import (
 )
 
 type DoctorProfileController struct {
-	DoctorProfilUsecase usecase.DoctorProfileUseCase
+	DoctorProfileUsecase usecase.DoctorProfileUseCase
 }
 
-func NewDoctorProfileController(DoctorProfilUsecase usecase.DoctorProfileUseCase) *DoctorProfileController {
-	return &DoctorProfileController{DoctorProfilUsecase: DoctorProfilUsecase}
+func NewDoctorProfileController(DoctorProfileUsecase usecase.DoctorProfileUseCase) *DoctorProfileController {
+	return &DoctorProfileController{DoctorProfileUsecase: DoctorProfileUsecase}
 }
 
 func (c *DoctorProfileController) GetProfile(ctx echo.Context) error {
 	claims, _ := ctx.Get("doctor").(*service.JwtCustomClaims)
-	doctor, err := c.DoctorProfilUsecase.GetDoctorProfile(claims.UserID)
+	doctor, err := c.DoctorProfileUsecase.GetDoctorProfile(claims.UserID)
 	if err != nil {
 		log.Println("Failed to fetch doctor profile:", err)
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil profil: "+err.Error())
 	}
 
 	type DoctorProfileResponse struct {
-		ID       int    `json:"id"`
-		Username string `json:"username"`
-		Avatar   string `json:"avatar"`
-		Email    string `json:"email"`
-		NoHp     string `json:"no_hp"`
-		Birth    string `json:"date_of_birth"`
-		Address  string `json:"address"`
-		Schedule string `json:"schedule"`
+		ID           int    `json:"id"`
+		Avatar       string `json:"avatar"`
+		Username     string `json:"username"`
+		Email        string `json:"email"`
+		NoHp         string `json:"no_hp"`
+		Alamat       string `json:"alamat"`
+		Tgl_lahir    string `json:"tgl_lahir"`
+		JenisKelamin string `json:"jenis_kelamin"`
+		Schedule     string `json:"schedule"`
 	}
 
 	doctorProfile := DoctorProfileResponse{
-		ID:       doctor.ID,
-		Username: doctor.Username,
-		Email:    doctor.Email,
-		NoHp:     doctor.NoHp,
-		Avatar:   doctor.Avatar,
-		Birth:    doctor.DateOfBirth,
-		Address:  doctor.Address,
-		Schedule: doctor.Schedule,
+		ID:           doctor.ID,
+		Avatar:       doctor.Avatar,
+		Username:     doctor.Username,
+		Email:        doctor.Email,
+		NoHp:         doctor.NoHp,
+		Alamat:       doctor.Address,
+		Tgl_lahir:    doctor.DateOfBirth,
+		JenisKelamin: doctor.Gender,
+		Schedule:     doctor.Schedule,
 	}
 
 	return helper.JSONSuccessResponse(ctx, doctorProfile)
 }
 
-func (c *DoctorProfileController) DoctorUpdateProfile(ctx echo.Context) error {
+func (c *DoctorProfileController) UpdateProfile(ctx echo.Context) error {
 	claims, _ := ctx.Get("doctor").(*service.JwtCustomClaims)
 	var doctor model.Doctor
 
@@ -60,10 +62,11 @@ func (c *DoctorProfileController) DoctorUpdateProfile(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan data: "+err.Error())
 	}
 
+	// Email dan Password tidak boleh diperbarui di endpoint ini
 	doctor.Email = ""
 	doctor.Password = ""
 
-	_, err := c.DoctorProfilUsecase.UpdateDoctorProfile(claims.UserID, &doctor)
+	_, err := c.DoctorProfileUsecase.UpdateDoctorProfile(claims.UserID, &doctor)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate profil: "+err.Error())
 	}
