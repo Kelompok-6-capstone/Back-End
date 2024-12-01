@@ -77,7 +77,7 @@ func main() {
 	// Group untuk user, dengan middleware yang memastikan hanya user yang login dapat mengaksesnya
 	userGroup := e.Group("/user", jwtMiddleware.HandlerUser)
 	adminGroup := e.Group("/admin", jwtMiddleware.HandlerAdmin)
-	doctorGroup := e.Group("/dokter", jwtMiddleware.HandlerAdmin)
+	doctorGroup := e.Group("/doctor", jwtMiddleware.HandlerAdmin)
 
 	// Routing group auth
 	routes.UserProfil(userGroup, userProfilController)                  // Profil User
