@@ -54,7 +54,7 @@ func main() {
 
 	//	Repositori, usecase, dan controller untuk Profil User
 	userProfilRepo := repository.NewUserProfilRepository(DB)
-	userProfilUsecase := usecase.NewUserProfilUsecaseImpl(userProfilRepo)
+	userProfilUsecase := usecase.NewUserProfileUseCase(userProfilRepo)
 	userProfilController := controller.NewProfilController(userProfilUsecase)
 
 	//	Repositori, usecase, dan controller untuk Fitur User

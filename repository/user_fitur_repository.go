@@ -24,7 +24,7 @@ func NewUserFiturRepository(db *gorm.DB) UserFiturRepository {
 
 func (r *UserFiturRepositoryImpl) GetAllDoctors() ([]model.Doctor, error) {
 	var doctors []model.Doctor
-	err := r.DB.Preload("Specialties").
+	err := r.DB.
 		Where("title != '' AND price > 0 AND experience > 0 AND is_verified = true AND is_active = true").
 		Find(&doctors).Error
 	return doctors, err
@@ -32,7 +32,7 @@ func (r *UserFiturRepositoryImpl) GetAllDoctors() ([]model.Doctor, error) {
 
 func (r *UserFiturRepositoryImpl) GetDoctorsBySpecialty(specialty string) ([]model.Doctor, error) {
 	var doctors []model.Doctor
-	err := r.DB.Preload("Specialties").
+	err := r.DB.
 		Joins("JOIN doctor_specialties ON doctors.id = doctor_specialties.doctor_id").
 		Joins("JOIN specialties ON doctor_specialties.specialty_id = specialties.id").
 		Where("specialties.name = ?", specialty).
@@ -42,13 +42,13 @@ func (r *UserFiturRepositoryImpl) GetDoctorsBySpecialty(specialty string) ([]mod
 
 func (r *UserFiturRepositoryImpl) GetDoctorsByStatus(isActive bool) ([]model.Doctor, error) {
 	var doctors []model.Doctor
-	err := r.DB.Preload("Specialties").Where("is_active = ?", isActive).Find(&doctors).Error
+	err := r.DB.Where("is_active = ?", isActive).Find(&doctors).Error
 	return doctors, err
 }
 
 func (r *UserFiturRepositoryImpl) SearchDoctors(query string) ([]model.Doctor, error) {
 	var doctors []model.Doctor
-	err := r.DB.Preload("Specialties").
+	err := r.DB.
 		Where("username LIKE ? OR title LIKE ? OR about LIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%").
 		Find(&doctors).Error
 	return doctors, err
@@ -56,7 +56,7 @@ func (r *UserFiturRepositoryImpl) SearchDoctors(query string) ([]model.Doctor, e
 
 func (r *UserFiturRepositoryImpl) GetDoctorByID(id int) (*model.Doctor, error) {
 	var doctor model.Doctor
-	err := r.DB.Preload("Specialties").Where("id = ?", id).First(&doctor).Error
+	err := r.DB.Where("id = ?", id).First(&doctor).Error
 	if err != nil {
 		return nil, err
 	}

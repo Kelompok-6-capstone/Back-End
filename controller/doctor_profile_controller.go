@@ -59,13 +59,6 @@ func (c *DoctorProfileController) UpdateProfile(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan data: "+err.Error())
 	}
 
-	// Validasi specialties
-	for _, specialty := range doctor.Specialties {
-		if specialty.Name == "" {
-			return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Nama spesialisasi tidak boleh kosong")
-		}
-	}
-
 	// Update profil dokter
 	_, err := c.DoctorProfileUsecase.UpdateDoctorProfile(claims.UserID, &doctor)
 	if err != nil {

@@ -6,31 +6,33 @@ import (
 	"errors"
 )
 
-type UserProfilUsecase interface {
-	GetUserProfile(userID int) (*model.User, error)
-	UpdateUserProfile(userID int, user *model.User) (*model.User, error)
+type UserProfileUseCase interface {
+	GetUserProfile(UserID int) (*model.User, error)
+	UpdateUserProfile(UserID int, User *model.User) (*model.User, error)
 }
 
-type UserProfilUsecaseImpl struct {
-	UserProfilRepo repository.UserProfilRepository
+type UserProfileUseCaseImpl struct {
+	UserProfileRepo repository.UserProfilRepository
 }
 
-func NewUserProfilUsecaseImpl(repo repository.UserProfilRepository) UserProfilUsecase {
-	return &UserProfilUsecaseImpl{UserProfilRepo: repo}
+func NewUserProfileUseCase(repo repository.UserProfilRepository) UserProfileUseCase {
+	return &UserProfileUseCaseImpl{UserProfileRepo: repo}
 }
 
-func (u *UserProfilUsecaseImpl) GetUserProfile(userID int) (*model.User, error) {
-	user, err := u.UserProfilRepo.GetByID(userID)
+// GetUserProfile retrieves the profile of a User by their ID
+func (u *UserProfileUseCaseImpl) GetUserProfile(UserID int) (*model.User, error) {
+	User, err := u.UserProfileRepo.GetByID(UserID)
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
-	return user, nil
+	return User, nil
 }
 
-func (u *UserProfilUsecaseImpl) UpdateUserProfile(userID int, user *model.User) (*model.User, error) {
-	updatedUser, err := u.UserProfilRepo.UpdateByID(userID, user)
+// UpdateUserProfile updates the profile of a User
+func (u *UserProfileUseCaseImpl) UpdateUserProfile(UserID int, User *model.User) (*model.User, error) {
+	updatedUser, err := u.UserProfileRepo.UpdateByID(UserID, User)
 	if err != nil {
-		return nil, errors.New("user not found")
+		return nil, errors.New("failed to update user profile")
 	}
 	return updatedUser, nil
 }

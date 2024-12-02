@@ -2,7 +2,6 @@ package repository
 
 import (
 	"calmind/model"
-	"errors"
 
 	"gorm.io/gorm"
 )
@@ -23,7 +22,7 @@ func NewDoctorProfilRepository(db *gorm.DB) DoctorProfilRepository {
 
 func (r *DoctorProfilRepositoryImpl) GetByID(id int) (*model.Doctor, error) {
 	var doctor model.Doctor
-	err := r.DB.Preload("Specialties").Where("id = ?", id).First(&doctor).Error
+	err := r.DB.Where("id = ?", id).First(&doctor).Error
 	if err != nil {
 		return nil, err
 	}
@@ -72,29 +71,7 @@ func (r *DoctorProfilRepositoryImpl) UpdateByID(id int, doctor *model.Doctor) (*
 		existingDoctor.About = doctor.About
 	}
 
-	if len(doctor.Specialties) > 0 {
-		var specialties []model.Specialty
-		for _, specialty := range doctor.Specialties {
-			if specialty.Name == "" {
-				return nil, errors.New("nama spesialisasi tidak boleh kosong")
-			}
-
-			var dbSpecialty model.Specialty
-			err := r.DB.Where("name = ?", specialty.Name).FirstOrCreate(&dbSpecialty).Error
-			if err != nil {
-				return nil, err
-			}
-			specialties = append(specialties, dbSpecialty)
-		}
-
-		// Update hubungan dokter dan spesialisasi
-		err = r.DB.Model(&existingDoctor).Association("Specialties").Replace(specialties)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Simpan perubahan
+	// Save updated doctor
 	err = r.DB.Save(&existingDoctor).Error
 	if err != nil {
 		return nil, err

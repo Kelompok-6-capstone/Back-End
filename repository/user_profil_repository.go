@@ -8,7 +8,7 @@ import (
 
 type UserProfilRepository interface {
 	GetByID(id int) (*model.User, error)
-	UpdateByID(id int, user *model.User) (*model.User, error)
+	UpdateByID(id int, User *model.User) (*model.User, error)
 }
 
 type UserProfilRepositoryImpl struct {
@@ -22,7 +22,10 @@ func NewUserProfilRepository(db *gorm.DB) UserProfilRepository {
 func (r *UserProfilRepositoryImpl) GetByID(id int) (*model.User, error) {
 	var user model.User
 	err := r.DB.Where("id = ?", id).First(&user).Error
-	return &user, err
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 func (r *UserProfilRepositoryImpl) UpdateByID(id int, user *model.User) (*model.User, error) {
@@ -32,7 +35,9 @@ func (r *UserProfilRepositoryImpl) UpdateByID(id int, user *model.User) (*model.
 		return nil, err
 	}
 
-	// Update fields
+	if user.Avatar != "" {
+		existingUser.Avatar = user.Avatar
+	}
 	if user.Username != "" {
 		existingUser.Username = user.Username
 	}
@@ -45,13 +50,15 @@ func (r *UserProfilRepositoryImpl) UpdateByID(id int, user *model.User) (*model.
 	if user.Tgl_lahir != "" {
 		existingUser.Tgl_lahir = user.Tgl_lahir
 	}
-	if user.Avatar != "" {
-		existingUser.Avatar = user.Avatar
-	}
 	if user.JenisKelamin != "" {
 		existingUser.JenisKelamin = user.JenisKelamin
 	}
 
+	// Simpan perubahan
 	err = r.DB.Save(&existingUser).Error
-	return &existingUser, err
+	if err != nil {
+		return nil, err
+	}
+
+	return &existingUser, nil
 }
