@@ -11,41 +11,47 @@ type UserProfilRepository interface {
 	UpdateByID(id int, user *model.User) (*model.User, error)
 }
 
-type userProfilRepositoryImpl struct {
+type UserProfilRepositoryImpl struct {
 	DB *gorm.DB
 }
 
 func NewUserProfilRepository(db *gorm.DB) UserProfilRepository {
-	return &userProfilRepositoryImpl{DB: db}
+	return &UserProfilRepositoryImpl{DB: db}
 }
 
-func (r *userProfilRepositoryImpl) GetByID(id int) (*model.User, error) {
+func (r *UserProfilRepositoryImpl) GetByID(id int) (*model.User, error) {
 	var user model.User
 	err := r.DB.Where("id = ?", id).First(&user).Error
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
+	return &user, err
 }
 
-func (r *userProfilRepositoryImpl) UpdateByID(id int, user *model.User) (*model.User, error) {
+func (r *UserProfilRepositoryImpl) UpdateByID(id int, user *model.User) (*model.User, error) {
 	var existingUser model.User
 	err := r.DB.Where("id = ?", id).First(&existingUser).Error
 	if err != nil {
 		return nil, err
 	}
 
-	existingUser.Avatar = user.Avatar
-	existingUser.Username = user.Username
-	existingUser.NoHp = user.NoHp
-	existingUser.Alamat = user.Alamat
-	existingUser.Tgl_lahir = user.Tgl_lahir
-	existingUser.JenisKelamin = user.JenisKelamin
-
-	err = r.DB.Save(&existingUser).Error
-	if err != nil {
-		return nil, err
+	// Update fields
+	if user.Username != "" {
+		existingUser.Username = user.Username
+	}
+	if user.NoHp != "" {
+		existingUser.NoHp = user.NoHp
+	}
+	if user.Alamat != "" {
+		existingUser.Alamat = user.Alamat
+	}
+	if user.Tgl_lahir != "" {
+		existingUser.Tgl_lahir = user.Tgl_lahir
+	}
+	if user.Avatar != "" {
+		existingUser.Avatar = user.Avatar
+	}
+	if user.JenisKelamin != "" {
+		existingUser.JenisKelamin = user.JenisKelamin
 	}
 
-	return &existingUser, nil
+	err = r.DB.Save(&existingUser).Error
+	return &existingUser, err
 }

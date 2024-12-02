@@ -28,7 +28,6 @@ func (u *UserProfilUsecaseImpl) GetUserProfile(userID int) (*model.User, error) 
 }
 
 func (u *UserProfilUsecaseImpl) UpdateUserProfile(userID int, user *model.User) (*model.User, error) {
-	// Perform the update
 	updatedUser, err := u.UserProfilRepo.UpdateByID(userID, user)
 	if err != nil {
 		return nil, errors.New("user not found")

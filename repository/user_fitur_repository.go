@@ -57,5 +57,8 @@ func (r *UserFiturRepositoryImpl) SearchDoctors(query string) ([]model.Doctor, e
 func (r *UserFiturRepositoryImpl) GetDoctorByID(id int) (*model.Doctor, error) {
 	var doctor model.Doctor
 	err := r.DB.Preload("Specialties").Where("id = ?", id).First(&doctor).Error
-	return &doctor, err
+	if err != nil {
+		return nil, err
+	}
+	return &doctor, nil
 }
