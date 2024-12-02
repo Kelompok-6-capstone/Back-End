@@ -8,7 +8,9 @@ import (
 
 type AdminManagementRepo interface {
 	FindAllUsers() ([]*model.User, error)
+	FindAllDocters() ([]*model.Doctor, error)
 	DeleteUsers(id int) (*model.User, error)
+	DeleteDocter(id int) (*model.Doctor, error)
 }
 
 type AdminManagementRepoImpl struct {
@@ -37,4 +39,23 @@ func (ar *AdminManagementRepoImpl) DeleteUsers(id int) (*model.User, error) {
 	}
 
 	return &user, nil
+}
+func (ar *AdminManagementRepoImpl) FindAllDocters() ([]*model.Doctor, error) {
+	var dokter []*model.Doctor
+	err := ar.DB.Find(&dokter).Error
+	return dokter, err
+}
+
+func (ar *AdminManagementRepoImpl) DeleteDocter(id int) (*model.Doctor, error) {
+	var dokter model.Doctor
+	err := ar.DB.First(&dokter, id).Error
+	if err != nil {
+	}
+
+	err = ar.DB.Delete(&dokter).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &dokter, nil
 }

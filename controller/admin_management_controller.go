@@ -56,3 +56,36 @@ func (ac *AdminManagementController) DeleteUser(c echo.Context) error {
 
 	return helper.JSONSuccessResponse(c, "User data successfully deleted")
 }
+
+func (ac *AdminManagementController) GetAllDocter(c echo.Context) error {
+	doctor, err := ac.AdminUsecase.GetAllDocter()
+	if err != nil {
+		return helper.JSONErrorResponse(c, http.StatusInternalServerError, "Failed to fetch doctor")
+	}
+
+	var userResponses []UserResponse
+	for _, user := range doctor {
+		userResponses = append(userResponses, UserResponse{
+			ID:       user.ID,
+			Username: user.Username,
+			Email:    user.Email,
+			NoHp:     user.NoHp,
+		})
+	}
+
+	return helper.JSONSuccessResponse(c, userResponses)
+}
+
+func (ac *AdminManagementController) DeleteDocter(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return helper.JSONErrorResponse(c, http.StatusBadRequest, "Invalid user ID")
+	}
+
+	_, err = ac.AdminUsecase.DeleteDocter(id)
+	if err != nil {
+		return helper.JSONErrorResponse(c, http.StatusInternalServerError, "Failed to delete dokter")
+	}
+
+	return helper.JSONSuccessResponse(c, "Docter data successfully deleted")
+}
