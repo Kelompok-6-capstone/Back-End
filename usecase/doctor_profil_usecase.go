@@ -9,6 +9,7 @@ import (
 type DoctorProfileUseCase interface {
 	GetDoctorProfile(doctorID int) (*model.Doctor, error)
 	UpdateDoctorProfile(doctorID int, doctor *model.Doctor) (*model.Doctor, error)
+	SetDoctorActiveStatus(doctorID int, isActive bool) error
 }
 
 type doctorProfileUseCaseImpl struct {
@@ -35,4 +36,13 @@ func (u *doctorProfileUseCaseImpl) UpdateDoctorProfile(doctorID int, doctor *mod
 		return nil, errors.New("failed to update doctor profile")
 	}
 	return updatedDoctor, nil
+}
+
+// SetDoctorActiveStatus updates the active status of a doctor
+func (u *doctorProfileUseCaseImpl) SetDoctorActiveStatus(doctorID int, isActive bool) error {
+	err := u.DoctorProfileRepo.UpdateDoctorActiveStatus(doctorID, isActive)
+	if err != nil {
+		return errors.New("failed to update doctor active status")
+	}
+	return nil
 }

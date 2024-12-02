@@ -20,7 +20,6 @@ func NewJWTMiddleware(cfg *config.JWTConfig) *JWTMiddleware {
 
 func (m *JWTMiddleware) HandlerAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Ambil token dari cookie
 		h, err := c.Cookie("token_admin")
 		if err != nil {
 			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "gagal login token tidak ditemukan")
@@ -29,7 +28,6 @@ func (m *JWTMiddleware) HandlerAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 		tokenString := h.Value
 		claims := &service.JwtCustomClaims{}
 
-		// Parse dan validasi token
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
 			return []byte(m.config.SecretKey), nil
 		})
@@ -38,12 +36,10 @@ func (m *JWTMiddleware) HandlerAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "invalid token")
 		}
 
-		// Pastikan token valid
 		if !token.Valid {
 			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "invalid token")
 		}
 
-		// Validasi role admin
 		if claims.Role != "admin" {
 			return helper.JSONErrorResponse(c, http.StatusForbidden, "access forbidden")
 		}
@@ -56,7 +52,6 @@ func (m *JWTMiddleware) HandlerAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 
 func (m *JWTMiddleware) HandlerUser(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Ambil token dari cookie
 		h, err := c.Cookie("token_user")
 		if err != nil {
 			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "gagal login token tidak ditemukan")
@@ -65,7 +60,6 @@ func (m *JWTMiddleware) HandlerUser(next echo.HandlerFunc) echo.HandlerFunc {
 		tokenString := h.Value
 		claims := &service.JwtCustomClaims{}
 
-		// Parse dan validasi token
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
 			return []byte(m.config.SecretKey), nil
 		})
@@ -74,22 +68,18 @@ func (m *JWTMiddleware) HandlerUser(next echo.HandlerFunc) echo.HandlerFunc {
 			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "invalid token")
 		}
 
-		// Pastikan token valid
 		if !token.Valid {
 			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "invalid token")
 		}
 
-		// Validasi apakah pengguna sudah diverifikasi
 		if !claims.IsVerified {
 			return helper.JSONErrorResponse(c, http.StatusForbidden, "access forbidden: account not verified. Please verify your OTP.")
 		}
 
-		// Validasi role user
 		if claims.Role != "user" {
 			return helper.JSONErrorResponse(c, http.StatusForbidden, "access forbidden")
 		}
 
-		// Simpan klaim di context untuk digunakan di handler berikutnya
 		c.Set("user", claims)
 
 		return next(c)
@@ -98,7 +88,6 @@ func (m *JWTMiddleware) HandlerUser(next echo.HandlerFunc) echo.HandlerFunc {
 
 func (m *JWTMiddleware) HandlerDoctor(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Ambil token dari cookie
 		h, err := c.Cookie("token_doctor")
 		if err != nil {
 			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "gagal login token tidak ditemukan")
@@ -107,7 +96,6 @@ func (m *JWTMiddleware) HandlerDoctor(next echo.HandlerFunc) echo.HandlerFunc {
 		tokenString := h.Value
 		claims := &service.JwtCustomClaims{}
 
-		// Parse dan validasi token
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
 			return []byte(m.config.SecretKey), nil
 		})
@@ -116,22 +104,18 @@ func (m *JWTMiddleware) HandlerDoctor(next echo.HandlerFunc) echo.HandlerFunc {
 			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "invalid token")
 		}
 
-		// Pastikan token valid
 		if !token.Valid {
 			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "invalid token")
 		}
 
-		// Validasi apakah dokter sudah diverifikasi
 		if !claims.IsVerified {
 			return helper.JSONErrorResponse(c, http.StatusForbidden, "access forbidden: account not verified. Please verify your OTP.")
 		}
 
-		// Validasi role dokter
 		if claims.Role != "doctor" {
 			return helper.JSONErrorResponse(c, http.StatusForbidden, "access forbidden")
 		}
 
-		// Simpan klaim di context untuk digunakan di handler berikutnya
 		c.Set("doctor", claims)
 
 		return next(c)

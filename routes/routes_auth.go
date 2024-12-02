@@ -14,9 +14,16 @@ func UserAuthRoutes(e *echo.Echo, authController *controller.AuthController) {
 	e.GET("/user/logout", authController.LogoutUser)      // Logout User
 }
 
-func UserProfil(e *echo.Group, profilController *controller.ProfilController) {
+func UserProfil(e *echo.Group, profilController *controller.ProfilController, fitur *controller.UserFiturController, konsultasi *controller.ConsultationController) {
 	e.GET("/profile", profilController.GetProfile)    // Profil User
 	e.PUT("/profile", profilController.UpdateProfile) // Profil User
+	e.GET("/doctors", fitur.GetDoctors)
+	e.GET("/doctors/specialty", fitur.GetDoctorsBySpecialty)
+	e.GET("/doctors/status", fitur.GetDoctorsByStatus)
+	e.GET("/doctors/search", fitur.SearchDoctors)
+	e.GET("/doctors/:id", fitur.GetDoctorDetail)
+	e.POST("/consultations", konsultasi.CreateConsultation)
+
 }
 
 // Routes untuk Admin
@@ -35,9 +42,11 @@ func DoctorAuthRoutes(e *echo.Echo, authController *controller.DoctorAuthControl
 	e.POST("/doctor/register", authController.RegisterDoctor)
 	e.POST("/doctor/login", authController.LoginDoctor)
 	e.GET("/doctor/logout", authController.LogoutDoctor)
+	e.POST("/doctor/verify-otp", authController.VerifyOtp) // verivikasi otp
 }
 
 func DoctorProfil(e *echo.Group, profilController *controller.DoctorProfileController) {
-	e.GET("/profile", profilController.GetProfile)    // Profil Doctor
-	e.PUT("/profile", profilController.UpdateProfile) // Profil Doctor
+	e.GET("/profile", profilController.GetProfile)     // Mendapatkan profil dokter
+	e.PUT("/profile", profilController.UpdateProfile)  // Mengupdate profil dokter
+	e.PUT("/status", profilController.SetActiveStatus) // Mengubah status aktif/tidak aktif dokter
 }

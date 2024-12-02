@@ -57,10 +57,20 @@ func main() {
 	userProfilUsecase := usecase.NewUserProfilUsecaseImpl(userProfilRepo)
 	userProfilController := controller.NewProfilController(userProfilUsecase)
 
+	//	Repositori, usecase, dan controller untuk Fitur User
+	userFiturRepo := repository.NewUserFiturRepository(DB)
+	userFiturUsecase := usecase.NewUserFiturUsecase(userFiturRepo)
+	userFiturController := controller.NewUserFiturController(userFiturUsecase)
+
 	//	Repositori, usecase, dan controller untuk Profil doctor
 	doctorProfilRepo := repository.NewDoctorProfilRepository(DB)
 	doctorProfilUsecase := usecase.NewDoctorProfileUseCase(doctorProfilRepo)
 	doctorProfilController := controller.NewDoctorProfileController(doctorProfilUsecase)
+
+	//    Repositori, usecase, dan controller untuk Consultasi
+	consultationRepo := repository.NewConsultationRepository(DB)
+	consultationUsecase := usecase.NewConsultationUsecase(consultationRepo)
+	consultationController := controller.NewConsultationController(consultationUsecase)
 
 	// Middleware
 	jwtMiddleware := middlewares.NewJWTMiddleware(jwtSecret)
@@ -80,9 +90,9 @@ func main() {
 	doctorGroup := e.Group("/doctor", jwtMiddleware.HandlerDoctor)
 
 	// Routing group auth
-	routes.UserProfil(userGroup, userProfilController)                  // Profil User
-	routes.AdminManagementRoutes(adminGroup, adminControllerManagement) // Admin management
-	routes.DoctorProfil(doctorGroup, doctorProfilController)            // Doctor Profile
+	routes.UserProfil(userGroup, userProfilController, userFiturController, consultationController) // Profil User
+	routes.AdminManagementRoutes(adminGroup, adminControllerManagement)                             // Admin management
+	routes.DoctorProfil(doctorGroup, doctorProfilController)                                        // Doctor Profile
 
 	// Mulai server
 	log.Fatal(e.Start(":8000"))

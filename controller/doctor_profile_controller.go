@@ -5,7 +5,6 @@ import (
 	"calmind/model"
 	"calmind/service"
 	"calmind/usecase"
-	"log"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -23,35 +22,35 @@ func (c *DoctorProfileController) GetProfile(ctx echo.Context) error {
 	claims, _ := ctx.Get("doctor").(*service.JwtCustomClaims)
 	doctor, err := c.DoctorProfileUsecase.GetDoctorProfile(claims.UserID)
 	if err != nil {
-		log.Println("Failed to fetch doctor profile:", err)
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil profil: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil profil dokter: "+err.Error())
 	}
 
-	type DoctorProfileResponse struct {
-		ID       int    `json:"id"`
-		Username string `json:"username"`
-		Avatar   string `json:"avatar"`
-		Email    string `json:"email"`
-		NoHp     string `json:"no_hp"`
-		Birth    string `json:"date_of_birth"`
-		Address  string `json:"address"`
-		Schedule string `json:"schedule"`
+	type DoctorResponse struct {
+		ID        int    `json:"id"`
+		Avatar    string `json:"avatar"`
+		Username  string `json:"username"`
+		Email     string `json:"email"`
+		NoHp      string `json:"no_hp"`
+		Tgl_lahir string `json:"date_of_birth"`
+		Alamat    string `json:"address"`
+		Schedule  string `json:"schedule"`
 	}
 
-	doctorProfile := DoctorProfileResponse{
-		ID:       doctor.ID,
-		Username: doctor.Username,
-		Email:    doctor.Email,
-		NoHp:     doctor.NoHp,
-		Avatar:   doctor.Avatar,
-		Birth:    doctor.DateOfBirth,
-		Address:  doctor.Address,
-		Schedule: doctor.Schedule,
+	doctorProfile := DoctorResponse{
+		ID:        doctor.ID,
+		Avatar:    doctor.Avatar,
+		Username:  doctor.Username,
+		Email:     doctor.Email,
+		NoHp:      doctor.NoHp,
+		Alamat:    doctor.Address,
+		Tgl_lahir: doctor.DateOfBirth,
+		Schedule:  doctor.Schedule,
 	}
 
 	return helper.JSONSuccessResponse(ctx, doctorProfile)
 }
 
+// UpdateProfile updates the profile of a doctor
 func (c *DoctorProfileController) UpdateProfile(ctx echo.Context) error {
 	claims, _ := ctx.Get("doctor").(*service.JwtCustomClaims)
 	var doctor model.Doctor
@@ -60,14 +59,45 @@ func (c *DoctorProfileController) UpdateProfile(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan data: "+err.Error())
 	}
 
-	// Email dan Password tidak boleh diperbarui di endpoint ini
-	doctor.Email = ""
-	doctor.Password = ""
+	// Validasi specialties
+	for _, specialty := range doctor.Specialties {
+		if specialty.Name == "" {
+			return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Nama spesialisasi tidak boleh kosong")
+		}
+	}
 
+	// Update profil dokter
 	_, err := c.DoctorProfileUsecase.UpdateDoctorProfile(claims.UserID, &doctor)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate profil: "+err.Error())
 	}
 
-	return helper.JSONSuccessResponse(ctx, "Berhasil update profil")
+	return helper.JSONSuccessResponse(ctx, "Berhasil Update Profil")
+}
+
+// SetActiveStatus allows a doctor to change their active/inactive status
+func (c *DoctorProfileController) SetActiveStatus(ctx echo.Context) error {
+	claims, _ := ctx.Get("doctor").(*service.JwtCustomClaims)
+
+	var statusRequest struct {
+		IsActive bool `json:"is_active"`
+	}
+
+	if err := ctx.Bind(&statusRequest); err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal memproses data: "+err.Error())
+	}
+
+	err := c.DoctorProfileUsecase.SetDoctorActiveStatus(claims.UserID, statusRequest.IsActive)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengubah status aktif dokter: "+err.Error())
+	}
+
+	message := "Anda telah mengubah status ke tidak aktif"
+	if statusRequest.IsActive {
+		message = "Anda telah mengubah status ke aktif"
+	}
+
+	return helper.JSONSuccessResponse(ctx, map[string]string{
+		"message": message,
+	})
 }

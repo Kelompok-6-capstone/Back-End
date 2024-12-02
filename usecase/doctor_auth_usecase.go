@@ -43,9 +43,6 @@ func (u *doctorUsecase) Register(doctor *model.Doctor) error {
 	if doctor.Password == "" {
 		return errors.New("password is required")
 	}
-	if doctor.NoHp == "" {
-		return errors.New("no handphone is required")
-	}
 	if doctor.Username == "" {
 		return errors.New("username is required")
 	}

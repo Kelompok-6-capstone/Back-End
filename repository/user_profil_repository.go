@@ -37,7 +37,6 @@ func (r *userProfilRepositoryImpl) UpdateByID(id int, user *model.User) (*model.
 
 	existingUser.Avatar = user.Avatar
 	existingUser.Username = user.Username
-	existingUser.Email = user.Email
 	existingUser.NoHp = user.NoHp
 	existingUser.Alamat = user.Alamat
 	existingUser.Tgl_lahir = user.Tgl_lahir
