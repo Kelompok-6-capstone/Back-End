@@ -10,6 +10,8 @@ type DoctorProfilRepository interface {
 	GetByID(id int) (*model.Doctor, error)
 	UpdateByID(id int, doctor *model.Doctor) (*model.Doctor, error)
 	UpdateDoctorActiveStatus(id int, isActive bool) error
+	GetSpecialtyByID(id int, specialty *model.Specialty) error
+	UpdateSpecialties(doctorID int, specialties []model.Specialty) error
 }
 
 type DoctorProfilRepositoryImpl struct {
@@ -22,7 +24,7 @@ func NewDoctorProfilRepository(db *gorm.DB) DoctorProfilRepository {
 
 func (r *DoctorProfilRepositoryImpl) GetByID(id int) (*model.Doctor, error) {
 	var doctor model.Doctor
-	err := r.DB.Where("id = ?", id).First(&doctor).Error
+	err := r.DB.Preload("Specialties").Where("id = ?", id).First(&doctor).Error
 	if err != nil {
 		return nil, err
 	}
@@ -58,9 +60,6 @@ func (r *DoctorProfilRepositoryImpl) UpdateByID(id int, doctor *model.Doctor) (*
 	if doctor.Title != "" {
 		existingDoctor.Title = doctor.Title
 	}
-	if doctor.Price > 0 {
-		existingDoctor.Price = doctor.Price
-	}
 	if doctor.Experience > 0 {
 		existingDoctor.Experience = doctor.Experience
 	}
@@ -82,4 +81,17 @@ func (r *DoctorProfilRepositoryImpl) UpdateByID(id int, doctor *model.Doctor) (*
 
 func (r *DoctorProfilRepositoryImpl) UpdateDoctorActiveStatus(id int, isActive bool) error {
 	return r.DB.Model(&model.Doctor{}).Where("id = ?", id).Update("is_active", isActive).Error
+}
+
+func (r *DoctorProfilRepositoryImpl) GetSpecialtyByID(id int, specialty *model.Specialty) error {
+	return r.DB.Where("id = ?", id).First(specialty).Error
+}
+
+func (r *DoctorProfilRepositoryImpl) UpdateSpecialties(doctorID int, specialties []model.Specialty) error {
+	var doctor model.Doctor
+	if err := r.DB.Where("id = ?", doctorID).First(&doctor).Error; err != nil {
+		return err
+	}
+
+	return r.DB.Model(&doctor).Association("Specialties").Replace(specialties)
 }

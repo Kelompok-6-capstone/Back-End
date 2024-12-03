@@ -22,8 +22,8 @@ func UserProfil(e *echo.Group, profilController *controller.ProfilController, fi
 	e.GET("/doctors/status", fitur.GetDoctorsByStatus)
 	e.GET("/doctors/search", fitur.SearchDoctors)
 	e.GET("/doctors/:id", fitur.GetDoctorDetail)
+	e.GET("/spesialis", fitur.GetAllSpesialis)
 	e.POST("/consultations", konsultasi.CreateConsultation)
-
 }
 
 // Routes untuk Admin

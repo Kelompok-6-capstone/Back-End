@@ -50,25 +50,22 @@ func (c *DoctorProfileController) GetProfile(ctx echo.Context) error {
 	return helper.JSONSuccessResponse(ctx, doctorProfile)
 }
 
-// UpdateProfile updates the profile of a doctor
 func (c *DoctorProfileController) UpdateProfile(ctx echo.Context) error {
 	claims, _ := ctx.Get("doctor").(*service.JwtCustomClaims)
-	var doctor model.Doctor
 
+	var doctor model.Doctor
 	if err := ctx.Bind(&doctor); err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan data: "+err.Error())
 	}
 
-	// Update profil dokter
 	_, err := c.DoctorProfileUsecase.UpdateDoctorProfile(claims.UserID, &doctor)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate profil: "+err.Error())
 	}
 
-	return helper.JSONSuccessResponse(ctx, "Berhasil Update Profil")
+	return helper.JSONSuccessResponse(ctx, "Berhasil update profil")
 }
 
-// SetActiveStatus allows a doctor to change their active/inactive status
 func (c *DoctorProfileController) SetActiveStatus(ctx echo.Context) error {
 	claims, _ := ctx.Get("doctor").(*service.JwtCustomClaims)
 

@@ -11,6 +11,7 @@ type UserFiturUsecase interface {
 	GetDoctorsByStatus(isActive bool) ([]model.Doctor, error)
 	SearchDoctors(query string) ([]model.Doctor, error)
 	GetDoctorByID(id int) (*model.Doctor, error)
+	GetAllSpesialis() ([]model.Specialty, error)
 }
 
 type UserFiturUsecaseImpl struct {
@@ -39,4 +40,7 @@ func (u *UserFiturUsecaseImpl) SearchDoctors(query string) ([]model.Doctor, erro
 
 func (u *UserFiturUsecaseImpl) GetDoctorByID(id int) (*model.Doctor, error) {
 	return u.DoctorRepo.GetDoctorByID(id)
+}
+func (u *UserFiturUsecaseImpl) GetAllSpesialis() ([]model.Specialty, error) {
+	return u.DoctorRepo.GetSpesialis()
 }

@@ -12,6 +12,7 @@ type UserFiturRepository interface {
 	GetDoctorsByStatus(isActive bool) ([]model.Doctor, error)
 	SearchDoctors(query string) ([]model.Doctor, error)
 	GetDoctorByID(id int) (*model.Doctor, error)
+	GetSpesialis() ([]model.Specialty, error)
 }
 
 type UserFiturRepositoryImpl struct {
@@ -56,9 +57,15 @@ func (r *UserFiturRepositoryImpl) SearchDoctors(query string) ([]model.Doctor, e
 
 func (r *UserFiturRepositoryImpl) GetDoctorByID(id int) (*model.Doctor, error) {
 	var doctor model.Doctor
-	err := r.DB.Where("id = ?", id).First(&doctor).Error
+	err := r.DB.Preload("Specialties").Where("id = ?", id).First(&doctor).Error
 	if err != nil {
 		return nil, err
 	}
 	return &doctor, nil
+}
+
+func (r *UserFiturRepositoryImpl) GetSpesialis() ([]model.Specialty, error) {
+	var spesialis []model.Specialty
+	err := r.DB.Find(&spesialis).Error
+	return spesialis, err
 }

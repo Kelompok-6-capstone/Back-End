@@ -20,7 +20,6 @@ func NewDoctorProfileUseCase(repo repository.DoctorProfilRepository) DoctorProfi
 	return &doctorProfileUseCaseImpl{DoctorProfileRepo: repo}
 }
 
-// GetDoctorProfile retrieves the profile of a doctor by their ID
 func (u *doctorProfileUseCaseImpl) GetDoctorProfile(doctorID int) (*model.Doctor, error) {
 	doctor, err := u.DoctorProfileRepo.GetByID(doctorID)
 	if err != nil {
@@ -29,16 +28,26 @@ func (u *doctorProfileUseCaseImpl) GetDoctorProfile(doctorID int) (*model.Doctor
 	return doctor, nil
 }
 
-// UpdateDoctorProfile updates the profile of a doctor
 func (u *doctorProfileUseCaseImpl) UpdateDoctorProfile(doctorID int, doctor *model.Doctor) (*model.Doctor, error) {
-	updatedDoctor, err := u.DoctorProfileRepo.UpdateByID(doctorID, doctor)
-	if err != nil {
-		return nil, errors.New("failed to update doctor profile")
+	// Handle specialties if provided
+	if len(doctor.Specialties) > 0 {
+		var specialties []model.Specialty
+		for _, specialty := range doctor.Specialties {
+			var dbSpecialty model.Specialty
+			if err := u.DoctorProfileRepo.GetSpecialtyByID(specialty.ID, &dbSpecialty); err != nil {
+				return nil, err
+			}
+			specialties = append(specialties, dbSpecialty)
+		}
+
+		if err := u.DoctorProfileRepo.UpdateSpecialties(doctorID, specialties); err != nil {
+			return nil, err
+		}
 	}
-	return updatedDoctor, nil
+
+	return u.DoctorProfileRepo.UpdateByID(doctorID, doctor)
 }
 
-// SetDoctorActiveStatus updates the active status of a doctor
 func (u *doctorProfileUseCaseImpl) SetDoctorActiveStatus(doctorID int, isActive bool) error {
 	err := u.DoctorProfileRepo.UpdateDoctorActiveStatus(doctorID, isActive)
 	if err != nil {

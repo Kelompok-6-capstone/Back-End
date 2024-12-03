@@ -29,18 +29,24 @@ type DoctorResponse struct {
 
 // Struct untuk respons detail dokter
 type DoctorDetailResponse struct {
-	ID          int     `json:"id"`
-	Username    string  `json:"username"`
-	Avatar      string  `json:"avatar"`
-	DateOfBirth string  `json:"date_of_birth"`
-	Address     string  `json:"address"`
-	Schedule    string  `json:"schedule"`
-	Title       string  `json:"title"`
-	Price       float64 `json:"price"`
-	Experience  int     `json:"experience"`
-	STRNumber   string  `json:"str_number"`
-	About       string  `json:"about"`
-	IsActive    bool    `json:"is_active"`
+	ID          int                 `json:"id"`
+	Username    string              `json:"username"`
+	Avatar      string              `json:"avatar"`
+	DateOfBirth string              `json:"date_of_birth"`
+	Address     string              `json:"address"`
+	Schedule    string              `json:"schedule"`
+	Title       string              `json:"title"`
+	Price       float64             `json:"price"`
+	Experience  int                 `json:"experience"`
+	STRNumber   string              `json:"str_number"`
+	About       string              `json:"about"`
+	IsActive    bool                `json:"is_active"`
+	Specialties []SpecialtyResponse `json:"specialties"` // Tambahkan ini
+}
+
+type SpecialtyResponse struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
 
 // Endpoint untuk mendapatkan daftar semua dokter
@@ -168,11 +174,20 @@ func (c *UserFiturController) GetDoctorDetail(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "Dokter tidak ditemukan")
 	}
 
+	// Transform specialties ke dalam struktur JSON
+	var specialties []SpecialtyResponse
+	for _, specialty := range doctor.Specialties {
+		specialties = append(specialties, SpecialtyResponse{
+			ID:   specialty.ID,
+			Name: specialty.Name,
+		})
+	}
+
 	doctorDetail := DoctorDetailResponse{
 		ID:          doctor.ID,
 		Username:    doctor.Username,
 		Avatar:      doctor.Avatar,
-		DateOfBirth: doctor.DateOfBirth, // Sudah dalam tipe time.Time
+		DateOfBirth: doctor.DateOfBirth,
 		Address:     doctor.Address,
 		Schedule:    doctor.Schedule,
 		Title:       doctor.Title,
@@ -181,7 +196,16 @@ func (c *UserFiturController) GetDoctorDetail(ctx echo.Context) error {
 		STRNumber:   doctor.STRNumber,
 		About:       doctor.About,
 		IsActive:    doctor.IsActive,
+		Specialties: specialties,
 	}
 
 	return helper.JSONSuccessResponse(ctx, doctorDetail)
+}
+func (c *UserFiturController) GetAllSpesialis(ctx echo.Context) error {
+	doctor, err := c.UserFiturUsecase.GetAllSpesialis()
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "Dokter tidak ditemukan")
+	}
+
+	return helper.JSONSuccessResponse(ctx, doctor)
 }
