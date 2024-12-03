@@ -39,24 +39,27 @@ func (c *DoctorAuthController) LoginDoctor(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "gagal mendapatkan data: "+err.Error())
 	}
 
+	// Login menggunakan usecase
 	token, err := c.DoctorUsecase.Login(doctor.Email, doctor.Password)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Login gagal: "+err.Error())
 	}
 
+	// Atur cookie untuk token
 	cookie := &http.Cookie{
 		Name:     "token_doctor",
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
-		MaxAge:   72 * 60 * 60,
+		Secure:   true,                  // false untuk HTTP, ubah ke true jika menggunakan HTTPS
+		MaxAge:   72 * 60 * 60,          // Masa aktif cookie (72 jam)
+		SameSite: http.SameSiteNoneMode, // None untuk mendukung cross-origin
 	}
-
 	ctx.SetCookie(cookie)
 
+	// Berikan respons sukses
 	return helper.JSONSuccessResponse(ctx, map[string]string{
-		"Token": token,
+		"Token": token, // Tetap sertakan token jika diperlukan untuk alternatif penggunaan
 	})
 }
 
