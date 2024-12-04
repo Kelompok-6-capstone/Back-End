@@ -51,9 +51,8 @@ func (c *DoctorAuthController) LoginDoctor(ctx echo.Context) error {
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,                 // Ubah ke true jika menggunakan HTTPS di frontend
-		MaxAge:   72 * 60 * 60,          // Masa aktif cookie (72 jam)
-		SameSite: http.SameSiteNoneMode, // None untuk mendukung lintas domain
+		Secure:   false,        // Ubah ke true jika menggunakan HTTPS di frontend
+		MaxAge:   72 * 60 * 60, // Masa aktif cookie (72 jam)
 	}
 	ctx.SetCookie(cookie)
 

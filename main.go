@@ -10,9 +10,10 @@ import (
 	"calmind/usecase"
 	"log"
 
+	"net/http"
+
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
@@ -77,13 +78,26 @@ func main() {
 
 	// Echo instance
 	e := echo.New()
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{"*"}, // Izinkan semua domain
-		AllowMethods:     []string{echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.OPTIONS},
-		AllowHeaders:     []string{"Content-Type", "Authorization"},
-		ExposeHeaders:    []string{"Content-Type", "Authorization"},
-		AllowCredentials: true, // Izinkan pengiriman cookie lintas domain
-	}))
+
+	// Middleware untuk CORS Dinamis
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			origin := c.Request().Header.Get("Origin")
+			if origin != "" {
+				c.Response().Header().Set("Access-Control-Allow-Origin", origin) // Izinkan origin spesifik
+				c.Response().Header().Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
+				c.Response().Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization")
+				c.Response().Header().Set("Access-Control-Allow-Credentials", "true")
+			}
+
+			// Tangani preflight request
+			if c.Request().Method == http.MethodOptions {
+				return c.NoContent(http.StatusOK)
+			}
+
+			return next(c)
+		}
+	})
 
 	// routes auth
 	routes.UserAuthRoutes(e, userController)               // user
