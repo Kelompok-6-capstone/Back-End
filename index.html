@@ -41,9 +41,6 @@
             background-color: #0056b3;
         }
 
-        .hidden {
-            display: none;
-        }
     </style>
 </head>
 
@@ -51,8 +48,9 @@
     <div class="container">
         <h1>Doctor Portal</h1>
 
+
         <!-- Login Form -->
-        <div id="loginForm">
+        <div id="loginForm" class="hidden">
             <h2>Login</h2>
             <form id="login">
                 <input type="email" id="loginEmail" placeholder="Email" required>
@@ -71,10 +69,43 @@
                 <button type="submit">Update Profile</button>
             </form>
         </div>
+
+        <!-- View Profile -->
+        <div id="viewProfile" class="hidden">
+            <h2>Your Profile</h2>
+            <p id="profileDetails"></p>
+            <button id="reloadProfile">Reload Profile</button>
+        </div>
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:8000';
+        const API_BASE = 'https://api.calmind.site';
+
+        // // Verify OTP
+        // document.getElementById('verifyOtp').addEventListener('submit', async (e) => {
+        //     e.preventDefault();
+        //     const email = document.getElementById('otpEmail').value;
+        //     const code = document.getElementById('otpCode').value;
+
+        //     try {
+        //         const response = await fetch(`${API_BASE}/doctor/verify-otp`, {
+        //             method: 'POST',
+        //             headers: { 'Content-Type': 'application/json' },
+        //             body: JSON.stringify({ email, code }),
+        //         });
+
+        //         if (response.ok) {
+        //             alert('OTP Verified! Silakan login.');
+        //             document.getElementById('otpForm').classList.add('hidden');
+        //             document.getElementById('loginForm').classList.remove('hidden');
+        //         } else {
+        //             const error = await response.json();
+        //             alert(`Verifikasi OTP gagal: ${error.message}`);
+        //         }
+        //     } catch (err) {
+        //         console.error('Terjadi kesalahan jaringan:', err);
+        //     }
+        // });
 
         // Login Request
         document.getElementById('login').addEventListener('submit', async (e) => {
@@ -87,11 +118,10 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password }),
-                    credentials: 'include', // Pastikan cookie dikirimkan
+                    credentials: 'include',
                 });
 
                 if (response.ok) {
-                    const data = await response.json();
                     alert('Login berhasil!');
                     document.getElementById('loginForm').classList.add('hidden');
                     document.getElementById('profileForm').classList.remove('hidden');
@@ -104,6 +134,52 @@
             }
         });
 
+        // Update Profile
+        document.getElementById('updateProfile').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const schedule = document.getElementById('schedule').value;
+            const about = document.getElementById('about').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/doctor/profile`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, schedule, about }),
+                    credentials: 'include',
+                });
+
+                if (response.ok) {
+                    alert('Profil berhasil diperbarui!');
+                } else {
+                    const error = await response.json();
+                    alert(`Update profil gagal: ${error.message}`);
+                }
+            } catch (err) {
+                console.error('Terjadi kesalahan jaringan:', err);
+            }
+        });
+
+        // View Profile
+        document.getElementById('reloadProfile').addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE}/doctor/profile`, {
+                    method: 'GET',
+                    credentials: 'include',
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('profileDetails').innerText = JSON.stringify(data, null, 2);
+                    document.getElementById('viewProfile').classList.remove('hidden');
+                } else {
+                    const error = await response.json();
+                    alert(`Gagal memuat profil: ${error.message}`);
+                }
+            } catch (err) {
+                console.error('Terjadi kesalahan jaringan:', err);
+            }
+        });
     </script>
 </body>
 
