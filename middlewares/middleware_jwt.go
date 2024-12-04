@@ -34,7 +34,11 @@ func (m *JWTMiddleware) HandlerAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 			return []byte(m.config.SecretKey), nil
 		})
 
-		if err != nil || !token.Valid {
+		if err != nil {
+			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "Token admin tidak valid: "+err.Error())
+		}
+
+		if !token.Valid {
 			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "Token admin tidak valid")
 		}
 
@@ -43,8 +47,8 @@ func (m *JWTMiddleware) HandlerAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 			return helper.JSONErrorResponse(c, http.StatusForbidden, "Akses hanya untuk admin")
 		}
 
-		// Set klaim ke context
-		c.Set("admin_id", claims.UserID)
+		// Set klaim ke context dengan key "admin"
+		c.Set("admin", claims)
 		return next(c)
 	}
 }

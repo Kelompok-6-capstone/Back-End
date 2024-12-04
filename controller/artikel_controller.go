@@ -113,7 +113,8 @@ func (c *ArtikelController) UpdateArtikel(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid artikel ID")
 	}
 
-	claims, ok := ctx.Get("admin_id").(*service.JwtCustomClaims)
+	// Ambil klaim dari context
+	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
 	if !ok || claims == nil {
 		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Klaim JWT tidak valid atau tidak ditemukan")
 	}
@@ -132,14 +133,14 @@ func (c *ArtikelController) UpdateArtikel(ctx echo.Context) error {
 	return helper.JSONSuccessResponse(ctx, map[string]string{"message": "Artikel updated successfully"})
 }
 
-// DeleteArtikel - Menghapus artikel berdasarkan ID
 func (c *ArtikelController) DeleteArtikel(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid artikel ID")
 	}
 
-	claims, ok := ctx.Get("admin_id").(*service.JwtCustomClaims)
+	// Ambil klaim dari context
+	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
 	if !ok || claims == nil {
 		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Klaim JWT tidak valid atau tidak ditemukan")
 	}
