@@ -20,12 +20,12 @@ func NewJWTMiddleware(cfg *config.JWTConfig) *JWTMiddleware {
 
 func (m *JWTMiddleware) HandlerAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		h, err := c.Cookie("token_admin")
+		cookie, err := c.Cookie("token_admin")
 		if err != nil {
 			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "Token admin tidak ditemukan")
 		}
 
-		tokenString := h.Value
+		tokenString := cookie.Value
 		claims := &service.JwtCustomClaims{}
 
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
@@ -40,13 +40,12 @@ func (m *JWTMiddleware) HandlerAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 			return helper.JSONErrorResponse(c, http.StatusForbidden, "Akses hanya untuk admin")
 		}
 
-		// Validasi bahwa admin_id tidak kosong
-		if claims.UserID == 0 {
+		if claims.UserID <= 0 {
 			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "Klaim JWT tidak valid atau admin_id kosong")
 		}
 
-		// Set klaim ke context
-		c.Set("admin", claims)
+		c.Set("admin_id", claims.UserID)
+
 		return next(c)
 	}
 }
