@@ -78,10 +78,11 @@ func main() {
 	// Echo instance
 	e := echo.New()
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{"http://127.0.0.1:5500", "http://localhost:5173"}, // Izinkan domain frontend
-		AllowMethods:     []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},
-		AllowHeaders:     []string{"Content-Type", "Authorization"},
-		AllowCredentials: true, // Izinkan pengiriman cookie lintas domain
+		AllowOrigins: []string{"http://127.0.0.1:5500", "http://localhost:5173"}, // Sesuaikan dengan domain frontend Anda
+		AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},
+		AllowHeaders: []string{echo.HeaderAuthorization, echo.HeaderContentType},
+
+		AllowCredentials: true, // Izinkan pengiriman cookie
 	}))
 
 	// routes auth
