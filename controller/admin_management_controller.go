@@ -18,7 +18,7 @@ type UserResponse struct {
 	Pekerjaan string `json:"pekerjaan"`
 	Alamat    string `json:"alamat"`
 	Gender    string `json:"gender"`
-	is_active bool   `json:"is_active"`
+	Is_active bool   `json:"is_active"`
 }
 
 type AdminManagementController struct {
@@ -122,7 +122,7 @@ func (ac *AdminManagementController) GetUserDetail(c echo.Context) error {
 		Pekerjaan: user.Pekerjaan,
 		NoHp:      user.NoHp,
 		Alamat:    user.Alamat,
-		is_active: user.IsVerified,
+		Is_active: user.IsVerified,
 	}
 
 	return helper.JSONSuccessResponse(c, response)
