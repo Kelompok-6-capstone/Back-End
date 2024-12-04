@@ -37,13 +37,20 @@ func NewArtikelController(usecase usecase.ArtikelUsecase) *ArtikelController {
 // CreateArtikel - Membuat artikel baru
 func (c *ArtikelController) CreateArtikel(ctx echo.Context) error {
 	var artikel model.Artikel
-	adminID := ctx.Get("admin_id").(int)
+
+	// Ambil admin_id dari klaim JWT
+	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
+	if !ok || claims == nil || claims.UserID == 0 {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Klaim JWT tidak valid atau admin_id kosong")
+	}
+
+	artikel.AdminID = claims.UserID // Gunakan admin_id dari klaim JWT
 
 	if err := ctx.Bind(&artikel); err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid input: "+err.Error())
 	}
 
-	err := c.Usecase.CreateArtikel(adminID, &artikel)
+	err := c.Usecase.CreateArtikel(claims.UserID, &artikel)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 	}
@@ -108,24 +115,15 @@ func (c *ArtikelController) GetArtikelByID(ctx echo.Context) error {
 
 // UpdateArtikel - Memperbarui artikel berdasarkan ID
 func (c *ArtikelController) UpdateArtikel(ctx echo.Context) error {
-	id, err := strconv.Atoi(ctx.Param("id"))
-	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid artikel ID")
-	}
-
-	// Ambil klaim dari context
-	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
-	if !ok || claims == nil {
-		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Klaim JWT tidak valid atau tidak ditemukan")
-	}
-
 	var artikel model.Artikel
+	adminID := ctx.Get("admin").(*service.JwtCustomClaims).UserID
+
 	if err := ctx.Bind(&artikel); err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid input: "+err.Error())
 	}
 
-	artikel.ID = id
-	err = c.Usecase.UpdateArtikel(claims.UserID, &artikel)
+	artikel.AdminID = adminID // Overwrite admin_id untuk mencegah manipulasi
+	err := c.Usecase.UpdateArtikel(adminID, &artikel)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 	}
