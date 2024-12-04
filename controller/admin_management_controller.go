@@ -15,6 +15,7 @@ type UserResponse struct {
 	Email     string `json:"email"`
 	Tgl_lahir string `json:"tgl_lahir"`
 	NoHp      string `json:"no_hp"`
+	Pekerjaan string `json:"pekerjaan"`
 	Almat     string `json:"alamat"`
 	Gender    string `json:"gender"`
 }
@@ -41,6 +42,7 @@ func (ac *AdminManagementController) GetAllUsers(c echo.Context) error {
 			Username:  user.Username,
 			Email:     user.Email,
 			Tgl_lahir: user.Tgl_lahir,
+			Pekerjaan: user.Pekerjaan,
 			NoHp:      user.NoHp,
 			Almat:     user.Alamat,
 		})
@@ -116,6 +118,7 @@ func (ac *AdminManagementController) GetUserDetail(c echo.Context) error {
 		Gender:    user.JenisKelamin,
 		Email:     user.Email,
 		Tgl_lahir: user.Tgl_lahir,
+		Pekerjaan: user.Pekerjaan,
 		NoHp:      user.NoHp,
 		Almat:     user.Alamat,
 	}

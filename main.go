@@ -72,6 +72,11 @@ func main() {
 	consultationUsecase := usecase.NewConsultationUsecase(consultationRepo)
 	consultationController := controller.NewConsultationController(consultationUsecase)
 
+	//    Repositori, usecase, dan controller untuk Consultasi
+	artikelonRepo := repository.NewArtikelRepository(DB)
+	artikelUsecase := usecase.NewArtikelUsecase(artikelonRepo)
+	artikelController := controller.NewArtikelController(artikelUsecase)
+
 	// Middleware
 	jwtMiddleware := middlewares.NewJWTMiddleware(jwtSecret)
 
@@ -95,9 +100,9 @@ func main() {
 	doctorGroup := e.Group("/doctor", jwtMiddleware.HandlerDoctor)
 
 	// Routing group auth
-	routes.UserProfil(userGroup, userProfilController, userFiturController, consultationController) // Profil User
-	routes.AdminManagementRoutes(adminGroup, adminControllerManagement)                             // Admin management
-	routes.DoctorProfil(doctorGroup, doctorProfilController)                                        // Doctor Profile
+	routes.UserProfil(userGroup, userProfilController, userFiturController, consultationController, artikelController) // Profil User
+	routes.AdminManagementRoutes(adminGroup, adminControllerManagement, artikelController)                             // Admin management
+	routes.DoctorProfil(doctorGroup, doctorProfilController, artikelController)                                        // Doctor Profile
 
 	// Mulai server
 	log.Fatal(e.Start(":8000"))
