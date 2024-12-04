@@ -16,8 +16,9 @@ type UserResponse struct {
 	Tgl_lahir string `json:"tgl_lahir"`
 	NoHp      string `json:"no_hp"`
 	Pekerjaan string `json:"pekerjaan"`
-	Almat     string `json:"alamat"`
+	Alamat    string `json:"alamat"`
 	Gender    string `json:"gender"`
+	is_active bool   `json:"is_active"`
 }
 
 type AdminManagementController struct {
@@ -44,7 +45,7 @@ func (ac *AdminManagementController) GetAllUsers(c echo.Context) error {
 			Tgl_lahir: user.Tgl_lahir,
 			Pekerjaan: user.Pekerjaan,
 			NoHp:      user.NoHp,
-			Almat:     user.Alamat,
+			Alamat:    user.Alamat,
 		})
 	}
 
@@ -80,7 +81,7 @@ func (ac *AdminManagementController) GetAllDocter(c echo.Context) error {
 			Email:     user.Email,
 			Tgl_lahir: user.DateOfBirth,
 			NoHp:      user.NoHp,
-			Almat:     user.Address,
+			Alamat:    user.Address,
 		})
 	}
 
@@ -120,7 +121,8 @@ func (ac *AdminManagementController) GetUserDetail(c echo.Context) error {
 		Tgl_lahir: user.Tgl_lahir,
 		Pekerjaan: user.Pekerjaan,
 		NoHp:      user.NoHp,
-		Almat:     user.Alamat,
+		Alamat:    user.Alamat,
+		is_active: user.IsVerified,
 	}
 
 	return helper.JSONSuccessResponse(c, response)
@@ -143,7 +145,8 @@ func (ac *AdminManagementController) GetDocterDetail(c echo.Context) error {
 		Email:     doctor.Email,
 		Tgl_lahir: doctor.DateOfBirth,
 		NoHp:      doctor.NoHp,
-		Almat:     doctor.Address,
+		Alamat:    doctor.Address,
+		Gender:    doctor.JenisKelamin,
 	}
 
 	return helper.JSONSuccessResponse(c, response)
