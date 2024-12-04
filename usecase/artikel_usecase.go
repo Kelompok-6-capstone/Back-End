@@ -10,7 +10,7 @@ type ArtikelUsecase interface {
 	CreateArtikel(adminID int, artikel *model.Artikel) error
 	GetAllArtikel() ([]model.Artikel, error)
 	GetArtikelByID(id int) (*model.Artikel, error)
-	UpdateArtikel(adminID int, artikel *model.Artikel) error
+	UpdateArtikel(artikel *model.Artikel) error
 	DeleteArtikel(adminID int, id int) error
 }
 
@@ -35,14 +35,7 @@ func (u *artikelUsecase) GetArtikelByID(id int) (*model.Artikel, error) {
 	return u.repo.GetByID(id)
 }
 
-func (u *artikelUsecase) UpdateArtikel(adminID int, artikel *model.Artikel) error {
-	existingArtikel, err := u.repo.GetByID(artikel.ID)
-	if err != nil {
-		return err
-	}
-	if existingArtikel.AdminID != adminID {
-		return errors.New("unauthorized to update this artikel")
-	}
+func (u *artikelUsecase) UpdateArtikel(artikel *model.Artikel) error {
 	return u.repo.Update(artikel)
 }
 

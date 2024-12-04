@@ -36,26 +36,26 @@ func NewArtikelController(usecase usecase.ArtikelUsecase) *ArtikelController {
 
 // CreateArtikel - Membuat artikel baru
 func (c *ArtikelController) CreateArtikel(ctx echo.Context) error {
-	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
 	var artikel model.Artikel
 
-	// Ambil admin_id dari klaim JWT
-	if !ok || claims == nil || claims.UserID == 0 {
-		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Klaim JWT tidak valid atau admin_id kosong")
+	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
+	if !ok || claims == nil {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Klaim JWT tidak valid atau tidak ditemukan")
 	}
 
-	artikel.AdminID = claims.UserID // Gunakan admin_id dari klaim JWT
-
+	// Validasi input
 	if err := ctx.Bind(&artikel); err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid input: "+err.Error())
 	}
 
+	// Memanggil usecase untuk membuat artikel
 	err := c.Usecase.CreateArtikel(claims.UserID, &artikel)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 	}
 
-	return helper.JSONSuccessResponse(ctx, artikel)
+	// Berhasil
+	return helper.JSONSuccessResponse(ctx, "berhasil update artikel")
 }
 
 // GetAllArtikel - Mengambil semua artikel
@@ -115,15 +115,18 @@ func (c *ArtikelController) GetArtikelByID(ctx echo.Context) error {
 
 // UpdateArtikel - Memperbarui artikel berdasarkan ID
 func (c *ArtikelController) UpdateArtikel(ctx echo.Context) error {
-	adminID := ctx.Get("admin").(*service.JwtCustomClaims)
-	var artikel model.Artikel
+	id, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid artikel ID")
+	}
 
+	var artikel model.Artikel
 	if err := ctx.Bind(&artikel); err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid input: "+err.Error())
 	}
 
-	artikel.AdminID = adminID.UserID // Overwrite admin_id untuk mencegah manipulasi
-	err := c.Usecase.UpdateArtikel(adminID.UserID, &artikel)
+	artikel.ID = id
+	err = c.Usecase.UpdateArtikel(&artikel)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 	}
@@ -131,14 +134,14 @@ func (c *ArtikelController) UpdateArtikel(ctx echo.Context) error {
 	return helper.JSONSuccessResponse(ctx, map[string]string{"message": "Artikel updated successfully"})
 }
 
+// DeleteArtikel - Menghapus artikel berdasarkan ID
 func (c *ArtikelController) DeleteArtikel(ctx echo.Context) error {
-	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid artikel ID")
 	}
 
-	// Ambil klaim dari context
+	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
 	if !ok || claims == nil {
 		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Klaim JWT tidak valid atau tidak ditemukan")
 	}
