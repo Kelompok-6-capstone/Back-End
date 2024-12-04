@@ -3,12 +3,12 @@ package model
 import "time"
 
 type Artikel struct {
-	ID        int       `json:"id" gorm:"primaryKey;autoIncrement"`
-	AdminID   int       `json:"admin_id" gorm:"not null"` // Foreign key
-	Admin     Admin     `json:"admin" gorm:"foreignKey:AdminID"`
-	Judul     string    `json:"judul" gorm:"not null"`
+	ID        int       `gorm:"primaryKey;autoIncrement" json:"id"`
+	AdminID   int       `gorm:"not null" json:"admin_id"`                       // Foreign key
+	Admin     Admin     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"` // Relasi ke Admin
+	Judul     string    `gorm:"not null" json:"judul"`
 	Gambar    string    `json:"gambar"`
-	Isi       string    `json:"isi" gorm:"not null"`
-	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+	Isi       string    `gorm:"not null" json:"isi"`
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }

@@ -1,10 +1,10 @@
 package model
 
 type Admin struct {
-	ID       int       `json:"id" gorm:"primaryKey;autoIncrement"`
-	Username string    `json:"username" gorm:"not null"`
+	ID       int       `gorm:"primaryKey;autoIncrement" json:"id"`
+	Username string    `gorm:"not null" json:"username"`
 	Email    string    `gorm:"unique;not null" json:"email"`
-	Password string    `gorm:"not null" json:"password"`
+	Password string    `gorm:"not null" json:"-"`
 	Role     string    `gorm:"not null" json:"role"`
-	Artikel  []Artikel `json:"artikel" gorm:"foreignKey:AdminID"`
+	Artikels []Artikel `gorm:"foreignKey:AdminID" json:"artikels,omitempty"` // Relasi ke Artikel
 }

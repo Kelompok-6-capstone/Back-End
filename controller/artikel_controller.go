@@ -37,25 +37,18 @@ func NewArtikelController(usecase usecase.ArtikelUsecase) *ArtikelController {
 // CreateArtikel - Membuat artikel baru
 func (c *ArtikelController) CreateArtikel(ctx echo.Context) error {
 	var artikel model.Artikel
+	adminID := ctx.Get("admin_id").(int)
 
-	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
-	if !ok || claims == nil {
-		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Klaim JWT tidak valid atau tidak ditemukan")
-	}
-
-	// Validasi input
 	if err := ctx.Bind(&artikel); err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid input: "+err.Error())
 	}
 
-	// Memanggil usecase untuk membuat artikel
-	err := c.Usecase.CreateArtikel(claims.UserID, &artikel)
+	err := c.Usecase.CreateArtikel(adminID, &artikel)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 	}
 
-	// Berhasil
-	return helper.JSONSuccessResponse(ctx, "berhasil update artikel")
+	return helper.JSONSuccessResponse(ctx, artikel)
 }
 
 // GetAllArtikel - Mengambil semua artikel
@@ -120,7 +113,7 @@ func (c *ArtikelController) UpdateArtikel(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid artikel ID")
 	}
 
-	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
+	claims, ok := ctx.Get("admin_id").(*service.JwtCustomClaims)
 	if !ok || claims == nil {
 		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Klaim JWT tidak valid atau tidak ditemukan")
 	}
@@ -146,7 +139,7 @@ func (c *ArtikelController) DeleteArtikel(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid artikel ID")
 	}
 
-	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
+	claims, ok := ctx.Get("admin_id").(*service.JwtCustomClaims)
 	if !ok || claims == nil {
 		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Klaim JWT tidak valid atau tidak ditemukan")
 	}

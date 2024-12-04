@@ -14,45 +14,45 @@ type ArtikelUsecase interface {
 	DeleteArtikel(adminID int, id int) error
 }
 
-type ArtikelUsecaseImpl struct {
-	Repo repository.ArtikelRepository
+type artikelUsecase struct {
+	repo repository.ArtikelRepository
 }
 
 func NewArtikelUsecase(repo repository.ArtikelRepository) ArtikelUsecase {
-	return &ArtikelUsecaseImpl{Repo: repo}
+	return &artikelUsecase{repo: repo}
 }
 
-func (u *ArtikelUsecaseImpl) CreateArtikel(adminID int, artikel *model.Artikel) error {
+func (u *artikelUsecase) CreateArtikel(adminID int, artikel *model.Artikel) error {
 	artikel.AdminID = adminID
-	return u.Repo.Create(artikel)
+	return u.repo.Create(artikel)
 }
 
-func (u *ArtikelUsecaseImpl) GetAllArtikel() ([]model.Artikel, error) {
-	return u.Repo.GetAll()
+func (u *artikelUsecase) GetAllArtikel() ([]model.Artikel, error) {
+	return u.repo.GetAll()
 }
 
-func (u *ArtikelUsecaseImpl) GetArtikelByID(id int) (*model.Artikel, error) {
-	return u.Repo.GetByID(id)
+func (u *artikelUsecase) GetArtikelByID(id int) (*model.Artikel, error) {
+	return u.repo.GetByID(id)
 }
 
-func (u *ArtikelUsecaseImpl) UpdateArtikel(adminID int, artikel *model.Artikel) error {
-	existingArtikel, err := u.Repo.GetByID(artikel.ID)
+func (u *artikelUsecase) UpdateArtikel(adminID int, artikel *model.Artikel) error {
+	existingArtikel, err := u.repo.GetByID(artikel.ID)
 	if err != nil {
 		return err
 	}
 	if existingArtikel.AdminID != adminID {
 		return errors.New("unauthorized to update this artikel")
 	}
-	return u.Repo.Update(artikel)
+	return u.repo.Update(artikel)
 }
 
-func (u *ArtikelUsecaseImpl) DeleteArtikel(adminID int, id int) error {
-	existingArtikel, err := u.Repo.GetByID(id)
+func (u *artikelUsecase) DeleteArtikel(adminID int, id int) error {
+	existingArtikel, err := u.repo.GetByID(id)
 	if err != nil {
 		return err
 	}
 	if existingArtikel.AdminID != adminID {
 		return errors.New("unauthorized to delete this artikel")
 	}
-	return u.Repo.Delete(id)
+	return u.repo.Delete(id)
 }

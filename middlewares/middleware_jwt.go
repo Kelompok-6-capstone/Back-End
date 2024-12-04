@@ -20,32 +20,31 @@ func NewJWTMiddleware(cfg *config.JWTConfig) *JWTMiddleware {
 
 func (m *JWTMiddleware) HandlerAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
+		// Ambil token dari cookie
 		h, err := c.Cookie("token_admin")
 		if err != nil {
-			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "gagal login token tidak ditemukan")
+			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "Token admin tidak ditemukan")
 		}
 
 		tokenString := h.Value
 		claims := &service.JwtCustomClaims{}
 
+		// Parse token dan validasi klaim
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
 			return []byte(m.config.SecretKey), nil
 		})
 
-		if err != nil {
-			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "invalid token")
+		if err != nil || !token.Valid {
+			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "Token admin tidak valid")
 		}
 
-		if !token.Valid {
-			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "invalid token")
-		}
-
+		// Pastikan role adalah admin
 		if claims.Role != "admin" {
-			return helper.JSONErrorResponse(c, http.StatusForbidden, "access forbidden")
+			return helper.JSONErrorResponse(c, http.StatusForbidden, "Akses hanya untuk admin")
 		}
 
-		c.Set("admin", claims)
-
+		// Set klaim ke context
+		c.Set("admin_id", claims.UserID)
 		return next(c)
 	}
 }
