@@ -10,10 +10,13 @@ import (
 )
 
 type UserResponse struct {
-	ID       int    `json:"id"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	NoHp     string `json:"no_hp"`
+	ID        int    `json:"id"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	Tgl_lahir string `json:"tgl_lahir"`
+	NoHp      string `json:"no_hp"`
+	Almat     string `json:"alamat"`
+	Gender    string `json:"gender"`
 }
 
 type AdminManagementController struct {
@@ -24,6 +27,7 @@ func NewAdminManagementController(usecase usecase.AdminManagementUsecase) *Admin
 	return &AdminManagementController{AdminUsecase: usecase}
 }
 
+// user
 func (ac *AdminManagementController) GetAllUsers(c echo.Context) error {
 	users, err := ac.AdminUsecase.GetAllUsers()
 	if err != nil {
@@ -33,10 +37,12 @@ func (ac *AdminManagementController) GetAllUsers(c echo.Context) error {
 	var userResponses []UserResponse
 	for _, user := range users {
 		userResponses = append(userResponses, UserResponse{
-			ID:       user.ID,
-			Username: user.Username,
-			Email:    user.Email,
-			NoHp:     user.NoHp,
+			ID:        user.ID,
+			Username:  user.Username,
+			Email:     user.Email,
+			Tgl_lahir: user.Tgl_lahir,
+			NoHp:      user.NoHp,
+			Almat:     user.Alamat,
 		})
 	}
 
@@ -57,6 +63,7 @@ func (ac *AdminManagementController) DeleteUser(c echo.Context) error {
 	return helper.JSONSuccessResponse(c, "User data successfully deleted")
 }
 
+// dokter
 func (ac *AdminManagementController) GetAllDocter(c echo.Context) error {
 	doctor, err := ac.AdminUsecase.GetAllDocter()
 	if err != nil {
@@ -66,10 +73,12 @@ func (ac *AdminManagementController) GetAllDocter(c echo.Context) error {
 	var userResponses []UserResponse
 	for _, user := range doctor {
 		userResponses = append(userResponses, UserResponse{
-			ID:       user.ID,
-			Username: user.Username,
-			Email:    user.Email,
-			NoHp:     user.NoHp,
+			ID:        user.ID,
+			Username:  user.Username,
+			Email:     user.Email,
+			Tgl_lahir: user.DateOfBirth,
+			NoHp:      user.NoHp,
+			Almat:     user.Address,
 		})
 	}
 
@@ -88,4 +97,51 @@ func (ac *AdminManagementController) DeleteDocter(c echo.Context) error {
 	}
 
 	return helper.JSONSuccessResponse(c, "Docter data successfully deleted")
+}
+
+func (ac *AdminManagementController) GetUserDetail(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return helper.JSONErrorResponse(c, http.StatusBadRequest, "Invalid user ID")
+	}
+
+	user, err := ac.AdminUsecase.GetUserDetail(id)
+	if err != nil {
+		return helper.JSONErrorResponse(c, http.StatusInternalServerError, "Failed to fetch user detail")
+	}
+
+	response := UserResponse{
+		ID:        user.ID,
+		Username:  user.Username,
+		Gender:    user.JenisKelamin,
+		Email:     user.Email,
+		Tgl_lahir: user.Tgl_lahir,
+		NoHp:      user.NoHp,
+		Almat:     user.Alamat,
+	}
+
+	return helper.JSONSuccessResponse(c, response)
+}
+
+func (ac *AdminManagementController) GetDocterDetail(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return helper.JSONErrorResponse(c, http.StatusBadRequest, "Invalid doctor ID")
+	}
+
+	doctor, err := ac.AdminUsecase.GetDocterDetail(id)
+	if err != nil {
+		return helper.JSONErrorResponse(c, http.StatusInternalServerError, "Failed to fetch doctor detail")
+	}
+
+	response := UserResponse{
+		ID:        doctor.ID,
+		Username:  doctor.Username,
+		Email:     doctor.Email,
+		Tgl_lahir: doctor.DateOfBirth,
+		NoHp:      doctor.NoHp,
+		Almat:     doctor.Address,
+	}
+
+	return helper.JSONSuccessResponse(c, response)
 }

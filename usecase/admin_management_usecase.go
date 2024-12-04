@@ -10,6 +10,8 @@ type AdminManagementUsecase interface {
 	DeleteUsers(id int) (*model.User, error)
 	GetAllDocter() ([]*model.Doctor, error)
 	DeleteDocter(id int) (*model.Doctor, error)
+	GetUserDetail(id int) (*model.User, error)
+	GetDocterDetail(id int) (*model.Doctor, error)
 }
 
 type AdminManagementUsecaseImpl struct {
@@ -35,6 +37,15 @@ func (au *AdminManagementUsecaseImpl) DeleteUsers(id int) (*model.User, error) {
 	}
 	return user, nil
 }
+
+func (au *AdminManagementUsecaseImpl) GetUserDetail(id int) (*model.User, error) {
+	user, err := au.Repo.FindUserDetail(id)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
 func (au *AdminManagementUsecaseImpl) GetAllDocter() ([]*model.Doctor, error) {
 	doctors, err := au.Repo.FindAllDocters()
 	if err != nil {
@@ -45,6 +56,14 @@ func (au *AdminManagementUsecaseImpl) GetAllDocter() ([]*model.Doctor, error) {
 
 func (au *AdminManagementUsecaseImpl) DeleteDocter(id int) (*model.Doctor, error) {
 	doctor, err := au.Repo.DeleteDocter(id)
+	if err != nil {
+		return nil, err
+	}
+	return doctor, nil
+}
+
+func (au *AdminManagementUsecaseImpl) GetDocterDetail(id int) (*model.Doctor, error) {
+	doctor, err := au.Repo.FindDocterDetail(id)
 	if err != nil {
 		return nil, err
 	}

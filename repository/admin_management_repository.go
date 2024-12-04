@@ -11,6 +11,8 @@ type AdminManagementRepo interface {
 	FindAllDocters() ([]*model.Doctor, error)
 	DeleteUsers(id int) (*model.User, error)
 	DeleteDocter(id int) (*model.Doctor, error)
+	FindUserDetail(id int) (*model.User, error)
+	FindDocterDetail(id int) (*model.Doctor, error)
 }
 
 type AdminManagementRepoImpl struct {
@@ -40,6 +42,16 @@ func (ar *AdminManagementRepoImpl) DeleteUsers(id int) (*model.User, error) {
 
 	return &user, nil
 }
+
+func (ar *AdminManagementRepoImpl) FindUserDetail(id int) (*model.User, error) {
+	var user model.User
+	err := ar.DB.First(&user, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 func (ar *AdminManagementRepoImpl) FindAllDocters() ([]*model.Doctor, error) {
 	var dokter []*model.Doctor
 	err := ar.DB.Find(&dokter).Error
@@ -58,4 +70,13 @@ func (ar *AdminManagementRepoImpl) DeleteDocter(id int) (*model.Doctor, error) {
 	}
 
 	return &dokter, nil
+}
+
+func (ar *AdminManagementRepoImpl) FindDocterDetail(id int) (*model.Doctor, error) {
+	var doctor model.Doctor
+	err := ar.DB.First(&doctor, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &doctor, nil
 }

@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 type Doctor struct {
 	ID          int         `json:"id" gorm:"primaryKey;autoIncrement"`
 	Username    string      `gorm:"not null" json:"username"`
@@ -19,6 +21,8 @@ type Doctor struct {
 	STRNumber   string      `json:"str_number"`
 	About       string      `json:"about"`
 	Specialties []Specialty `json:"specialties" gorm:"many2many:doctor_specialties"`
+	CreatedAt   time.Time   `json:"created_at" gorm:"autoCreateTime"` // otomatis saat data dibuat
+	UpdatedAt   time.Time   `json:"updated_at" gorm:"autoUpdateTime"` // otomatis saat data diupdate
 }
 
 type Specialty struct {
