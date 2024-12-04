@@ -36,10 +36,10 @@ func NewArtikelController(usecase usecase.ArtikelUsecase) *ArtikelController {
 
 // CreateArtikel - Membuat artikel baru
 func (c *ArtikelController) CreateArtikel(ctx echo.Context) error {
+	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
 	var artikel model.Artikel
 
 	// Ambil admin_id dari klaim JWT
-	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
 	if !ok || claims == nil || claims.UserID == 0 {
 		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Klaim JWT tidak valid atau admin_id kosong")
 	}
@@ -115,15 +115,15 @@ func (c *ArtikelController) GetArtikelByID(ctx echo.Context) error {
 
 // UpdateArtikel - Memperbarui artikel berdasarkan ID
 func (c *ArtikelController) UpdateArtikel(ctx echo.Context) error {
+	adminID := ctx.Get("admin").(*service.JwtCustomClaims)
 	var artikel model.Artikel
-	adminID := ctx.Get("admin").(*service.JwtCustomClaims).UserID
 
 	if err := ctx.Bind(&artikel); err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid input: "+err.Error())
 	}
 
-	artikel.AdminID = adminID // Overwrite admin_id untuk mencegah manipulasi
-	err := c.Usecase.UpdateArtikel(adminID, &artikel)
+	artikel.AdminID = adminID.UserID // Overwrite admin_id untuk mencegah manipulasi
+	err := c.Usecase.UpdateArtikel(adminID.UserID, &artikel)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 	}
@@ -132,13 +132,13 @@ func (c *ArtikelController) UpdateArtikel(ctx echo.Context) error {
 }
 
 func (c *ArtikelController) DeleteArtikel(ctx echo.Context) error {
+	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid artikel ID")
 	}
 
 	// Ambil klaim dari context
-	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
 	if !ok || claims == nil {
 		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Klaim JWT tidak valid atau tidak ditemukan")
 	}

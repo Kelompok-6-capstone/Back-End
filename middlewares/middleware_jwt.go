@@ -20,31 +20,31 @@ func NewJWTMiddleware(cfg *config.JWTConfig) *JWTMiddleware {
 
 func (m *JWTMiddleware) HandlerAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		cookie, err := c.Cookie("token_admin")
+		h, err := c.Cookie("token_admin")
 		if err != nil {
-			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "Token admin tidak ditemukan")
+			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "gagal login token tidak ditemukan")
 		}
 
-		tokenString := cookie.Value
+		tokenString := h.Value
 		claims := &service.JwtCustomClaims{}
 
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
 			return []byte(m.config.SecretKey), nil
 		})
 
-		if err != nil || !token.Valid {
-			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "Token admin tidak valid")
+		if err != nil {
+			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "invalid token")
+		}
+
+		if !token.Valid {
+			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "invalid token")
 		}
 
 		if claims.Role != "admin" {
-			return helper.JSONErrorResponse(c, http.StatusForbidden, "Akses hanya untuk admin")
+			return helper.JSONErrorResponse(c, http.StatusForbidden, "access forbidden")
 		}
 
-		if claims.UserID <= 0 {
-			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "Klaim JWT tidak valid atau admin_id kosong")
-		}
-
-		c.Set("admin_id", claims.UserID)
+		c.Set("admin", claims)
 
 		return next(c)
 	}
