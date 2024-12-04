@@ -77,11 +77,7 @@ func main() {
 
 	// Echo instance
 	e := echo.New()
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowMethods:     []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},
-		AllowHeaders:     []string{"Content-Type", "Authorization"},
-		AllowCredentials: true, // Izinkan pengiriman cookie lintas domain
-	}))
+	e.Use(middleware.CORS())
 
 	// routes auth
 	routes.UserAuthRoutes(e, userController)               // user
