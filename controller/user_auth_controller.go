@@ -45,14 +45,14 @@ func (c *AuthController) LoginUser(ctx echo.Context) error {
 	}
 
 	cookie := &http.Cookie{
-		Name:     "token_doctor",
+		Name:     "token_user",
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,                  // Ubah ke true jika menggunakan HTTPS di frontend
-		MaxAge:   72 * 60 * 60,          // Masa aktif cookie (72 jam)
-		SameSite: http.SameSiteNoneMode, // None untuk mendukung lintas domain
+		Secure:   false,
+		MaxAge:   72 * 60 * 60,
 	}
+
 	ctx.SetCookie(cookie)
 
 	return helper.JSONSuccessResponse(ctx, map[string]string{
