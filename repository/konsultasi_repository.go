@@ -10,7 +10,6 @@ type ConsultationRepository interface {
 	FindByDoctorID(doctorID int, consultations *[]model.Consultation) error
 	FindByConsultationID(consultationID string, consultation *model.Consultation) error
 	UpdateRecommendation(consultationID int, recommendation string) error
-	"gorm.io/gorm"
 )
 
 // ConsultationRepository
