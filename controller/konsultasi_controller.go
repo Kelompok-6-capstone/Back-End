@@ -18,7 +18,6 @@ func NewConsultationController(consultationUsecase usecase.ConsultationUsecase) 
 	return &ConsultationController{ConsultationUsecase: consultationUsecase}
 }
 
-// Membuat konsultasi baru (dari user)
 func (c *ConsultationController) CreateConsultation(ctx echo.Context) error {
 	claims, _ := ctx.Get("user").(*service.JwtCustomClaims)
 
@@ -37,13 +36,11 @@ func (c *ConsultationController) CreateConsultation(ctx echo.Context) error {
 		Message:  request.Message,
 	}
 
-	// Call usecase to create consultation
+
 	err := c.ConsultationUsecase.CreateConsultation(&consultation)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat konsultasi")
 	}
-
-	// Success response
 	return helper.JSONSuccessResponse(ctx, "Konsultasi berhasil dibuat")
 }
 
@@ -125,4 +122,3 @@ func (c *ConsultationController) GiveRecommendation(ctx echo.Context) error {
 
 	return helper.JSONSuccessResponse(ctx, "Rekomendasi berhasil diberikan")
 }
-

@@ -10,6 +10,12 @@ type ConsultationRepository interface {
 	FindByDoctorID(doctorID int, consultations *[]model.Consultation) error
 	FindByConsultationID(consultationID string, consultation *model.Consultation) error
 	UpdateRecommendation(consultationID int, recommendation string) error
+	"gorm.io/gorm"
+)
+
+// ConsultationRepository
+type ConsultationRepository interface {
+	CreateConsultation(consultation *model.Consultation) error
 }
 
 type ConsultationRepositoryImpl struct {
@@ -45,5 +51,9 @@ func (r *ConsultationRepositoryImpl) FindByConsultationID(consultationID string,
 // Memperbarui rekomendasi konsultasi
 func (r *ConsultationRepositoryImpl) UpdateRecommendation(consultationID int, recommendation string) error {
     return r.DB.Model(&model.Consultation{}).Where("id = ?", consultationID).Update("rekomendasi", recommendation).Error
+}
+
+func (r *ConsultationRepositoryImpl) CreateConsultation(consultation *model.Consultation) error {
+	return r.DB.Create(consultation).Error
 }
 

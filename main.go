@@ -104,6 +104,7 @@ func main() {
 	routes.AdminManagementRoutes(adminGroup, adminControllerManagement, artikelController)                             // Admin management
 	routes.DoctorProfil(doctorGroup, doctorProfilController, artikelController, consultationController)                                        // Doctor Profile
 
+
 	// Mulai server
 	log.Fatal(e.Start(":8000"))
 }

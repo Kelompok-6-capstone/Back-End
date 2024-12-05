@@ -57,6 +57,7 @@ func (r *UserProfilRepositoryImpl) UpdateByID(id int, user *model.User) (*model.
 		existingUser.Pekerjaan = user.Pekerjaan
 	}
 
+
 	// Simpan perubahan
 	err = r.DB.Save(&existingUser).Error
 	if err != nil {
