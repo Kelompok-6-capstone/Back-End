@@ -24,8 +24,9 @@ func UserProfil(e *echo.Group, profilController *controller.ProfilController, fi
 	e.GET("/doctors/:id", fitur.GetDoctorDetail)
 	e.GET("/spesialis", fitur.GetAllSpesialis)
 	e.POST("/consultations", konsultasi.CreateConsultation)
-	e.GET("/artikel", artikelController.GetAllArtikel)      // Lihat semua artikel
-	e.GET("/artikel/:id", artikelController.GetArtikelByID) // Lihat detail artikel
+	e.GET("/consultation/:id", konsultasi.GetConsultationDetailByID) // Melihat Detail keluhan
+	e.GET("/artikel", artikelController.GetAllArtikel)               // Lihat semua artikel
+	e.GET("/artikel/:id", artikelController.GetArtikelByID)          // Lihat detail artikel
 }
 
 // Routes untuk Admin
@@ -53,11 +54,13 @@ func DoctorAuthRoutes(e *echo.Echo, authController *controller.DoctorAuthControl
 	e.GET("/doctor/logout", authController.LogoutDoctor)
 	e.POST("/doctor/verify-otp", authController.VerifyOtp) // verivikasi otp
 }
-
-func DoctorProfil(e *echo.Group, profilController *controller.DoctorProfileController, artikelController *controller.ArtikelController) {
-	e.GET("/profile", profilController.GetProfile)          // Mendapatkan profil dokter
-	e.PUT("/profile", profilController.UpdateProfile)       // Mengupdate profil dokter
-	e.PUT("/status", profilController.SetActiveStatus)      // Mengubah status aktif/tidak aktif dokter
-	e.GET("/artikel", artikelController.GetAllArtikel)      // Lihat semua artikel
-	e.GET("/artikel/:id", artikelController.GetArtikelByID) // Lihat detail artikel
+func DoctorProfil(e *echo.Group, profilController *controller.DoctorProfileController, artikelController *controller.ArtikelController, consultationController *controller.ConsultationController) {
+	e.GET("/profile", profilController.GetProfile)                                       // Mendapatkan profil dokter
+	e.PUT("/profile", profilController.UpdateProfile)                                    // Mengupdate profil dokter
+	e.PUT("/status", profilController.SetActiveStatus)                                   // Mengubah status aktif/tidak aktif dokter
+	e.GET("/consultations", consultationController.GetConsultationsAllDoctor)            // Melihat Daftar pasien
+	e.GET("/consultation/:id", consultationController.GetConsultationDetailByID)         // Melihat Detail keluhan
+	e.PUT("/consultation/:id/recommendation", consultationController.GiveRecommendation) // Memberikan rekomendasi
+	e.GET("/artikel", artikelController.GetAllArtikel)                                   // Lihat semua artikel
+	e.GET("/artikel/:id", artikelController.GetArtikelByID)                              // Lihat detail artikel
 }

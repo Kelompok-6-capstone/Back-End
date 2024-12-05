@@ -12,8 +12,8 @@ type User struct {
 	Avatar       string    `gorm:"" json:"avatar"`
 	Alamat       string    `gorm:"" json:"alamat"`
 	Tgl_lahir    string    `gorm:"" json:"tgl_lahir"`
-	Pekerjaan    string    `gorm:"" json:"pekerjaan"`
 	JenisKelamin string    `gorm:"type:enum('Laki-laki', 'Perempuan');" json:"jenis_kelamin"`
+	Pekerjaan    string    `gorm:"" json:"pekerjaan"`
 	IsVerified   bool      `json:"is_verified" gorm:"default:false"`
 	CreatedAt    time.Time `json:"created_at" gorm:"autoCreateTime"` // otomatis saat data dibuat
 	UpdatedAt    time.Time `json:"updated_at" gorm:"autoUpdateTime"` // otomatis saat data diupdate
