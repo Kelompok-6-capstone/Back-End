@@ -51,7 +51,7 @@ func (c *AdminAuthController) LogoutAdmin(ctx echo.Context) error {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   true,
 		MaxAge:   -1,
 	}
 

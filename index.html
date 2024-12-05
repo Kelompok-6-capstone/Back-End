@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Portal</title>
+    <style>
+        /* General Styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        h1, h2 {
+            color: #007BFF;
+            text-align: center;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        input,
+        select,
+        textarea,
+        button {
+            margin: 10px 0;
+            padding: 12px 15px;
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            width: 100%;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #007BFF;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
+
+        textarea {
+            resize: vertical;
+        }
+
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .selected-specialties {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+            min-height: 50px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        .selected-specialty {
+            display: inline-block;
+            background-color: #007BFF;
+            color: white;
+            padding: 5px 10px;
+            margin: 5px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .selected-specialty:hover {
+            background-color: #0056b3;
+        }
+
+        label {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Doctor Portal</h1>
+
+        <!-- Login Form -->
+        <div id="loginForm">
+            <h2>Login</h2>
+            <form id="login">
+                <input type="email" id="loginEmail" placeholder="Email" required>
+                <input type="password" id="loginPassword" placeholder="Password" required>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+
+        <!-- Complete Profile Form -->
+        <div id="profileForm" class="hidden">
+            <h2>Complete Your Profile</h2>
+            <form id="completeProfile">
+                <input type="text" id="username" placeholder="Full Name (e.g., Dr. Sarah Wijaya)" required>
+                <input type="text" id="noHp" placeholder="Phone Number (e.g., 081234567890)" required>
+                <input type="date" id="dateOfBirth" required>
+                <input type="text" id="address" placeholder="Address (e.g., Jl. Merdeka No.45, Bandung)" required>
+                <input type="text" id="schedule" placeholder="Schedule (e.g., Mon-Fri 09:00 - 17:00)" required>
+                <input type="text" id="title" placeholder="Title (e.g., Clinical Psychologist)" required>
+                <input type="number" id="experience" placeholder="Years of Experience" required>
+                <input type="text" id="strNumber" placeholder="STR Number (e.g., 1234567891011123444)" required>
+                <textarea id="about" placeholder="About Doctor" rows="3"></textarea>
+                <label for="specialty">Select Specialties:</label>
+                <select id="specialty">
+                    <option value="" disabled selected>Choose Specialties</option>
+                </select>
+                <div class="selected-specialties" id="selectedSpecialties"></div>
+                <button type="submit">Update Profile</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://api.calmind.site';
+
+        // Data spesialisasi diinisialisasi secara manual
+        const specialties = [
+            { id: 1, name: "Stress" },
+            { id: 2, name: "Depresi" },
+            { id: 3, name: "Trauma" },
+            { id: 4, name: "Adiksi" },
+            { id: 5, name: "Gangguan Kecemasan" },
+            { id: 6, name: "Pengembangan Diri" },
+            { id: 7, name: "Gangguan Mood" },
+            { id: 8, name: "Pengasuhan & Anak" },
+            { id: 9, name: "Pekerjaan" },
+            { id: 10, name: "Hubungan & Keluarga" },
+            { id: 11, name: "Identitas Seksual" },
+            { id: 12, name: "Gangguan Kepribadian" }
+        ];
+
+        const specialtySelect = document.getElementById('specialty');
+        const selectedSpecialties = document.getElementById('selectedSpecialties');
+        const selectedSpecialtyIds = new Set();
+
+        // Populate dropdown dengan spesialisasi
+        specialties.forEach(spec => {
+            const option = document.createElement('option');
+            option.value = spec.id;
+            option.textContent = spec.name;
+            specialtySelect.appendChild(option);
+        });
+
+        // Tambahkan spesialisasi yang dipilih
+        specialtySelect.addEventListener('change', () => {
+            const selectedId = parseInt(specialtySelect.value);
+            const selectedName = specialties.find(spec => spec.id === selectedId)?.name;
+
+            if (!selectedSpecialtyIds.has(selectedId)) {
+                const tag = document.createElement('div');
+                tag.className = 'selected-specialty';
+                tag.textContent = selectedName;
+                tag.dataset.id = selectedId;
+
+                tag.addEventListener('click', () => {
+                    selectedSpecialties.removeChild(tag);
+                    selectedSpecialtyIds.delete(selectedId);
+                });
+
+                selectedSpecialties.appendChild(tag);
+                selectedSpecialtyIds.add(selectedId);
+            }
+        });
+
+        // Login logic
+        document.getElementById('login').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            const response = await fetch(`${API_BASE}/doctor/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+                credentials: 'include',
+            });
+
+            if (response.ok) {
+                alert('Login berhasil!');
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('profileForm').classList.remove('hidden');
+            } else {
+                alert('Login gagal!');
+            }
+        });
+
+        // Kirim data profil
+        document.getElementById('completeProfile').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const profileData = {
+                username: document.getElementById('username').value,
+                no_hp: document.getElementById('noHp').value,
+                date_of_birth: document.getElementById('dateOfBirth').value,
+                address: document.getElementById('address').value,
+                schedule: document.getElementById('schedule').value,
+                title: document.getElementById('title').value,
+                experience: parseInt(document.getElementById('experience').value),
+                str_number: document.getElementById('strNumber').value,
+                about: document.getElementById('about').value,
+                specialties: Array.from(selectedSpecialtyIds).map(id => ({ id })),
+            };
+
+            const response = await fetch(`${API_BASE}/doctor/profile`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(profileData),
+                credentials: 'include',
+            });
+
+            if (response.ok) {
+                alert('Profile updated successfully!');
+            } else {
+                alert('Profile update failed!');
+            }
+        });
+    </script>
+</body>
+
+</html>

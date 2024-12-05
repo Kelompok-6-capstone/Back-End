@@ -79,7 +79,7 @@ func (c *AuthController) LogoutUser(ctx echo.Context) error {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   true,
 		MaxAge:   -1,
 	}
 
