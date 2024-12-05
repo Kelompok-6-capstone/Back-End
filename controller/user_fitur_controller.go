@@ -69,10 +69,7 @@ func (c *UserFiturController) GetDoctors(ctx echo.Context) error {
 		})
 	}
 
-	return helper.JSONSuccessResponse(ctx, map[string]interface{}{
-		"data":    doctorList,
-		"success": true,
-	})
+	return helper.JSONSuccessResponse(ctx, doctorList)
 }
 
 // Endpoint untuk mendapatkan daftar dokter berdasarkan spesialisasi
