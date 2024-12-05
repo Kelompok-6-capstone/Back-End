@@ -10,15 +10,15 @@ import (
 )
 
 type UserResponse struct {
-	ID        int    `json:"id"`
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	Tgl_lahir string `json:"tgl_lahir"`
-	NoHp      string `json:"no_hp"`
-	Pekerjaan string `json:"pekerjaan"`
-	Alamat    string `json:"alamat"`
-	Gender    string `json:"gender"`
-	Is_active bool   `json:"is_active"`
+	ID         int    `json:"id"`
+	Username   string `json:"username"`
+	Email      string `json:"email"`
+	Tgl_lahir  string `json:"tgl_lahir"`
+	NoHp       string `json:"no_hp"`
+	Pekerjaan  string `json:"pekerjaan"`
+	Alamat     string `json:"alamat"`
+	Gender     string `json:"gender"`
+	IsVerified bool   `json:"is_verified"`
 }
 
 type AdminManagementController struct {
@@ -114,15 +114,15 @@ func (ac *AdminManagementController) GetUserDetail(c echo.Context) error {
 	}
 
 	response := UserResponse{
-		ID:        user.ID,
-		Username:  user.Username,
-		Gender:    user.JenisKelamin,
-		Email:     user.Email,
-		Tgl_lahir: user.Tgl_lahir,
-		Pekerjaan: user.Pekerjaan,
-		NoHp:      user.NoHp,
-		Alamat:    user.Alamat,
-		Is_active: user.IsVerified,
+		ID:         user.ID,
+		Username:   user.Username,
+		Gender:     user.JenisKelamin,
+		Email:      user.Email,
+		Tgl_lahir:  user.Tgl_lahir,
+		Pekerjaan:  user.Pekerjaan,
+		NoHp:       user.NoHp,
+		Alamat:     user.Alamat,
+		IsVerified: user.IsVerified,
 	}
 
 	return helper.JSONSuccessResponse(c, response)
@@ -140,13 +140,14 @@ func (ac *AdminManagementController) GetDocterDetail(c echo.Context) error {
 	}
 
 	response := UserResponse{
-		ID:        doctor.ID,
-		Username:  doctor.Username,
-		Email:     doctor.Email,
-		Tgl_lahir: doctor.DateOfBirth,
-		NoHp:      doctor.NoHp,
-		Alamat:    doctor.Address,
-		Gender:    doctor.JenisKelamin,
+		ID:         doctor.ID,
+		Username:   doctor.Username,
+		Email:      doctor.Email,
+		Tgl_lahir:  doctor.DateOfBirth,
+		NoHp:       doctor.NoHp,
+		Alamat:     doctor.Address,
+		Gender:     doctor.JenisKelamin,
+		IsVerified: doctor.IsVerified,
 	}
 
 	return helper.JSONSuccessResponse(c, response)
