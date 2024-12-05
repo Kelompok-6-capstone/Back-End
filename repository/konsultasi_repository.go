@@ -12,11 +12,6 @@ type ConsultationRepository interface {
 	UpdateRecommendation(consultationID int, recommendation string) error
 )
 
-// ConsultationRepository
-type ConsultationRepository interface {
-	CreateConsultation(consultation *model.Consultation) error
-}
-
 type ConsultationRepositoryImpl struct {
 	DB *gorm.DB
 }
