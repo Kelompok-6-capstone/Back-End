@@ -14,7 +14,7 @@ type User struct {
 	Tgl_lahir    string    `gorm:"" json:"tgl_lahir"`
 	Pekerjaan    string    `gorm:"" json:"pekerjaan"`
 	JenisKelamin string    `gorm:"type:enum('Laki-laki', 'Perempuan');" json:"jenis_kelamin"`
-	IsVerified   bool      `json:"is_verified" gorm:"default:false"`
+	IsVerified   bool      `json:"is_verified" gorm:"column:is_verified;type:TINYINT(1);default:false"`
 	CreatedAt    time.Time `json:"created_at" gorm:"autoCreateTime"` // otomatis saat data dibuat
 	UpdatedAt    time.Time `json:"updated_at" gorm:"autoUpdateTime"` // otomatis saat data diupdate
 }
