@@ -49,7 +49,7 @@ func (c *AuthController) LoginUser(ctx echo.Context) error {
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   true,
 		MaxAge:   72 * 60 * 60,
 		SameSite: http.SameSiteNoneMode, // None untuk mendukung cross-origin
 	}
