@@ -13,11 +13,11 @@ type UserResponse struct {
 	ID         int    `json:"id"`
 	Username   string `json:"username"`
 	Email      string `json:"email"`
-	Tgl_lahir  string `json:"tgl_lahir"`
-	NoHp       string `json:"no_hp"`
-	Pekerjaan  string `json:"pekerjaan"`
-	Alamat     string `json:"alamat"`
-	Gender     string `json:"gender"`
+	TglLahir   string `json:"tgl_lahir,omitempty"` // `omitempty` agar tidak ditampilkan jika kosong
+	NoHp       string `json:"no_hp,omitempty"`
+	Pekerjaan  string `json:"pekerjaan,omitempty"`
+	Alamat     string `json:"alamat,omitempty"`
+	Gender     string `json:"gender,omitempty"`
 	IsVerified bool   `json:"is_verified"`
 }
 
@@ -29,7 +29,7 @@ func NewAdminManagementController(usecase usecase.AdminManagementUsecase) *Admin
 	return &AdminManagementController{AdminUsecase: usecase}
 }
 
-// user
+// Get All Users
 func (ac *AdminManagementController) GetAllUsers(c echo.Context) error {
 	users, err := ac.AdminUsecase.GetAllUsers()
 	if err != nil {
@@ -39,69 +39,17 @@ func (ac *AdminManagementController) GetAllUsers(c echo.Context) error {
 	var userResponses []UserResponse
 	for _, user := range users {
 		userResponses = append(userResponses, UserResponse{
-			ID:        user.ID,
-			Username:  user.Username,
-			Email:     user.Email,
-			Tgl_lahir: user.Tgl_lahir,
-			Pekerjaan: user.Pekerjaan,
-			NoHp:      user.NoHp,
-			Alamat:    user.Alamat,
+			ID:         user.ID,
+			Username:   user.Username,
+			Email:      user.Email,
+			IsVerified: user.IsVerified,
 		})
 	}
 
 	return helper.JSONSuccessResponse(c, userResponses)
 }
 
-func (ac *AdminManagementController) DeleteUser(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		return helper.JSONErrorResponse(c, http.StatusBadRequest, "Invalid user ID")
-	}
-
-	_, err = ac.AdminUsecase.DeleteUsers(id)
-	if err != nil {
-		return helper.JSONErrorResponse(c, http.StatusInternalServerError, "Failed to delete user")
-	}
-
-	return helper.JSONSuccessResponse(c, "User data successfully deleted")
-}
-
-// dokter
-func (ac *AdminManagementController) GetAllDocter(c echo.Context) error {
-	doctor, err := ac.AdminUsecase.GetAllDocter()
-	if err != nil {
-		return helper.JSONErrorResponse(c, http.StatusInternalServerError, "Failed to fetch doctor")
-	}
-
-	var userResponses []UserResponse
-	for _, user := range doctor {
-		userResponses = append(userResponses, UserResponse{
-			ID:        user.ID,
-			Username:  user.Username,
-			Email:     user.Email,
-			Tgl_lahir: user.DateOfBirth,
-			NoHp:      user.NoHp,
-			Alamat:    user.Address,
-		})
-	}
-
-	return helper.JSONSuccessResponse(c, userResponses)
-}
-
-func (ac *AdminManagementController) DeleteDocter(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		return helper.JSONErrorResponse(c, http.StatusBadRequest, "Invalid user ID")
-	}
-
-	_, err = ac.AdminUsecase.DeleteDocter(id)
-	if err != nil {
-		return helper.JSONErrorResponse(c, http.StatusInternalServerError, "Failed to delete dokter")
-	}
-
-	return helper.JSONSuccessResponse(c, "Docter data successfully deleted")
-}
-
+// Get User Detail
 func (ac *AdminManagementController) GetUserDetail(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -116,19 +64,40 @@ func (ac *AdminManagementController) GetUserDetail(c echo.Context) error {
 	response := UserResponse{
 		ID:         user.ID,
 		Username:   user.Username,
-		Gender:     user.JenisKelamin,
 		Email:      user.Email,
-		Tgl_lahir:  user.Tgl_lahir,
-		Pekerjaan:  user.Pekerjaan,
+		TglLahir:   user.Tgl_lahir,
 		NoHp:       user.NoHp,
+		Pekerjaan:  user.Pekerjaan,
 		Alamat:     user.Alamat,
+		Gender:     user.JenisKelamin,
 		IsVerified: user.IsVerified,
 	}
 
 	return helper.JSONSuccessResponse(c, response)
 }
 
-func (ac *AdminManagementController) GetDocterDetail(c echo.Context) error {
+// Get All Doctors
+func (ac *AdminManagementController) GetAllDoctors(c echo.Context) error {
+	doctors, err := ac.AdminUsecase.GetAllDocter()
+	if err != nil {
+		return helper.JSONErrorResponse(c, http.StatusInternalServerError, "Failed to fetch doctors")
+	}
+
+	var doctorResponses []UserResponse
+	for _, doctor := range doctors {
+		doctorResponses = append(doctorResponses, UserResponse{
+			ID:         doctor.ID,
+			Username:   doctor.Username,
+			Email:      doctor.Email,
+			IsVerified: doctor.IsVerified,
+		})
+	}
+
+	return helper.JSONSuccessResponse(c, doctorResponses)
+}
+
+// Get Doctor Detail
+func (ac *AdminManagementController) GetDoctorDetail(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return helper.JSONErrorResponse(c, http.StatusBadRequest, "Invalid doctor ID")
@@ -143,7 +112,7 @@ func (ac *AdminManagementController) GetDocterDetail(c echo.Context) error {
 		ID:         doctor.ID,
 		Username:   doctor.Username,
 		Email:      doctor.Email,
-		Tgl_lahir:  doctor.DateOfBirth,
+		TglLahir:   doctor.DateOfBirth,
 		NoHp:       doctor.NoHp,
 		Alamat:     doctor.Address,
 		Gender:     doctor.JenisKelamin,
@@ -151,4 +120,34 @@ func (ac *AdminManagementController) GetDocterDetail(c echo.Context) error {
 	}
 
 	return helper.JSONSuccessResponse(c, response)
+}
+
+// Delete User
+func (ac *AdminManagementController) DeleteUser(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return helper.JSONErrorResponse(c, http.StatusBadRequest, "Invalid user ID")
+	}
+
+	_, err = ac.AdminUsecase.DeleteUsers(id)
+	if err != nil {
+		return helper.JSONErrorResponse(c, http.StatusInternalServerError, "Failed to delete user")
+	}
+
+	return helper.JSONSuccessResponse(c, "User data successfully deleted")
+}
+
+// Delete Doctor
+func (ac *AdminManagementController) DeleteDoctor(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return helper.JSONErrorResponse(c, http.StatusBadRequest, "Invalid doctor ID")
+	}
+
+	_, err = ac.AdminUsecase.DeleteDocter(id)
+	if err != nil {
+		return helper.JSONErrorResponse(c, http.StatusInternalServerError, "Failed to delete doctor")
+	}
+
+	return helper.JSONSuccessResponse(c, "Doctor data successfully deleted")
 }

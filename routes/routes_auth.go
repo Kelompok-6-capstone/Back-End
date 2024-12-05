@@ -36,9 +36,9 @@ func AdminAuthRoutes(e *echo.Echo, authController *controller.AdminAuthControlle
 
 func AdminManagementRoutes(e *echo.Group, adminManagement *controller.AdminManagementController, artikelController *controller.ArtikelController) {
 	e.GET("/allusers", adminManagement.GetAllUsers)           // Ambil Semua Data User
-	e.GET("/alldocters", adminManagement.GetAllDocter)        // Ambil Semua Data User
+	e.GET("/alldocters", adminManagement.GetAllDoctors)       // Ambil Semua Data User
 	e.DELETE("/users/:id", adminManagement.DeleteUser)        // Hapus User berdasarkan ID
-	e.DELETE("/docters/:id", adminManagement.DeleteDocter)    // Hapus User berdasarkan ID
+	e.DELETE("/docters/:id", adminManagement.DeleteDoctor)    // Hapus User berdasarkan ID
 	e.POST("/artikel", artikelController.CreateArtikel)       // Tambah artikel
 	e.GET("/artikel", artikelController.GetAllArtikel)        // Lihat semua artikel
 	e.GET("/artikel/:id", artikelController.GetArtikelByID)   // Lihat detail artikel
