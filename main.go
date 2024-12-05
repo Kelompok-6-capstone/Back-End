@@ -102,7 +102,8 @@ func main() {
 	// Routing group auth
 	routes.UserProfil(userGroup, userProfilController, userFiturController, consultationController, artikelController) // Profil User
 	routes.AdminManagementRoutes(adminGroup, adminControllerManagement, artikelController)                             // Admin management
-	routes.DoctorProfil(doctorGroup, doctorProfilController, artikelController)                                        // Doctor Profile
+	routes.DoctorProfil(doctorGroup, doctorProfilController, artikelController, consultationController)                                        // Doctor Profile
+
 
 	// Mulai server
 	log.Fatal(e.Start(":8000"))

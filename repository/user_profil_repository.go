@@ -53,6 +53,10 @@ func (r *UserProfilRepositoryImpl) UpdateByID(id int, user *model.User) (*model.
 	if user.JenisKelamin != "" {
 		existingUser.JenisKelamin = user.JenisKelamin
 	}
+	if user.Pekerjaan != "" {
+		existingUser.Pekerjaan = user.Pekerjaan
+	}
+
 
 	// Simpan perubahan
 	err = r.DB.Save(&existingUser).Error

@@ -35,6 +35,7 @@ func (c *ProfilController) GetProfile(ctx echo.Context) error {
 		Alamat        string `json:"alamat"`
 		Tgl_lahir     string `json:"tgl_lahir"`
 		Jenis_kelamin string `json:"jenis_kelamin"`
+		Pekerjaan     string `json:"pekerjaan"`
 	}
 
 	userProfile := UserProfileResponse{
@@ -46,6 +47,7 @@ func (c *ProfilController) GetProfile(ctx echo.Context) error {
 		Alamat:        user.Alamat,
 		Tgl_lahir:     user.Tgl_lahir,
 		Jenis_kelamin: user.JenisKelamin,
+		Pekerjaan:     user.Pekerjaan,
 	}
 
 	return helper.JSONSuccessResponse(ctx, userProfile)
