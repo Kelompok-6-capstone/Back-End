@@ -39,13 +39,10 @@ func (ac *AdminManagementController) GetAllUsers(c echo.Context) error {
 	var userResponses []UserResponse
 	for _, user := range users {
 		userResponses = append(userResponses, UserResponse{
-			ID:        user.ID,
-			Username:  user.Username,
-			Email:     user.Email,
-			TglLahir:  user.Tgl_lahir,
-			Pekerjaan: user.Pekerjaan,
-			NoHp:      user.NoHp,
-			Alamat:    user.Alamat,
+			ID:         user.ID,
+			Username:   user.Username,
+			Email:      user.Email,
+			IsVerified: user.IsVerified,
 		})
 	}
 
@@ -89,14 +86,13 @@ func (ac *AdminManagementController) GetAllDoctors(c echo.Context) error {
 	var doctorResponses []UserResponse
 	for _, doctor := range doctors {
 		doctorResponses = append(doctorResponses, UserResponse{
-			ID:       doctor.ID,
-			Username: doctor.Username,
-			Email:    doctor.Email,
-			TglLahir: doctor.DateOfBirth,
-			NoHp:     doctor.NoHp,
-			Alamat:   doctor.Address,
+			ID:         doctor.ID,
+			Username:   doctor.Username,
+			Email:      doctor.Email,
+			IsVerified: doctor.IsVerified,
 		})
 	}
+
 	return helper.JSONSuccessResponse(c, doctorResponses)
 }
 
