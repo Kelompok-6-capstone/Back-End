@@ -2,8 +2,8 @@ package middlewares
 
 import (
 	"calmind/config"
-	"calmind/helper"
 	"calmind/service"
+	"log"
 	"net/http"
 	"strings"
 
@@ -19,106 +19,90 @@ func NewJWTMiddleware(cfg *config.JWTConfig) *JWTMiddleware {
 	return &JWTMiddleware{config: cfg}
 }
 
-// Validate Admin Token
+// Fungsi umum untuk memvalidasi token dan mengambil klaim
+func (m *JWTMiddleware) validateToken(c echo.Context) (*service.JwtCustomClaims, error) {
+	authHeader := c.Request().Header.Get("Authorization")
+	if authHeader == "" {
+		return nil, echo.NewHTTPError(http.StatusUnauthorized, "Token tidak ditemukan")
+	}
+
+	// Ambil token dari header Authorization
+	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+	claims := &service.JwtCustomClaims{}
+
+	// Parse token JWT dan validasi klaim
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
+		return []byte(m.config.SecretKey), nil
+	})
+
+	if err != nil {
+		log.Printf("Token error: %v", err)
+		return nil, echo.NewHTTPError(http.StatusUnauthorized, "Token tidak valid")
+	}
+
+	if !token.Valid {
+		log.Println("Token tidak valid")
+		return nil, echo.NewHTTPError(http.StatusUnauthorized, "Token tidak valid")
+	}
+
+	return claims, nil
+}
+
+// Middleware untuk Admin
 func (m *JWTMiddleware) HandlerAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		authHeader := c.Request().Header.Get("Authorization")
-		if authHeader == "" {
-			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "Token tidak ditemukan")
-		}
-
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		claims := &service.JwtCustomClaims{}
-
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
-			return []byte(m.config.SecretKey), nil
-		})
-
+		claims, err := m.validateToken(c)
 		if err != nil {
-			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "invalid token")
-		}
-
-		if !token.Valid {
-			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "invalid token")
+			return err
 		}
 
 		if claims.Role != "admin" {
-			return helper.JSONErrorResponse(c, http.StatusForbidden, "access forbidden")
+			return echo.NewHTTPError(http.StatusForbidden, "Akses hanya untuk admin")
 		}
 
-		c.Set("admin", claims)
+		c.Set("admin", claims) // Simpan klaim di context
 		return next(c)
 	}
 }
 
-// Validate User Token
+// Middleware untuk User
 func (m *JWTMiddleware) HandlerUser(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		authHeader := c.Request().Header.Get("Authorization")
-		if authHeader == "" {
-			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "Token tidak ditemukan")
-		}
-
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		claims := &service.JwtCustomClaims{}
-
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
-			return []byte(m.config.SecretKey), nil
-		})
-
+		claims, err := m.validateToken(c)
 		if err != nil {
-			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "invalid token")
-		}
-
-		if !token.Valid {
-			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "invalid token")
-		}
-
-		if !claims.IsVerified {
-			return helper.JSONErrorResponse(c, http.StatusForbidden, "access forbidden: account not verified. Please verify your OTP.")
+			return err
 		}
 
 		if claims.Role != "user" {
-			return helper.JSONErrorResponse(c, http.StatusForbidden, "access forbidden")
+			return echo.NewHTTPError(http.StatusForbidden, "Akses hanya untuk user")
 		}
 
-		c.Set("user", claims)
+		if !claims.IsVerified {
+			return echo.NewHTTPError(http.StatusForbidden, "Akun belum diverifikasi. Harap verifikasi OTP Anda.")
+		}
+
+		c.Set("user", claims) // Simpan klaim di context
 		return next(c)
 	}
 }
 
-// Validate Doctor Token
+// Middleware untuk Dokter
 func (m *JWTMiddleware) HandlerDoctor(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		authHeader := c.Request().Header.Get("Authorization")
-		if authHeader == "" {
-			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "Token tidak ditemukan")
-		}
-
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		claims := &service.JwtCustomClaims{}
-
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
-			return []byte(m.config.SecretKey), nil
-		})
-
+		claims, err := m.validateToken(c)
 		if err != nil {
-			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "invalid token")
-		}
-
-		if !token.Valid {
-			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "invalid token")
-		}
-
-		if !claims.IsVerified {
-			return helper.JSONErrorResponse(c, http.StatusForbidden, "access forbidden: account not verified. Please verify your OTP.")
+			return err
 		}
 
 		if claims.Role != "doctor" {
-			return helper.JSONErrorResponse(c, http.StatusForbidden, "access forbidden")
+			return echo.NewHTTPError(http.StatusForbidden, "Akses hanya untuk dokter")
 		}
 
-		c.Set("doctor", claims)
+		if !claims.IsVerified {
+			return echo.NewHTTPError(http.StatusForbidden, "Akun belum diverifikasi. Harap verifikasi OTP Anda.")
+		}
+
+		c.Set("doctor", claims) // Simpan klaim di context
 		return next(c)
 	}
 }
