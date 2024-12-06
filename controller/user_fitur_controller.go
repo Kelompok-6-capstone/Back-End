@@ -61,6 +61,13 @@ func (c *UserFiturController) GetDoctors(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mendapatkan daftar dokter: "+err.Error())
 	}
 
+	if len(doctors) == 0 {
+		return helper.JSONSuccessResponse(ctx, map[string]interface{}{
+			"data":    nil,
+			"success": true,
+		})
+	}
+
 	var doctorList []DoctorResponse
 	for _, doctor := range doctors {
 		doctorList = append(doctorList, DoctorResponse{

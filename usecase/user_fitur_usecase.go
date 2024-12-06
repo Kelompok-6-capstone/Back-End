@@ -26,7 +26,11 @@ func NewUserFiturUsecase(repo repository.UserFiturRepository) UserFiturUsecase {
 
 // Mendapatkan semua dokter
 func (u *UserFiturUsecaseImpl) GetAllDoctors() ([]model.Doctor, error) {
-	return u.DoctorRepo.GetAllDoctors()
+	doctors, err := u.DoctorRepo.GetAllDoctors()
+	if err != nil {
+		return nil, err
+	}
+	return doctors, nil
 }
 
 // Mendapatkan dokter berdasarkan tag

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"calmind/model"
+	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -29,9 +30,22 @@ func NewUserFiturRepository(db *gorm.DB) UserFiturRepository {
 func (r *UserFiturRepositoryImpl) GetAllDoctors() ([]model.Doctor, error) {
 	var doctors []model.Doctor
 	err := r.DB.
-		Where("title != '' AND price > 0 AND experience > 0 AND is_verified = true AND is_active = true").
+		Preload("Tags").
+		Preload("Title").
+		Where("price > 0 AND experience > 0 AND is_verified = true AND is_active = true").
 		Find(&doctors).Error
-	return doctors, err
+
+	// Logging data untuk debugging
+	if err != nil {
+		fmt.Printf("Error fetching doctors: %v\n", err)
+		return nil, err
+	}
+	if len(doctors) == 0 {
+		fmt.Println("No doctors found.")
+		return doctors, nil
+	}
+
+	return doctors, nil
 }
 
 // Mendapatkan dokter berdasarkan Tag
