@@ -84,14 +84,20 @@ func main() {
 	e := echo.New()
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{
-			"http://localhost:3000",
-			"http://localhost:5173",
-			"https://jovial-mooncake-23a3d0.netlify.app", // Tambahkan domain frontend Anda
+			"http://localhost:3000",                      // Tambahkan domain frontend lokal
+			"http://localhost:5173",                      // Tambahkan domain frontend lokal
+			"https://jovial-mooncake-23a3d0.netlify.app", // Domain frontend produksi
 		},
-		AllowMethods:  []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},
-		AllowHeaders:  []string{echo.HeaderAuthorization, echo.HeaderContentType},
-		ExposeHeaders: []string{"Authorization"},
-		// AllowCredentials: true, // Izinkan pengiriman cookie atau token di header
+		AllowMethods: []string{
+			echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.OPTIONS, // Pastikan OPTIONS diizinkan
+		},
+		AllowHeaders: []string{
+			echo.HeaderAuthorization, echo.HeaderContentType, echo.HeaderAccept, "X-Requested-With",
+		},
+		ExposeHeaders: []string{
+			"Authorization",
+		},
+		AllowCredentials: false, // Tidak perlu jika hanya menggunakan token di header Authorization
 	}))
 
 	// routes auth
