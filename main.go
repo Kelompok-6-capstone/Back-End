@@ -83,10 +83,10 @@ func main() {
 	// Echo instance
 	e := echo.New()
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{"http://127.0.0.1:5500", "http://localhost:3000", "http://localhost:5173", "https://jovial-mooncake-23a3d0.netlify.app"},
+		AllowOrigins:     []string{"http://localhost:5173", "http://127.0.0.1:5500", "https://your-frontend-url.com"},
 		AllowMethods:     []string{echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.OPTIONS},
-		AllowHeaders:     []string{echo.HeaderAuthorization, echo.HeaderContentType, echo.HeaderAccept},
-		AllowCredentials: true,
+		AllowHeaders:     []string{echo.HeaderAuthorization, echo.HeaderContentType},
+		AllowCredentials: false,
 	}))
 
 	// routes auth
@@ -95,14 +95,19 @@ func main() {
 	routes.DoctorAuthRoutes(e, doctorControllerManagement) // dokter
 
 	// Group untuk user, dengan middleware yang memastikan hanya user yang login dapat mengaksesnya
-	userGroup := e.Group("/user", jwtMiddleware.HandlerUser)
-	adminGroup := e.Group("/admin", jwtMiddleware.HandlerAdmin)
-	doctorGroup := e.Group("/doctor", jwtMiddleware.HandlerDoctor)
+	// Middleware JWT
 
-	// Routing group auth
-	routes.UserProfil(userGroup, userProfilController, userFiturController, consultationController, artikelController) // Profil User
-	routes.AdminManagementRoutes(adminGroup, adminControllerManagement, artikelController)                             // Admin management
-	routes.DoctorProfil(doctorGroup, doctorProfilController, artikelController, consultationController)                // Doctor Profile
+	// Group User
+	userGroup := e.Group("/user", jwtMiddleware.HandlerUser)
+	routes.UserProfil(userGroup, userProfilController, userFiturController, consultationController, artikelController)
+
+	// Group Admin
+	adminGroup := e.Group("/admin", jwtMiddleware.HandlerAdmin)
+	routes.AdminManagementRoutes(adminGroup, adminControllerManagement, artikelController)
+
+	// Group Doctor
+	doctorGroup := e.Group("/doctor", jwtMiddleware.HandlerDoctor)
+	routes.DoctorProfil(doctorGroup, doctorProfilController, artikelController, consultationController)
 
 	// Mulai server
 	log.Fatal(e.Start(":8000"))
