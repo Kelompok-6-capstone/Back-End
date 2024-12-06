@@ -79,7 +79,7 @@ func (r *UserFiturRepositoryImpl) SearchDoctors(query string) ([]model.Doctor, e
 // Mendapatkan dokter berdasarkan ID, termasuk informasi Tags
 func (r *UserFiturRepositoryImpl) GetDoctorByID(id int) (*model.Doctor, error) {
 	var doctor model.Doctor
-	err := r.DB.Preload("Tags").Where("id = ?", id).First(&doctor).Error
+	err := r.DB.Preload("Tags").Preload("Title").Where("id = ?", id).First(&doctor).Error
 	if err != nil {
 		return nil, err
 	}
