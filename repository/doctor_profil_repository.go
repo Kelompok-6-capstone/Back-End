@@ -10,8 +10,10 @@ type DoctorProfilRepository interface {
 	GetByID(id int) (*model.Doctor, error)
 	UpdateByID(id int, doctor *model.Doctor) (*model.Doctor, error)
 	UpdateDoctorActiveStatus(id int, isActive bool) error
-	GetSpecialtyByID(id int, specialty *model.Specialty) error
-	UpdateSpecialties(doctorID int, specialties []model.Specialty) error
+	GetTagByID(id int) (*model.Tags, error)
+	UpdateTags(doctorID int, tags []model.Tags) error
+	GetDoctorTitleByID(doctorID int) (*model.Title, error)
+	UpdateDoctorTitle(doctorID int, titleID int) error
 }
 
 type DoctorProfilRepositoryImpl struct {
@@ -22,15 +24,17 @@ func NewDoctorProfilRepository(db *gorm.DB) DoctorProfilRepository {
 	return &DoctorProfilRepositoryImpl{DB: db}
 }
 
+// Mendapatkan dokter berdasarkan ID
 func (r *DoctorProfilRepositoryImpl) GetByID(id int) (*model.Doctor, error) {
 	var doctor model.Doctor
-	err := r.DB.Preload("Specialties").Where("id = ?", id).First(&doctor).Error
+	err := r.DB.Preload("Tags").Preload("Title").Where("id = ?", id).First(&doctor).Error
 	if err != nil {
 		return nil, err
 	}
 	return &doctor, nil
 }
 
+// Memperbarui profil dokter berdasarkan ID
 func (r *DoctorProfilRepositoryImpl) UpdateByID(id int, doctor *model.Doctor) (*model.Doctor, error) {
 	var existingDoctor model.Doctor
 	err := r.DB.Where("id = ?", id).First(&existingDoctor).Error
@@ -38,7 +42,7 @@ func (r *DoctorProfilRepositoryImpl) UpdateByID(id int, doctor *model.Doctor) (*
 		return nil, err
 	}
 
-	// Update fields
+	// Update hanya field yang diberikan
 	if doctor.Username != "" {
 		existingDoctor.Username = doctor.Username
 	}
@@ -57,9 +61,6 @@ func (r *DoctorProfilRepositoryImpl) UpdateByID(id int, doctor *model.Doctor) (*
 	if doctor.Schedule != "" {
 		existingDoctor.Schedule = doctor.Schedule
 	}
-	if doctor.Title != "" {
-		existingDoctor.Title = doctor.Title
-	}
 	if doctor.Experience > 0 {
 		existingDoctor.Experience = doctor.Experience
 	}
@@ -70,7 +71,7 @@ func (r *DoctorProfilRepositoryImpl) UpdateByID(id int, doctor *model.Doctor) (*
 		existingDoctor.About = doctor.About
 	}
 
-	// Save updated doctor
+	// Simpan perubahan
 	err = r.DB.Save(&existingDoctor).Error
 	if err != nil {
 		return nil, err
@@ -79,19 +80,54 @@ func (r *DoctorProfilRepositoryImpl) UpdateByID(id int, doctor *model.Doctor) (*
 	return &existingDoctor, nil
 }
 
+// Memperbarui status aktif dokter
 func (r *DoctorProfilRepositoryImpl) UpdateDoctorActiveStatus(id int, isActive bool) error {
 	return r.DB.Model(&model.Doctor{}).Where("id = ?", id).Update("is_active", isActive).Error
 }
 
-func (r *DoctorProfilRepositoryImpl) GetSpecialtyByID(id int, specialty *model.Specialty) error {
-	return r.DB.Where("id = ?", id).First(specialty).Error
+// Mendapatkan tag berdasarkan ID
+func (r *DoctorProfilRepositoryImpl) GetTagByID(id int) (*model.Tags, error) {
+	var tag model.Tags
+	err := r.DB.Where("id = ?", id).First(&tag).Error
+	if err != nil {
+		return nil, err
+	}
+	return &tag, nil
 }
 
-func (r *DoctorProfilRepositoryImpl) UpdateSpecialties(doctorID int, specialties []model.Specialty) error {
+// Memperbarui tag yang terkait dengan dokter
+func (r *DoctorProfilRepositoryImpl) UpdateTags(doctorID int, tags []model.Tags) error {
 	var doctor model.Doctor
 	if err := r.DB.Where("id = ?", doctorID).First(&doctor).Error; err != nil {
 		return err
 	}
 
-	return r.DB.Model(&doctor).Association("Specialties").Replace(specialties)
+	// Perbarui asosiasi tags dengan dokter
+	return r.DB.Model(&doctor).Association("Tags").Replace(tags)
+}
+
+// Mendapatkan title dokter berdasarkan ID dokter
+func (r *DoctorProfilRepositoryImpl) GetDoctorTitleByID(doctorID int) (*model.Title, error) {
+	var doctor model.Doctor
+	err := r.DB.Preload("Title").Where("id = ?", doctorID).First(&doctor).Error
+	if err != nil {
+		return nil, err
+	}
+	return &doctor.Title, nil
+}
+
+// Memperbarui title dokter
+func (r *DoctorProfilRepositoryImpl) UpdateDoctorTitle(doctorID int, titleID int) error {
+	var doctor model.Doctor
+	if err := r.DB.Where("id = ?", doctorID).First(&doctor).Error; err != nil {
+		return err
+	}
+
+	var title model.Title
+	if err := r.DB.Where("id = ?", titleID).First(&title).Error; err != nil {
+		return err
+	}
+
+	doctor.TitleID = title.ID
+	return r.DB.Save(&doctor).Error
 }

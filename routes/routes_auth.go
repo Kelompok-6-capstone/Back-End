@@ -14,19 +14,36 @@ func UserAuthRoutes(e *echo.Echo, authController *controller.AuthController) {
 	e.GET("/user/logout", authController.LogoutUser)      // Logout User
 }
 
-func UserProfil(e *echo.Group, profilController *controller.ProfilController, fitur *controller.UserFiturController, konsultasi *controller.ConsultationController, artikelController *controller.ArtikelController) {
-	e.GET("/profile", profilController.GetProfile)    // Profil User
-	e.PUT("/profile", profilController.UpdateProfile) // Profil User
-	e.GET("/doctors", fitur.GetDoctors)
-	e.GET("/doctors/specialty", fitur.GetDoctorsBySpecialty)
-	e.GET("/doctors/status", fitur.GetDoctorsByStatus)
-	e.GET("/doctors/search", fitur.SearchDoctors)
-	e.GET("/doctors/:id", fitur.GetDoctorDetail)
-	e.GET("/spesialis", fitur.GetAllSpesialis)
-	e.POST("/consultations", konsultasi.CreateConsultation)
-	e.GET("/consultation/:id", konsultasi.GetConsultationDetailByID) // Melihat Detail keluhan
-	e.GET("/artikel", artikelController.GetAllArtikel)               // Lihat semua artikel
-	e.GET("/artikel/:id", artikelController.GetArtikelByID)          // Lihat detail artikel
+func UserProfil(
+	e *echo.Group,
+	profilController *controller.ProfilController,
+	fitur *controller.UserFiturController,
+	konsultasi *controller.ConsultationController,
+	artikelController *controller.ArtikelController,
+) {
+	// Endpoint untuk profil pengguna
+	e.GET("/profile", profilController.GetProfile)    // Melihat profil pengguna
+	e.PUT("/profile", profilController.UpdateProfile) // Memperbarui profil pengguna
+
+	// Endpoint untuk fitur dokter
+	e.GET("/doctors", fitur.GetDoctors)                // Mendapatkan daftar semua dokter
+	e.GET("/doctors/tag", fitur.GetDoctorsByTag)       // Mendapatkan dokter berdasarkan tag
+	e.GET("/doctors/status", fitur.GetDoctorsByStatus) // Mendapatkan dokter berdasarkan status
+	e.GET("/doctors/search", fitur.SearchDoctors)      // Mencari dokter berdasarkan query
+	e.GET("/doctors/:id", fitur.GetDoctorDetail)       // Mendapatkan detail dokter berdasarkan ID
+	e.GET("/tags", fitur.GetAllTags)                   // Mendapatkan semua tag (bidang keahlian)
+
+	// Endpoint untuk title
+	e.GET("/titles", fitur.GetAllTitles)             // Mendapatkan semua title
+	e.GET("/doctors/title", fitur.GetDoctorsByTitle) // Mendapatkan dokter berdasarkan title
+
+	// Endpoint untuk konsultasi
+	e.POST("/consultations", konsultasi.CreateConsultation)          // Membuat konsultasi
+	e.GET("/consultation/:id", konsultasi.GetConsultationDetailByID) // Melihat detail konsultasi
+
+	// Endpoint untuk artikel
+	e.GET("/artikel", artikelController.GetAllArtikel)      // Mendapatkan semua artikel
+	e.GET("/artikel/:id", artikelController.GetArtikelByID) // Mendapatkan detail artikel berdasarkan ID
 }
 
 // Routes untuk Admin

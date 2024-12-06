@@ -29,23 +29,40 @@ func (u *doctorProfileUseCaseImpl) GetDoctorProfile(doctorID int) (*model.Doctor
 }
 
 func (u *doctorProfileUseCaseImpl) UpdateDoctorProfile(doctorID int, doctor *model.Doctor) (*model.Doctor, error) {
-	// Handle specialties if provided
-	if len(doctor.Specialties) > 0 {
-		var specialties []model.Specialty
-		for _, specialty := range doctor.Specialties {
-			var dbSpecialty model.Specialty
-			if err := u.DoctorProfileRepo.GetSpecialtyByID(specialty.ID, &dbSpecialty); err != nil {
-				return nil, err
+	// Memperbarui Tags jika disediakan
+	if len(doctor.Tags) > 0 {
+		var tags []model.Tags
+		for _, tag := range doctor.Tags {
+			dbTag, err := u.DoctorProfileRepo.GetTagByID(tag.ID)
+			if err != nil {
+				return nil, errors.New("invalid tag provided")
 			}
-			specialties = append(specialties, dbSpecialty)
+			tags = append(tags, *dbTag)
 		}
 
-		if err := u.DoctorProfileRepo.UpdateSpecialties(doctorID, specialties); err != nil {
-			return nil, err
+		if err := u.DoctorProfileRepo.UpdateTags(doctorID, tags); err != nil {
+			return nil, errors.New("failed to update tags")
 		}
 	}
 
-	return u.DoctorProfileRepo.UpdateByID(doctorID, doctor)
+	// Memperbarui Title jika disediakan
+	if doctor.TitleID != 0 {
+		_, err := u.DoctorProfileRepo.GetDoctorTitleByID(doctor.TitleID)
+		if err != nil {
+			return nil, errors.New("invalid title provided")
+		}
+
+		if err := u.DoctorProfileRepo.UpdateDoctorTitle(doctorID, doctor.TitleID); err != nil {
+			return nil, errors.New("failed to update title")
+		}
+	}
+
+	// Memperbarui profil dokter lainnya
+	updatedDoctor, err := u.DoctorProfileRepo.UpdateByID(doctorID, doctor)
+	if err != nil {
+		return nil, errors.New("failed to update doctor profile")
+	}
+	return updatedDoctor, nil
 }
 
 func (u *doctorProfileUseCaseImpl) SetDoctorActiveStatus(doctorID int, isActive bool) error {

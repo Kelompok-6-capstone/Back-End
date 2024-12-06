@@ -29,22 +29,27 @@ type DoctorResponse struct {
 
 // Struct untuk respons detail dokter
 type DoctorDetailResponse struct {
-	ID          int                 `json:"id"`
-	Username    string              `json:"username"`
-	Avatar      string              `json:"avatar"`
-	DateOfBirth string              `json:"date_of_birth"`
-	Address     string              `json:"address"`
-	Schedule    string              `json:"schedule"`
-	Title       string              `json:"title"`
-	Price       float64             `json:"price"`
-	Experience  int                 `json:"experience"`
-	STRNumber   string              `json:"str_number"`
-	About       string              `json:"about"`
-	IsActive    bool                `json:"is_active"`
-	Specialties []SpecialtyResponse `json:"specialties"` // Tambahkan ini
+	ID          int            `json:"id"`
+	Username    string         `json:"username"`
+	Avatar      string         `json:"avatar"`
+	DateOfBirth string         `json:"date_of_birth"`
+	Address     string         `json:"address"`
+	Schedule    string         `json:"schedule"`
+	Title       string         `json:"title"`
+	Price       float64        `json:"price"`
+	Experience  int            `json:"experience"`
+	STRNumber   string         `json:"str_number"`
+	About       string         `json:"about"`
+	IsActive    bool           `json:"is_active"`
+	Tags        []TagsResponse `json:"tags"`
 }
 
-type SpecialtyResponse struct {
+type TagsResponse struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type TitleResponse struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
 }
@@ -56,13 +61,12 @@ func (c *UserFiturController) GetDoctors(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mendapatkan daftar dokter: "+err.Error())
 	}
 
-	// Mengisi data ke struct
 	var doctorList []DoctorResponse
 	for _, doctor := range doctors {
 		doctorList = append(doctorList, DoctorResponse{
 			ID:         doctor.ID,
 			Username:   doctor.Username,
-			Title:      doctor.Title,
+			Title:      doctor.Title.Name, // Ambil Name dari objek Title
 			Experience: doctor.Experience,
 			Price:      doctor.Price,
 			Avatar:     doctor.Avatar,
@@ -72,16 +76,16 @@ func (c *UserFiturController) GetDoctors(ctx echo.Context) error {
 	return helper.JSONSuccessResponse(ctx, doctorList)
 }
 
-// Endpoint untuk mendapatkan daftar dokter berdasarkan spesialisasi
-func (c *UserFiturController) GetDoctorsBySpecialty(ctx echo.Context) error {
-	specialty := ctx.QueryParam("specialty")
-	if specialty == "" {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Spesialisasi tidak boleh kosong")
+// Endpoint untuk mendapatkan daftar dokter berdasarkan tag
+func (c *UserFiturController) GetDoctorsByTag(ctx echo.Context) error {
+	tag := ctx.QueryParam("tag")
+	if tag == "" {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Tag tidak boleh kosong")
 	}
 
-	doctors, err := c.UserFiturUsecase.GetDoctorsBySpecialty(specialty)
+	doctors, err := c.UserFiturUsecase.GetDoctorsByTag(tag)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mendapatkan dokter berdasarkan spesialisasi: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mendapatkan dokter berdasarkan tag: "+err.Error())
 	}
 
 	var doctorList []DoctorResponse
@@ -89,24 +93,21 @@ func (c *UserFiturController) GetDoctorsBySpecialty(ctx echo.Context) error {
 		doctorList = append(doctorList, DoctorResponse{
 			ID:         doctor.ID,
 			Username:   doctor.Username,
-			Title:      doctor.Title,
+			Title:      doctor.Title.Name,
 			Experience: doctor.Experience,
 			Price:      doctor.Price,
 			Avatar:     doctor.Avatar,
 		})
 	}
 
-	return helper.JSONSuccessResponse(ctx, map[string]interface{}{
-		"data":    doctorList,
-		"success": true,
-	})
+	return helper.JSONSuccessResponse(ctx, doctorList)
 }
 
 // Endpoint untuk mendapatkan daftar dokter berdasarkan status
 func (c *UserFiturController) GetDoctorsByStatus(ctx echo.Context) error {
 	status := ctx.QueryParam("status")
 	if status != "active" && status != "inactive" {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Status tidak valid")
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Status tidak valid. Gunakan 'active' atau 'inactive'.")
 	}
 
 	isActive := (status == "active")
@@ -120,22 +121,23 @@ func (c *UserFiturController) GetDoctorsByStatus(ctx echo.Context) error {
 		doctorList = append(doctorList, DoctorResponse{
 			ID:         doctor.ID,
 			Username:   doctor.Username,
-			Title:      doctor.Title,
+			Title:      doctor.Title.Name,
 			Experience: doctor.Experience,
 			Price:      doctor.Price,
 			Avatar:     doctor.Avatar,
 		})
 	}
 
-	return helper.JSONSuccessResponse(ctx, map[string]interface{}{
-		"data":    doctorList,
-		"success": true,
-	})
+	return helper.JSONSuccessResponse(ctx, doctorList)
 }
 
 // Endpoint untuk mencari dokter berdasarkan query
 func (c *UserFiturController) SearchDoctors(ctx echo.Context) error {
 	query := ctx.QueryParam("query")
+	if query == "" {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Query tidak boleh kosong")
+	}
+
 	doctors, err := c.UserFiturUsecase.SearchDoctors(query)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mencari dokter: "+err.Error())
@@ -146,20 +148,17 @@ func (c *UserFiturController) SearchDoctors(ctx echo.Context) error {
 		doctorList = append(doctorList, DoctorResponse{
 			ID:         doctor.ID,
 			Username:   doctor.Username,
-			Title:      doctor.Title,
+			Title:      doctor.Title.Name,
 			Experience: doctor.Experience,
 			Price:      doctor.Price,
 			Avatar:     doctor.Avatar,
 		})
 	}
 
-	return helper.JSONSuccessResponse(ctx, map[string]interface{}{
-		"data":    doctorList,
-		"success": true,
-	})
+	return helper.JSONSuccessResponse(ctx, doctorList)
 }
 
-// Endpoint untuk mendapatkan detail dokter
+// Endpoint untuk mendapatkan detail dokter berdasarkan ID
 func (c *UserFiturController) GetDoctorDetail(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
@@ -171,12 +170,11 @@ func (c *UserFiturController) GetDoctorDetail(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "Dokter tidak ditemukan")
 	}
 
-	// Transform specialties ke dalam struktur JSON
-	var specialties []SpecialtyResponse
-	for _, specialty := range doctor.Specialties {
-		specialties = append(specialties, SpecialtyResponse{
-			ID:   specialty.ID,
-			Name: specialty.Name,
+	var tagsResponse []TagsResponse
+	for _, tag := range doctor.Tags {
+		tagsResponse = append(tagsResponse, TagsResponse{
+			ID:   tag.ID,
+			Name: tag.Name,
 		})
 	}
 
@@ -187,22 +185,69 @@ func (c *UserFiturController) GetDoctorDetail(ctx echo.Context) error {
 		DateOfBirth: doctor.DateOfBirth,
 		Address:     doctor.Address,
 		Schedule:    doctor.Schedule,
-		Title:       doctor.Title,
+		Title:       doctor.Title.Name, // Ambil Name dari objek Title
 		Price:       doctor.Price,
 		Experience:  doctor.Experience,
 		STRNumber:   doctor.STRNumber,
 		About:       doctor.About,
 		IsActive:    doctor.IsActive,
-		Specialties: specialties,
+		Tags:        tagsResponse,
 	}
 
 	return helper.JSONSuccessResponse(ctx, doctorDetail)
 }
-func (c *UserFiturController) GetAllSpesialis(ctx echo.Context) error {
-	doctor, err := c.UserFiturUsecase.GetAllSpesialis()
+
+// Endpoint untuk mendapatkan semua tags
+func (c *UserFiturController) GetAllTags(ctx echo.Context) error {
+	tags, err := c.UserFiturUsecase.GetAllTags()
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "Dokter tidak ditemukan")
+		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "Tags tidak ditemukan")
 	}
 
-	return helper.JSONSuccessResponse(ctx, doctor)
+	return helper.JSONSuccessResponse(ctx, tags)
+}
+
+// Endpoint untuk mendapatkan semua titles
+func (c *UserFiturController) GetAllTitles(ctx echo.Context) error {
+	titles, err := c.UserFiturUsecase.GetAllTitles()
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "Titles tidak ditemukan: "+err.Error())
+	}
+
+	var titleList []TitleResponse
+	for _, title := range titles {
+		titleList = append(titleList, TitleResponse{
+			ID:   title.ID,
+			Name: title.Name,
+		})
+	}
+
+	return helper.JSONSuccessResponse(ctx, titleList)
+}
+
+// Endpoint untuk mendapatkan daftar dokter berdasarkan title
+func (c *UserFiturController) GetDoctorsByTitle(ctx echo.Context) error {
+	title := ctx.QueryParam("title")
+	if title == "" {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Title tidak boleh kosong")
+	}
+
+	doctors, err := c.UserFiturUsecase.GetDoctorsByTitle(title)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mendapatkan dokter berdasarkan title: "+err.Error())
+	}
+
+	var doctorList []DoctorResponse
+	for _, doctor := range doctors {
+		doctorList = append(doctorList, DoctorResponse{
+			ID:         doctor.ID,
+			Username:   doctor.Username,
+			Title:      doctor.Title.Name,
+			Experience: doctor.Experience,
+			Price:      doctor.Price,
+			Avatar:     doctor.Avatar,
+		})
+	}
+
+	return helper.JSONSuccessResponse(ctx, doctorList)
 }

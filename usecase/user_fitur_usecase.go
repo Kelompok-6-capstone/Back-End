@@ -7,11 +7,13 @@ import (
 
 type UserFiturUsecase interface {
 	GetAllDoctors() ([]model.Doctor, error)
-	GetDoctorsBySpecialty(specialty string) ([]model.Doctor, error)
+	GetDoctorsByTag(tag string) ([]model.Doctor, error)
 	GetDoctorsByStatus(isActive bool) ([]model.Doctor, error)
 	SearchDoctors(query string) ([]model.Doctor, error)
 	GetDoctorByID(id int) (*model.Doctor, error)
-	GetAllSpesialis() ([]model.Specialty, error)
+	GetAllTags() ([]model.Tags, error)
+	GetAllTitles() ([]model.Title, error)
+	GetDoctorsByTitle(title string) ([]model.Doctor, error)
 }
 
 type UserFiturUsecaseImpl struct {
@@ -22,25 +24,42 @@ func NewUserFiturUsecase(repo repository.UserFiturRepository) UserFiturUsecase {
 	return &UserFiturUsecaseImpl{DoctorRepo: repo}
 }
 
+// Mendapatkan semua dokter
 func (u *UserFiturUsecaseImpl) GetAllDoctors() ([]model.Doctor, error) {
 	return u.DoctorRepo.GetAllDoctors()
 }
 
-func (u *UserFiturUsecaseImpl) GetDoctorsBySpecialty(specialty string) ([]model.Doctor, error) {
-	return u.DoctorRepo.GetDoctorsBySpecialty(specialty)
+// Mendapatkan dokter berdasarkan tag
+func (u *UserFiturUsecaseImpl) GetDoctorsByTag(tag string) ([]model.Doctor, error) {
+	return u.DoctorRepo.GetDoctorsByTag(tag)
 }
 
+// Mendapatkan dokter berdasarkan status (aktif/tidak aktif)
 func (u *UserFiturUsecaseImpl) GetDoctorsByStatus(isActive bool) ([]model.Doctor, error) {
 	return u.DoctorRepo.GetDoctorsByStatus(isActive)
 }
 
+// Mencari dokter berdasarkan query
 func (u *UserFiturUsecaseImpl) SearchDoctors(query string) ([]model.Doctor, error) {
 	return u.DoctorRepo.SearchDoctors(query)
 }
 
+// Mendapatkan dokter berdasarkan ID
 func (u *UserFiturUsecaseImpl) GetDoctorByID(id int) (*model.Doctor, error) {
 	return u.DoctorRepo.GetDoctorByID(id)
 }
-func (u *UserFiturUsecaseImpl) GetAllSpesialis() ([]model.Specialty, error) {
-	return u.DoctorRepo.GetSpesialis()
+
+// Mendapatkan semua tags
+func (u *UserFiturUsecaseImpl) GetAllTags() ([]model.Tags, error) {
+	return u.DoctorRepo.GetTags()
+}
+
+// Mendapatkan semua titles
+func (u *UserFiturUsecaseImpl) GetAllTitles() ([]model.Title, error) {
+	return u.DoctorRepo.GetTitles()
+}
+
+// Mendapatkan dokter berdasarkan title
+func (u *UserFiturUsecaseImpl) GetDoctorsByTitle(title string) ([]model.Doctor, error) {
+	return u.DoctorRepo.GetDoctorsByTitle(title)
 }

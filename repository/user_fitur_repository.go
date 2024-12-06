@@ -8,11 +8,13 @@ import (
 
 type UserFiturRepository interface {
 	GetAllDoctors() ([]model.Doctor, error)
-	GetDoctorsBySpecialty(specialty string) ([]model.Doctor, error)
+	GetDoctorsByTag(tag string) ([]model.Doctor, error)
 	GetDoctorsByStatus(isActive bool) ([]model.Doctor, error)
 	SearchDoctors(query string) ([]model.Doctor, error)
 	GetDoctorByID(id int) (*model.Doctor, error)
-	GetSpesialis() ([]model.Specialty, error)
+	GetTags() ([]model.Tags, error)
+	GetTitles() ([]model.Title, error)
+	GetDoctorsByTitle(title string) ([]model.Doctor, error)
 }
 
 type UserFiturRepositoryImpl struct {
@@ -23,6 +25,7 @@ func NewUserFiturRepository(db *gorm.DB) UserFiturRepository {
 	return &UserFiturRepositoryImpl{DB: db}
 }
 
+// Mendapatkan semua dokter yang memenuhi kriteria umum
 func (r *UserFiturRepositoryImpl) GetAllDoctors() ([]model.Doctor, error) {
 	var doctors []model.Doctor
 	err := r.DB.
@@ -31,22 +34,26 @@ func (r *UserFiturRepositoryImpl) GetAllDoctors() ([]model.Doctor, error) {
 	return doctors, err
 }
 
-func (r *UserFiturRepositoryImpl) GetDoctorsBySpecialty(specialty string) ([]model.Doctor, error) {
+// Mendapatkan dokter berdasarkan Tag
+func (r *UserFiturRepositoryImpl) GetDoctorsByTag(tag string) ([]model.Doctor, error) {
 	var doctors []model.Doctor
 	err := r.DB.
-		Joins("JOIN doctor_specialties ON doctors.id = doctor_specialties.doctor_id").
-		Joins("JOIN specialties ON doctor_specialties.specialty_id = specialties.id").
-		Where("specialties.name = ?", specialty).
+		Joins("JOIN doctor_tags ON doctors.id = doctor_tags.doctor_id").
+		Joins("JOIN tags ON doctor_tags.tag_id = tags.id").
+		Where("tags.name = ?", tag).
+		Preload("Tags").
 		Find(&doctors).Error
 	return doctors, err
 }
 
+// Mendapatkan dokter berdasarkan status (aktif atau tidak)
 func (r *UserFiturRepositoryImpl) GetDoctorsByStatus(isActive bool) ([]model.Doctor, error) {
 	var doctors []model.Doctor
 	err := r.DB.Where("is_active = ?", isActive).Find(&doctors).Error
 	return doctors, err
 }
 
+// Mencari dokter berdasarkan kueri di beberapa kolom
 func (r *UserFiturRepositoryImpl) SearchDoctors(query string) ([]model.Doctor, error) {
 	var doctors []model.Doctor
 	err := r.DB.
@@ -55,17 +62,36 @@ func (r *UserFiturRepositoryImpl) SearchDoctors(query string) ([]model.Doctor, e
 	return doctors, err
 }
 
+// Mendapatkan dokter berdasarkan ID, termasuk informasi Tags
 func (r *UserFiturRepositoryImpl) GetDoctorByID(id int) (*model.Doctor, error) {
 	var doctor model.Doctor
-	err := r.DB.Preload("Specialties").Where("id = ?", id).First(&doctor).Error
+	err := r.DB.Preload("Tags").Where("id = ?", id).First(&doctor).Error
 	if err != nil {
 		return nil, err
 	}
 	return &doctor, nil
 }
 
-func (r *UserFiturRepositoryImpl) GetSpesialis() ([]model.Specialty, error) {
-	var spesialis []model.Specialty
-	err := r.DB.Find(&spesialis).Error
-	return spesialis, err
+// Mendapatkan daftar semua Tags
+func (r *UserFiturRepositoryImpl) GetTags() ([]model.Tags, error) {
+	var tags []model.Tags
+	err := r.DB.Find(&tags).Error
+	return tags, err
+}
+
+func (r *UserFiturRepositoryImpl) GetTitles() ([]model.Title, error) {
+	var titles []model.Title
+	err := r.DB.Find(&titles).Error
+	return titles, err
+}
+
+// Mendapatkan dokter berdasarkan Title
+func (r *UserFiturRepositoryImpl) GetDoctorsByTitle(title string) ([]model.Doctor, error) {
+	var doctors []model.Doctor
+	err := r.DB.
+		Joins("JOIN titles ON doctors.title_id = titles.id").
+		Where("titles.name = ?", title).
+		Preload("Title").
+		Find(&doctors).Error
+	return doctors, err
 }

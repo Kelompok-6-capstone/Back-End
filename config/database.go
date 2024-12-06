@@ -38,10 +38,21 @@ func InitDB() (*gorm.DB, error) {
 		return nil, fmt.Errorf("gagal membuka koneksi ke database: %w", err)
 	}
 
-	err = db.AutoMigrate(&model.User{}, &model.Admin{}, &model.Doctor{}, &model.Otp{}, &model.Consultation{}, &model.Specialty{}, &model.Artikel{})
+	err = db.AutoMigrate(&model.User{}, &model.Admin{}, &model.Doctor{}, &model.Otp{}, &model.Consultation{}, &model.Tags{}, &model.Artikel{})
 	if err != nil {
 		return nil, fmt.Errorf("gagal melakukan migrasi: %w", err)
 	}
+	if err := SeedTitles(db); err != nil {
+		fmt.Println("Error seeding titles:", err)
+	} else {
+		fmt.Println("Titles seeded successfully.")
+	}
 
+	// Seed Tags (Specialties)
+	if err := SeedSpecialties(db); err != nil {
+		fmt.Println("Error seeding specialties:", err)
+	} else {
+		fmt.Println("Specialties seeded successfully.")
+	}
 	return db, nil
 }
