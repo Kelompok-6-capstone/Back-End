@@ -113,7 +113,6 @@ func (c *ArtikelController) GetArtikelByID(ctx echo.Context) error {
 	return helper.JSONSuccessResponse(ctx, response)
 }
 
-// UpdateArtikel - Memperbarui artikel berdasarkan ID
 func (c *ArtikelController) UpdateArtikel(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
@@ -125,7 +124,18 @@ func (c *ArtikelController) UpdateArtikel(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid input: "+err.Error())
 	}
 
+	// Validasi agar admin_id tidak diubah melalui payload
+	existingArtikel, err := c.Usecase.GetArtikelByID(id)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "Artikel not found")
+	}
+
+	if existingArtikel.AdminID != artikel.AdminID && artikel.AdminID != 0 {
+		return helper.JSONErrorResponse(ctx, http.StatusForbidden, "Cannot change Admin ID")
+	}
+
 	artikel.ID = id
+	artikel.AdminID = existingArtikel.AdminID // Tetapkan admin_id dari data asli
 	err = c.Usecase.UpdateArtikel(&artikel)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, err.Error())

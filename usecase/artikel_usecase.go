@@ -36,6 +36,14 @@ func (u *artikelUsecase) GetArtikelByID(id int) (*model.Artikel, error) {
 }
 
 func (u *artikelUsecase) UpdateArtikel(artikel *model.Artikel) error {
+	existingArtikel, err := u.repo.GetByID(artikel.ID)
+	if err != nil {
+		return err
+	}
+
+	// Pastikan admin_id tidak diubah
+	artikel.AdminID = existingArtikel.AdminID
+
 	return u.repo.Update(artikel)
 }
 

@@ -39,7 +39,13 @@ func (r *artikelRepository) GetByID(id int) (*model.Artikel, error) {
 }
 
 func (r *artikelRepository) Update(artikel *model.Artikel) error {
-	return r.db.Save(artikel).Error
+	return r.db.Model(&model.Artikel{}).Where("id = ?", artikel.ID).
+		Updates(map[string]interface{}{
+			"judul":      artikel.Judul,
+			"gambar":     artikel.Gambar,
+			"isi":        artikel.Isi,
+			"updated_at": artikel.UpdatedAt,
+		}).Error
 }
 
 func (r *artikelRepository) Delete(id int) error {
