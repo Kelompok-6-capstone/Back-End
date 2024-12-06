@@ -22,6 +22,11 @@ func NewDoctorAuthRepository(db *gorm.DB) DoctorRepository {
 }
 
 func (r *doctorRepositoryState) CreateDoctor(doctor *model.Doctor) error {
+	// Tetapkan default title_id jika tidak diberikan
+	if doctor.TitleID == 0 {
+		doctor.TitleID = 1 // ID default dari title
+	}
+
 	var existingDoctor model.Doctor
 	err := r.DB.Where("email = ?", doctor.Email).First(&existingDoctor).Error
 	if err == nil {
@@ -30,6 +35,7 @@ func (r *doctorRepositoryState) CreateDoctor(doctor *model.Doctor) error {
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
+
 	return r.DB.Create(doctor).Error
 }
 

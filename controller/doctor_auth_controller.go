@@ -22,12 +22,15 @@ func NewDoctorAuthController(doctorUsecase usecase.DoctorUsecase) *DoctorAuthCon
 func (c *DoctorAuthController) RegisterDoctor(ctx echo.Context) error {
 	var doctor model.Doctor
 	if err := ctx.Bind(&doctor); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "gagal mendapatkan data: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan data: "+err.Error())
 	}
 
 	err := c.DoctorUsecase.Register(&doctor)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "gagal register dokter: "+err.Error())
+		if err.Error() == "invalid title_id" {
+			return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "title_id tidak valid. Silakan pilih title yang tersedia.")
+		}
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal register dokter: "+err.Error())
 	}
 
 	return helper.JSONSuccessResponse(ctx, "Berhasil Register Dokter")

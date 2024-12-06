@@ -47,6 +47,11 @@ func (u *doctorUsecase) Register(doctor *model.Doctor) error {
 		return errors.New("username is required")
 	}
 
+	// Tetapkan default title_id jika tidak diberikan
+	if doctor.TitleID == 0 {
+		doctor.TitleID = 1 // ID default dari title
+	}
+
 	// Set default role for doctors
 	doctor.Role = "doctor"
 
@@ -77,7 +82,6 @@ func (u *doctorUsecase) Register(doctor *model.Doctor) error {
 	if err != nil {
 		log.Printf("Gagal mengirim email ke %s: %v", doctor.Email, err)
 	}
-	log.Println("Proses selesai")
 
 	return nil
 }
