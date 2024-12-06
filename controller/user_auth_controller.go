@@ -36,7 +36,7 @@ func (c *AuthController) RegisterUser(ctx echo.Context) error {
 func (c *AuthController) LoginUser(ctx echo.Context) error {
 	var user model.User
 	if err := ctx.Bind(&user); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "gagal mendapatkan data: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan data: "+err.Error())
 	}
 
 	token, err := c.AuthUsecase.Login(user.Email, user.Password)
@@ -44,20 +44,9 @@ func (c *AuthController) LoginUser(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Login gagal: "+err.Error())
 	}
 
-	cookie := &http.Cookie{
-		Name:     "token_user",
-		Value:    token,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   false,
-		MaxAge:   72 * 60 * 60,
-		SameSite: http.SameSiteNoneMode, // None untuk mendukung cross-origin
-	}
-
-	ctx.SetCookie(cookie)
-
+	// Kembalikan token dalam respons
 	return helper.JSONSuccessResponse(ctx, map[string]string{
-		"Token": token,
+		"token": token,
 	})
 }
 
@@ -74,16 +63,5 @@ func (c *AuthController) VerifyOtp(ctx echo.Context) error {
 }
 
 func (c *AuthController) LogoutUser(ctx echo.Context) error {
-	cookie := &http.Cookie{
-		Name:     "token_user",
-		Value:    "",
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   true,
-		MaxAge:   -1,
-	}
-
-	ctx.SetCookie(cookie)
-
-	return helper.JSONSuccessResponse(ctx, "Berhasil Logout")
+	return helper.JSONSuccessResponse(ctx, "Logout berhasil")
 }

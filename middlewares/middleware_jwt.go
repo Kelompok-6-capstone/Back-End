@@ -5,6 +5,7 @@ import (
 	"calmind/helper"
 	"calmind/service"
 	"net/http"
+	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
@@ -18,14 +19,15 @@ func NewJWTMiddleware(cfg *config.JWTConfig) *JWTMiddleware {
 	return &JWTMiddleware{config: cfg}
 }
 
+// Validate Admin Token
 func (m *JWTMiddleware) HandlerAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		h, err := c.Cookie("token_admin")
-		if err != nil {
-			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "gagal login token tidak ditemukan")
+		authHeader := c.Request().Header.Get("Authorization")
+		if authHeader == "" {
+			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "Token tidak ditemukan")
 		}
 
-		tokenString := h.Value
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		claims := &service.JwtCustomClaims{}
 
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
@@ -45,19 +47,19 @@ func (m *JWTMiddleware) HandlerAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		c.Set("admin", claims)
-
 		return next(c)
 	}
 }
 
+// Validate User Token
 func (m *JWTMiddleware) HandlerUser(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		h, err := c.Cookie("token_user")
-		if err != nil {
-			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "gagal login token tidak ditemukan")
+		authHeader := c.Request().Header.Get("Authorization")
+		if authHeader == "" {
+			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "Token tidak ditemukan")
 		}
 
-		tokenString := h.Value
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		claims := &service.JwtCustomClaims{}
 
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
@@ -81,19 +83,19 @@ func (m *JWTMiddleware) HandlerUser(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		c.Set("user", claims)
-
 		return next(c)
 	}
 }
 
+// Validate Doctor Token
 func (m *JWTMiddleware) HandlerDoctor(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		h, err := c.Cookie("token_doctor")
-		if err != nil {
-			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "gagal login token tidak ditemukan")
+		authHeader := c.Request().Header.Get("Authorization")
+		if authHeader == "" {
+			return helper.JSONErrorResponse(c, http.StatusUnauthorized, "Token tidak ditemukan")
 		}
 
-		tokenString := h.Value
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		claims := &service.JwtCustomClaims{}
 
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
@@ -117,7 +119,6 @@ func (m *JWTMiddleware) HandlerDoctor(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		c.Set("doctor", claims)
-
 		return next(c)
 	}
 }

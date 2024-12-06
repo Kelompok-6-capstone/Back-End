@@ -54,6 +54,7 @@ func DoctorAuthRoutes(e *echo.Echo, authController *controller.DoctorAuthControl
 	e.GET("/doctor/logout", authController.LogoutDoctor)
 	e.POST("/doctor/verify-otp", authController.VerifyOtp) // verivikasi otp
 }
+
 func DoctorProfil(e *echo.Group, profilController *controller.DoctorProfileController, artikelController *controller.ArtikelController, consultationController *controller.ConsultationController) {
 	e.GET("/profile", profilController.GetProfile)                                       // Mendapatkan profil dokter
 	e.PUT("/profile", profilController.UpdateProfile)                                    // Mengupdate profil dokter

@@ -20,7 +20,7 @@ func NewAdminAuthController(usecase usecase.AdminAuthUsecase) *AdminAuthControll
 func (c *AdminAuthController) LoginAdmin(ctx echo.Context) error {
 	var user model.User
 	if err := ctx.Bind(&user); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "gagal mendapatkan data: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan data: "+err.Error())
 	}
 
 	token, err := c.AdminUsecase.LoginAdmin(user.Email, user.Password)
@@ -28,34 +28,12 @@ func (c *AdminAuthController) LoginAdmin(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Login gagal: "+err.Error())
 	}
 
-	cookie := &http.Cookie{
-		Name:     "token_admin",
-		Value:    token,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   false,
-		MaxAge:   72 * 60 * 60,
-		SameSite: http.SameSiteNoneMode, // None untuk mendukung cross-origin
-	}
-
-	ctx.SetCookie(cookie)
-
+	// Kembalikan token dalam respons
 	return helper.JSONSuccessResponse(ctx, map[string]string{
-		"Token": token,
+		"token": token,
 	})
 }
 
 func (c *AdminAuthController) LogoutAdmin(ctx echo.Context) error {
-	cookie := &http.Cookie{
-		Name:     "token_admin",
-		Value:    "",
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   true,
-		MaxAge:   -1,
-	}
-
-	ctx.SetCookie(cookie)
-
-	return helper.JSONSuccessResponse(ctx, "Berhasil Logout")
+	return helper.JSONSuccessResponse(ctx, "Logout berhasil")
 }
