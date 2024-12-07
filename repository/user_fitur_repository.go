@@ -99,7 +99,7 @@ func (r *UserFiturRepositoryImpl) GetDoctorsByStatus(isActive bool) ([]model.Doc
 // Mencari dokter berdasarkan kueri di beberapa kolom
 func (r *UserFiturRepositoryImpl) SearchDoctors(query string) ([]model.Doctor, error) {
 	var doctors []model.Doctor
-	err := r.DB.
+	err := r.DB.Preload("Title").
 		Where("username LIKE ? OR title LIKE ? OR about LIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%").
 		Find(&doctors).Error
 	return doctors, err
