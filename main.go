@@ -67,13 +67,10 @@ func main() {
 	doctorProfilUsecase := usecase.NewDoctorProfileUseCase(doctorProfilRepo)
 	doctorProfilController := controller.NewDoctorProfileController(doctorProfilUsecase)
 
-	paymentRepo := repository.NewPaymentRepository(DB)
-	paymentUsecase := usecase.NewPaymentUsecase(paymentRepo)
-
 	//    Repositori, usecase, dan controller untuk Consultasi
 	consultationRepo := repository.NewConsultationRepository(DB)
 	consultationUsecase := usecase.NewConsultationUsecase(consultationRepo)
-	consultationController := controller.NewConsultationController(consultationUsecase, paymentUsecase)
+	consultationController := controller.NewConsultationController(consultationUsecase)
 
 	//    Repositori, usecase, dan controller untuk Consultasi
 	artikelonRepo := repository.NewArtikelRepository(DB)
@@ -107,7 +104,7 @@ func main() {
 
 	// Group Admin
 	adminGroup := e.Group("/admin", jwtMiddleware.HandlerAdmin)
-	routes.AdminManagementRoutes(adminGroup, adminControllerManagement, consultationController, artikelController)
+	routes.AdminManagementRoutes(adminGroup, adminControllerManagement, artikelController)
 
 	// Group Doctor
 	doctorGroup := e.Group("/doctor", jwtMiddleware.HandlerDoctor)
