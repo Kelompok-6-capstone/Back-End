@@ -18,6 +18,7 @@ func NewDoctorProfileController(DoctorProfileUsecase usecase.DoctorProfileUseCas
 	return &DoctorProfileController{DoctorProfileUsecase: DoctorProfileUsecase}
 }
 
+// Mendapatkan profil dokter
 func (c *DoctorProfileController) GetProfile(ctx echo.Context) error {
 	claims, _ := ctx.Get("doctor").(*service.JwtCustomClaims)
 	doctor, err := c.DoctorProfileUsecase.GetDoctorProfile(claims.UserID)
@@ -25,31 +26,60 @@ func (c *DoctorProfileController) GetProfile(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil profil dokter: "+err.Error())
 	}
 
+	// Format response lengkap dengan Title dan Tags
+	type TagsResponse struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	}
+
 	type DoctorResponse struct {
-		ID        int    `json:"id"`
-		Avatar    string `json:"avatar"`
-		Username  string `json:"username"`
-		Email     string `json:"email"`
-		NoHp      string `json:"no_hp"`
-		Tgl_lahir string `json:"date_of_birth"`
-		Alamat    string `json:"address"`
-		Schedule  string `json:"schedule"`
+		ID          int            `json:"id"`
+		Avatar      string         `json:"avatar"`
+		Username    string         `json:"username"`
+		Email       string         `json:"email"`
+		NoHp        string         `json:"no_hp"`
+		DateOfBirth string         `json:"date_of_birth"`
+		Address     string         `json:"address"`
+		Schedule    string         `json:"schedule"`
+		Title       string         `json:"title"`
+		Price       float64        `json:"price"`
+		Experience  int            `json:"experience"`
+		STRNumber   string         `json:"str_number"`
+		About       string         `json:"about"`
+		IsActive    bool           `json:"is_active"`
+		Tags        []TagsResponse `json:"tags"`
+	}
+
+	var tagsResponse []TagsResponse
+	for _, tag := range doctor.Tags {
+		tagsResponse = append(tagsResponse, TagsResponse{
+			ID:   tag.ID,
+			Name: tag.Name,
+		})
 	}
 
 	doctorProfile := DoctorResponse{
-		ID:        doctor.ID,
-		Avatar:    doctor.Avatar,
-		Username:  doctor.Username,
-		Email:     doctor.Email,
-		NoHp:      doctor.NoHp,
-		Alamat:    doctor.Address,
-		Tgl_lahir: doctor.DateOfBirth,
-		Schedule:  doctor.Schedule,
+		ID:          doctor.ID,
+		Avatar:      doctor.Avatar,
+		Username:    doctor.Username,
+		Email:       doctor.Email,
+		NoHp:        doctor.NoHp,
+		DateOfBirth: doctor.DateOfBirth,
+		Address:     doctor.Address,
+		Schedule:    doctor.Schedule,
+		Title:       doctor.Title.Name,
+		Price:       doctor.Price,
+		Experience:  doctor.Experience,
+		STRNumber:   doctor.STRNumber,
+		About:       doctor.About,
+		IsActive:    doctor.IsActive,
+		Tags:        tagsResponse,
 	}
 
 	return helper.JSONSuccessResponse(ctx, doctorProfile)
 }
 
+// Memperbarui profil dokter
 func (c *DoctorProfileController) UpdateProfile(ctx echo.Context) error {
 	claims, _ := ctx.Get("doctor").(*service.JwtCustomClaims)
 
@@ -66,6 +96,7 @@ func (c *DoctorProfileController) UpdateProfile(ctx echo.Context) error {
 	return helper.JSONSuccessResponse(ctx, "Berhasil update profil")
 }
 
+// Mengatur status aktif dokter
 func (c *DoctorProfileController) SetActiveStatus(ctx echo.Context) error {
 	claims, _ := ctx.Get("doctor").(*service.JwtCustomClaims)
 

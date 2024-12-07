@@ -3,7 +3,7 @@ package usecase
 import (
 	"calmind/model"
 	"calmind/repository"
-	"errors"
+	"fmt"
 )
 
 type DoctorProfileUseCase interface {
@@ -20,55 +20,51 @@ func NewDoctorProfileUseCase(repo repository.DoctorProfilRepository) DoctorProfi
 	return &doctorProfileUseCaseImpl{DoctorProfileRepo: repo}
 }
 
+// Mendapatkan profil dokter berdasarkan ID
 func (u *doctorProfileUseCaseImpl) GetDoctorProfile(doctorID int) (*model.Doctor, error) {
 	doctor, err := u.DoctorProfileRepo.GetByID(doctorID)
 	if err != nil {
-		return nil, errors.New("doctor not found")
+		return nil, fmt.Errorf("failed to fetch doctor profile: %v", err)
 	}
 	return doctor, nil
 }
 
+// Memperbarui profil dokter
 func (u *doctorProfileUseCaseImpl) UpdateDoctorProfile(doctorID int, doctor *model.Doctor) (*model.Doctor, error) {
 	// Memperbarui Tags jika disediakan
 	if len(doctor.Tags) > 0 {
-		var tags []model.Tags
+		var tagNames []string
 		for _, tag := range doctor.Tags {
-			dbTag, err := u.DoctorProfileRepo.GetTagByID(tag.ID)
-			if err != nil {
-				return nil, errors.New("invalid tag provided")
-			}
-			tags = append(tags, *dbTag)
+			tagNames = append(tagNames, tag.Name)
 		}
 
-		if err := u.DoctorProfileRepo.UpdateTags(doctorID, tags); err != nil {
-			return nil, errors.New("failed to update tags")
+		err := u.DoctorProfileRepo.UpdateTagsByName(doctorID, tagNames)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update tags: %v", err)
 		}
 	}
 
 	// Memperbarui Title jika disediakan
-	if doctor.TitleID != 0 {
-		_, err := u.DoctorProfileRepo.GetDoctorTitleByID(doctor.TitleID)
+	if doctor.Title.Name != "" {
+		err := u.DoctorProfileRepo.UpdateDoctorTitleByName(doctorID, doctor.Title.Name)
 		if err != nil {
-			return nil, errors.New("invalid title provided")
-		}
-
-		if err := u.DoctorProfileRepo.UpdateDoctorTitle(doctorID, doctor.TitleID); err != nil {
-			return nil, errors.New("failed to update title")
+			return nil, fmt.Errorf("failed to update title: %v", err)
 		}
 	}
 
 	// Memperbarui profil dokter lainnya
 	updatedDoctor, err := u.DoctorProfileRepo.UpdateByID(doctorID, doctor)
 	if err != nil {
-		return nil, errors.New("failed to update doctor profile")
+		return nil, fmt.Errorf("failed to update doctor profile: %v", err)
 	}
 	return updatedDoctor, nil
 }
 
+// Mengatur status aktif dokter
 func (u *doctorProfileUseCaseImpl) SetDoctorActiveStatus(doctorID int, isActive bool) error {
 	err := u.DoctorProfileRepo.UpdateDoctorActiveStatus(doctorID, isActive)
 	if err != nil {
-		return errors.New("failed to update doctor active status")
+		return fmt.Errorf("failed to update doctor active status: %v", err)
 	}
 	return nil
 }
