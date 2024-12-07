@@ -20,7 +20,11 @@ func NewDoctorProfileController(DoctorProfileUsecase usecase.DoctorProfileUseCas
 
 // Mendapatkan profil dokter
 func (c *DoctorProfileController) GetProfile(ctx echo.Context) error {
-	claims, _ := ctx.Get("doctor").(*service.JwtCustomClaims)
+	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
+	if !ok || claims == nil {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized access")
+	}
+
 	doctor, err := c.DoctorProfileUsecase.GetDoctorProfile(claims.UserID)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil profil dokter: "+err.Error())
@@ -81,24 +85,30 @@ func (c *DoctorProfileController) GetProfile(ctx echo.Context) error {
 
 // Memperbarui profil dokter
 func (c *DoctorProfileController) UpdateProfile(ctx echo.Context) error {
-	claims, _ := ctx.Get("doctor").(*service.JwtCustomClaims)
+	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
+	if !ok || claims == nil {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized access")
+	}
 
 	var doctor model.Doctor
 	if err := ctx.Bind(&doctor); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan data: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal memproses data: "+err.Error())
 	}
 
-	_, err := c.DoctorProfileUsecase.UpdateDoctorProfile(claims.UserID, &doctor)
+	updatedDoctor, err := c.DoctorProfileUsecase.UpdateDoctorProfile(claims.UserID, &doctor)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate profil: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate profil dokter: "+err.Error())
 	}
 
-	return helper.JSONSuccessResponse(ctx, "Berhasil update profil")
+	return helper.JSONSuccessResponse(ctx, updatedDoctor)
 }
 
 // Mengatur status aktif dokter
 func (c *DoctorProfileController) SetActiveStatus(ctx echo.Context) error {
-	claims, _ := ctx.Get("doctor").(*service.JwtCustomClaims)
+	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
+	if !ok || claims == nil {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized access")
+	}
 
 	var statusRequest struct {
 		IsActive bool `json:"is_active"`

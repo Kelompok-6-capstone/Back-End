@@ -20,7 +20,7 @@ func NewDoctorProfileUseCase(repo repository.DoctorProfilRepository) DoctorProfi
 	return &doctorProfileUseCaseImpl{DoctorProfileRepo: repo}
 }
 
-// Mendapatkan profil dokter berdasarkan ID
+// GetDoctorProfile retrieves a doctor's profile by their ID.
 func (u *doctorProfileUseCaseImpl) GetDoctorProfile(doctorID int) (*model.Doctor, error) {
 	doctor, err := u.DoctorProfileRepo.GetByID(doctorID)
 	if err != nil {
@@ -29,38 +29,40 @@ func (u *doctorProfileUseCaseImpl) GetDoctorProfile(doctorID int) (*model.Doctor
 	return doctor, nil
 }
 
-// Memperbarui profil dokter
+// UpdateDoctorProfile updates a doctor's profile, including tags and title if provided.
 func (u *doctorProfileUseCaseImpl) UpdateDoctorProfile(doctorID int, doctor *model.Doctor) (*model.Doctor, error) {
-	// Memperbarui Tags jika disediakan
+	// Validate and update tags if provided
 	if len(doctor.Tags) > 0 {
-		var tagNames []string
+		tagNames := make([]string, 0, len(doctor.Tags))
 		for _, tag := range doctor.Tags {
+			if tag.Name == "" {
+				return nil, fmt.Errorf("tag name cannot be empty")
+			}
 			tagNames = append(tagNames, tag.Name)
 		}
 
-		err := u.DoctorProfileRepo.UpdateTagsByName(doctorID, tagNames)
-		if err != nil {
+		if err := u.DoctorProfileRepo.UpdateTagsByName(doctorID, tagNames); err != nil {
 			return nil, fmt.Errorf("failed to update tags: %v", err)
 		}
 	}
 
-	// Memperbarui Title jika disediakan
+	// Validate and update title if provided
 	if doctor.Title.Name != "" {
-		err := u.DoctorProfileRepo.UpdateDoctorTitleByName(doctorID, doctor.Title.Name)
-		if err != nil {
+		if err := u.DoctorProfileRepo.UpdateDoctorTitleByName(doctorID, doctor.Title.Name); err != nil {
 			return nil, fmt.Errorf("failed to update title: %v", err)
 		}
 	}
 
-	// Memperbarui profil dokter lainnya
+	// Update other profile fields
 	updatedDoctor, err := u.DoctorProfileRepo.UpdateByID(doctorID, doctor)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update doctor profile: %v", err)
 	}
+
 	return updatedDoctor, nil
 }
 
-// Mengatur status aktif dokter
+// SetDoctorActiveStatus updates the active status of a doctor.
 func (u *doctorProfileUseCaseImpl) SetDoctorActiveStatus(doctorID int, isActive bool) error {
 	err := u.DoctorProfileRepo.UpdateDoctorActiveStatus(doctorID, isActive)
 	if err != nil {

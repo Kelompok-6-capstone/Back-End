@@ -131,7 +131,7 @@ func (r *DoctorProfilRepositoryImpl) UpdateTagsByName(doctorID int, tagNames []s
 		return fmt.Errorf("failed to fetch doctor: %v", err)
 	}
 
-	// Perbarui asosiasi Tags
+	// Update tag associations
 	err = r.DB.Model(&doctor).Association("Tags").Replace(tags)
 	if err != nil {
 		return fmt.Errorf("failed to update tags: %v", err)
@@ -140,20 +140,7 @@ func (r *DoctorProfilRepositoryImpl) UpdateTagsByName(doctorID int, tagNames []s
 	return nil
 }
 
-// Mendapatkan title dokter berdasarkan ID dokter
-func (r *DoctorProfilRepositoryImpl) GetDoctorTitleByID(doctorID int) (*model.Title, error) {
-	var doctor model.Doctor
-	err := r.DB.Preload("Title").Where("id = ?", doctorID).First(&doctor).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("doctor with ID %d not found", doctorID)
-		}
-		return nil, fmt.Errorf("failed to fetch doctor title: %v", err)
-	}
-	return &doctor.Title, nil
-}
-
-// Memperbarui title dokter berdasarkan nama
+// UpdateDoctorTitleByName updates a doctor's title using the title name.
 func (r *DoctorProfilRepositoryImpl) UpdateDoctorTitleByName(doctorID int, titleName string) error {
 	var title model.Title
 	err := r.DB.Where("name = ?", titleName).First(&title).Error
@@ -173,13 +160,25 @@ func (r *DoctorProfilRepositoryImpl) UpdateDoctorTitleByName(doctorID int, title
 		return fmt.Errorf("failed to fetch doctor: %v", err)
 	}
 
+	// Update title ID
 	doctor.TitleID = title.ID
-
-	// Simpan perubahan TitleID
 	err = r.DB.Save(&doctor).Error
 	if err != nil {
 		return fmt.Errorf("failed to update doctor title: %v", err)
 	}
 
 	return nil
+}
+
+// Mendapatkan title dokter berdasarkan ID dokter
+func (r *DoctorProfilRepositoryImpl) GetDoctorTitleByID(doctorID int) (*model.Title, error) {
+	var doctor model.Doctor
+	err := r.DB.Preload("Title").Where("id = ?", doctorID).First(&doctor).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("doctor with ID %d not found", doctorID)
+		}
+		return nil, fmt.Errorf("failed to fetch doctor title: %v", err)
+	}
+	return &doctor.Title, nil
 }
