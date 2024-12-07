@@ -45,8 +45,6 @@ func (c *DoctorProfileController) GetProfile(ctx echo.Context) error {
 		Username     string         `json:"username"`
 		NoHp         string         `json:"no_hp"`
 		Email        string         `json:"email"`
-		Password     string         `json:"password"`
-		Role         string         `json:"role"`
 		Avatar       string         `json:"avatar"`
 		DateOfBirth  string         `json:"date_of_birth"`
 		Address      string         `json:"address"`
@@ -77,8 +75,6 @@ func (c *DoctorProfileController) GetProfile(ctx echo.Context) error {
 		Username:     doctor.Username,
 		NoHp:         doctor.NoHp,
 		Email:        doctor.Email,
-		Password:     doctor.Password,
-		Role:         doctor.Role,
 		Avatar:       doctor.Avatar,
 		DateOfBirth:  doctor.DateOfBirth,
 		Address:      doctor.Address,
