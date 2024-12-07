@@ -7,6 +7,8 @@ import (
 	"calmind/usecase"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/labstack/echo/v4"
 )
@@ -175,29 +177,63 @@ func (c *DoctorProfileController) SetActiveStatus(ctx echo.Context) error {
 		"message": message,
 	})
 }
+
 func (c *DoctorProfileController) UploadAvatar(ctx echo.Context) error {
 	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
 	if !ok {
 		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
 	}
-	dokterID := claims.UserID
+	doctorID := claims.UserID
 
-	// Get file from form
+	// Ambil file dari form
 	file, err := ctx.FormFile("avatar")
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan file: "+err.Error())
 	}
 
-	// Use helper to upload file
-	filePath, err := helper.UploadFile(file, "uploads/avatars", fmt.Sprintf("user_%d", dokterID), 5*1024*1024, []string{".jpg", ".jpeg", ".png"})
-	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mengupload file: "+err.Error())
+	// Validasi ukuran file (maksimal 5 MB)
+	if file.Size > 5*1024*1024 {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Ukuran file maksimal 5 MB")
 	}
 
-	// Save avatar URL to database
+	// Validasi ekstensi file
+	ext := filepath.Ext(file.Filename)
+	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Hanya file dengan format .jpg, .jpeg, atau .png yang diperbolehkan")
+	}
+
+	// Simpan file di direktori uploads
+	uploadDir := "uploads/avatars"
+	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
+		err = os.MkdirAll(uploadDir, os.ModePerm)
+		if err != nil {
+			return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat direktori upload")
+		}
+	}
+
+	filePath := fmt.Sprintf("%s/doctor_%d_%s", uploadDir, doctorID, file.Filename)
+	src, err := file.Open()
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuka file")
+	}
+	defer src.Close()
+
+	dst, err := os.Create(filePath)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
+	}
+	defer dst.Close()
+
+	if _, err := helper.CopyFile(src, dst); err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
+	}
+
+	// Update URL avatar di database
 	avatarURL := fmt.Sprintf("http://%s/%s", ctx.Request().Host, filePath)
-	dokter := model.Doctor{Avatar: avatarURL}
-	_, err = c.DoctorProfileUsecase.UpdateDoctorProfile(dokterID, &dokter)
+	doctor := model.Doctor{
+		Avatar: avatarURL,
+	}
+	_, err = c.DoctorProfileUsecase.UpdateDoctorProfile(doctorID, &doctor)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate avatar: "+err.Error())
 	}
@@ -213,25 +249,27 @@ func (c *DoctorProfileController) DeleteAvatar(ctx echo.Context) error {
 	if !ok {
 		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
 	}
-	dokterID := claims.UserID
+	doctorID := claims.UserID
 
-	// Get user profile to fetch avatar URL
-	user, err := c.DoctorProfileUsecase.GetDoctorProfile(dokterID)
+	// Ambil data dokter untuk mendapatkan URL avatar
+	doctor, err := c.DoctorProfileUsecase.GetDoctorProfile(doctorID)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil profil user: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil profil dokter: "+err.Error())
 	}
 
-	// Delete avatar file
-	if user.Avatar != "" {
-		filePath := "." + user.Avatar
-		if err := helper.DeleteFile(filePath); err != nil {
-			return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+	// Hapus file avatar
+	if doctor.Avatar != "" {
+		filePath := "." + doctor.Avatar // Tambahkan "." untuk path relatif
+		if _, err := os.Stat(filePath); err == nil {
+			if err := os.Remove(filePath); err != nil {
+				return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus file avatar: "+err.Error())
+			}
 		}
 	}
 
-	// Update avatar field in database
-	user.Avatar = ""
-	_, err = c.DoctorProfileUsecase.UpdateDoctorProfile(dokterID, user)
+	// Update avatar menjadi kosong di database
+	doctor.Avatar = ""
+	_, err = c.DoctorProfileUsecase.UpdateDoctorProfile(doctorID, doctor)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate avatar di database: "+err.Error())
 	}
