@@ -16,7 +16,6 @@ import (
 )
 
 func main() {
-	// Memuat konfigurasi .env
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Gagal memuat file .env")
 	}
@@ -26,63 +25,66 @@ func main() {
 	if err != nil {
 		log.Fatalf("Gagal menginisialisasi database: %v", err)
 	}
-	log.Println("Database berhasil diinisialisasi.")
 
-	// Konfigurasi JWT dan OTP Service
+	// Konfigurasi JWT
 	jwtSecret := config.NewJWTConfig()
 	jwtService := service.NewJWTService(jwtSecret)
 	otpService := service.NewOtpService()
-	log.Println("JWT dan OTP Service berhasil dikonfigurasi.")
 
-	// Inisialisasi Repositori
+	// Repositori, usecase, dan controller untuk User
 	userRepo := repository.NewAuthRepository(DB)
 	otpRepo := repository.NewOtpRepository(DB)
-	adminRepo := repository.NewAdminAuthRepository(DB)
-	adminManagementRepo := repository.NewAdminManagementRepo(DB)
-	doctorAuthRepo := repository.NewDoctorAuthRepository(DB)
-	userProfilRepo := repository.NewUserProfilRepository(DB)
-	userFiturRepo := repository.NewUserFiturRepository(DB)
-	doctorProfilRepo := repository.NewDoctorProfilRepository(DB)
-	consultationRepo := repository.NewConsultationRepository(DB)
-	artikelRepo := repository.NewArtikelRepository(DB)
-	paymentRepo := repository.NewPaymentRepository(DB)
-
-	log.Println("Repositori berhasil diinisialisasi.")
-
-	// Inisialisasi Usecase
 	userUsecase := usecase.NewAuthUsecase(userRepo, jwtService, otpRepo, otpService)
+	userController := controller.NewAuthController(userUsecase)
+
+	// Repositori, usecase, dan controller untuk Admin
+	adminRepo := repository.NewAdminAuthRepository(DB)
 	adminUsecase := usecase.NewAdminAuthUsecase(adminRepo, jwtService)
-	adminManagementUsecase := usecase.NewAdminManagementUsecase(adminManagementRepo)
-	doctorAuthUsecase := usecase.NewDoctorAuthUsecase(doctorAuthRepo, jwtService, otpRepo, otpService)
+	adminController := controller.NewAdminAuthController(adminUsecase)
+
+	// Repositori, usecase, dan controller untuk Admin management
+	adminRepoManagement := repository.NewAdminManagementRepo(DB)
+	adminUsecaseManagement := usecase.NewAdminManagementUsecase(adminRepoManagement)
+	adminControllerManagement := controller.NewAdminManagementController(adminUsecaseManagement)
+
+	// Repositori, usecase, dan controller untuk dokter
+	doctorRepoManagement := repository.NewDoctorAuthRepository(DB)
+	doctorUsecaseManagement := usecase.NewDoctorAuthUsecase(doctorRepoManagement, jwtService, otpRepo, otpService)
+	doctorControllerManagement := controller.NewDoctorAuthController(doctorUsecaseManagement)
+
+	//	Repositori, usecase, dan controller untuk Profil User
+	userProfilRepo := repository.NewUserProfilRepository(DB)
 	userProfilUsecase := usecase.NewUserProfileUseCase(userProfilRepo)
+	userProfilController := controller.NewProfilController(userProfilUsecase)
+
+	//	Repositori, usecase, dan controller untuk Fitur User
+	userFiturRepo := repository.NewUserFiturRepository(DB)
 	userFiturUsecase := usecase.NewUserFiturUsecase(userFiturRepo)
+	userFiturController := controller.NewUserFiturController(userFiturUsecase)
+
+	//	Repositori, usecase, dan controller untuk Profil doctor
+	doctorProfilRepo := repository.NewDoctorProfilRepository(DB)
 	doctorProfilUsecase := usecase.NewDoctorProfileUseCase(doctorProfilRepo)
-	consultationUsecase := usecase.NewConsultationUsecase(consultationRepo)
-	artikelUsecase := usecase.NewArtikelUsecase(artikelRepo)
+	doctorProfilController := controller.NewDoctorProfileController(doctorProfilUsecase)
+
+	paymentRepo := repository.NewPaymentRepository(DB)
 	paymentUsecase := usecase.NewPaymentUsecase(paymentRepo)
 
-	log.Println("Usecase berhasil diinisialisasi.")
-
-	// Inisialisasi Controller
-	userController := controller.NewAuthController(userUsecase)
-	adminController := controller.NewAdminAuthController(adminUsecase)
-	adminManagementController := controller.NewAdminManagementController(adminManagementUsecase)
-	doctorAuthController := controller.NewDoctorAuthController(doctorAuthUsecase)
-	userProfilController := controller.NewProfilController(userProfilUsecase)
-	userFiturController := controller.NewUserFiturController(userFiturUsecase)
-	doctorProfilController := controller.NewDoctorProfileController(doctorProfilUsecase)
+	//    Repositori, usecase, dan controller untuk Consultasi
+	consultationRepo := repository.NewConsultationRepository(DB)
+	consultationUsecase := usecase.NewConsultationUsecase(consultationRepo)
 	consultationController := controller.NewConsultationController(consultationUsecase, paymentUsecase)
+
+	//    Repositori, usecase, dan controller untuk Consultasi
+	artikelonRepo := repository.NewArtikelRepository(DB)
+	artikelUsecase := usecase.NewArtikelUsecase(artikelonRepo)
 	artikelController := controller.NewArtikelController(artikelUsecase)
 
-	log.Println("Controller berhasil diinisialisasi.")
-
-	// Middleware JWT
+	// Middleware
 	jwtMiddleware := middlewares.NewJWTMiddleware(jwtSecret)
 
-	// Echo Instance
+	// Echo instance
 	e := echo.New()
-
-	// Konfigurasi Middleware
 	e.Static("/uploads", "uploads")
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins:     []string{"http://localhost:5174", "http://localhost:5173", "http://127.0.0.1:5500", "https://jovial-mooncake-23a3d0.netlify.app"},
@@ -91,24 +93,26 @@ func main() {
 		AllowCredentials: false,
 	}))
 
-	log.Println("Echo server berhasil dikonfigurasi.")
+	// routes auth
+	routes.UserAuthRoutes(e, userController)               // user
+	routes.AdminAuthRoutes(e, adminController)             // admin
+	routes.DoctorAuthRoutes(e, doctorControllerManagement) // dokter
 
-	// Konfigurasi Routes
-	routes.UserAuthRoutes(e, userController)
-	routes.AdminAuthRoutes(e, adminController)
-	routes.DoctorAuthRoutes(e, doctorAuthController)
+	// Group untuk user, dengan middleware yang memastikan hanya user yang login dapat mengaksesnya
+	// Middleware JWT
 
+	// Group User
 	userGroup := e.Group("/user", jwtMiddleware.HandlerUser)
 	routes.UserProfil(userGroup, userProfilController, userFiturController, consultationController, artikelController)
 
+	// Group Admin
 	adminGroup := e.Group("/admin", jwtMiddleware.HandlerAdmin)
-	routes.AdminManagementRoutes(adminGroup, adminManagementController, consultationController, artikelController)
+	routes.AdminManagementRoutes(adminGroup, adminControllerManagement, consultationController, artikelController)
 
+	// Group Doctor
 	doctorGroup := e.Group("/doctor", jwtMiddleware.HandlerDoctor)
 	routes.DoctorProfil(doctorGroup, doctorProfilController, artikelController, consultationController)
 
-	log.Println("Routes berhasil dikonfigurasi.")
-
-	// Menjalankan server
+	// Mulai server
 	log.Fatal(e.Start(":8000"))
 }
