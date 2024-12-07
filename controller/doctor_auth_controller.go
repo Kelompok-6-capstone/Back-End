@@ -70,3 +70,27 @@ func (c *DoctorAuthController) VerifyOtp(ctx echo.Context) error {
 func (c *DoctorAuthController) LogoutDoctor(ctx echo.Context) error {
 	return helper.JSONSuccessResponse(ctx, "Logout berhasil")
 }
+
+func (c *DoctorAuthController) ResendOtp(ctx echo.Context) error {
+	var request struct {
+		Email string `json:"email"`
+	}
+
+	// Bind data input
+	if err := ctx.Bind(&request); err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid input: "+err.Error())
+	}
+
+	// Validasi input email
+	if request.Email == "" {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Email is required")
+	}
+
+	// Resend OTP
+	err := c.DoctorUsecase.ResendOtp(request.Email)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to resend OTP: "+err.Error())
+	}
+
+	return helper.JSONSuccessResponse(ctx, "OTP sent successfully")
+}
