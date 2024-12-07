@@ -100,7 +100,7 @@ func main() {
 	routes.UserProfil(userGroup, userProfilController, userFiturController, consultationController, artikelController)
 
 	adminGroup := e.Group("/admin", jwtMiddleware.HandlerAdmin)
-	routes.AdminManagementRoutes(adminGroup, adminManagementController, artikelController)
+	routes.AdminManagementRoutes(adminGroup, adminManagementController, consultationController, artikelController)
 
 	doctorGroup := e.Group("/doctor", jwtMiddleware.HandlerDoctor)
 	routes.DoctorProfil(doctorGroup, doctorProfilController, artikelController, consultationController)
