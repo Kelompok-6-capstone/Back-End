@@ -40,6 +40,7 @@ func (r *DoctorProfilRepositoryImpl) GetByID(id int) (*model.Doctor, error) {
 }
 
 // Memperbarui profil dokter berdasarkan ID
+// Memperbarui profil dokter berdasarkan ID
 func (r *DoctorProfilRepositoryImpl) UpdateByID(id int, doctor *model.Doctor) (*model.Doctor, error) {
 	var existingDoctor model.Doctor
 	err := r.DB.Where("id = ?", id).First(&existingDoctor).Error
@@ -77,6 +78,13 @@ func (r *DoctorProfilRepositoryImpl) UpdateByID(id int, doctor *model.Doctor) (*
 	}
 	if doctor.About != "" {
 		existingDoctor.About = doctor.About
+	}
+	// Update JenisKelamin jika tidak kosong
+	if doctor.JenisKelamin != "" {
+		if doctor.JenisKelamin != "Laki-laki" && doctor.JenisKelamin != "Perempuan" {
+			return nil, fmt.Errorf("invalid value for JenisKelamin: %s", doctor.JenisKelamin)
+		}
+		existingDoctor.JenisKelamin = doctor.JenisKelamin
 	}
 
 	// Simpan perubahan
