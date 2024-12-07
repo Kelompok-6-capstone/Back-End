@@ -5,6 +5,7 @@ import (
 	"calmind/model"
 	"calmind/service"
 	"calmind/usecase"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -162,4 +163,35 @@ func (c *ArtikelController) DeleteArtikel(ctx echo.Context) error {
 	}
 
 	return helper.JSONSuccessResponse(ctx, map[string]string{"message": "Artikel deleted successfully"})
+}
+func (c *ArtikelController) UploadArtikelImage(ctx echo.Context) error {
+	file, err := ctx.FormFile("gambar")
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan file: "+err.Error())
+	}
+
+	// Gunakan helper untuk upload
+	filePath, err := helper.UploadFile(file, "uploads/artikel", "artikel", 5*1024*1024, []string{".jpg", ".jpeg", ".png"})
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mengupload file: "+err.Error())
+	}
+
+	imageURL := fmt.Sprintf("http://%s/%s", ctx.Request().Host, filePath)
+	return helper.JSONSuccessResponse(ctx, map[string]string{
+		"message":  "Gambar artikel berhasil diupload",
+		"imageUrl": imageURL,
+	})
+}
+
+func (c *ArtikelController) DeleteArtikelImage(ctx echo.Context) error {
+	filePath := ctx.QueryParam("file_path")
+	if filePath == "" {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "File path diperlukan")
+	}
+
+	if err := helper.DeleteFile("." + filePath); err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+	}
+
+	return helper.JSONSuccessResponse(ctx, "Gambar artikel berhasil dihapus")
 }

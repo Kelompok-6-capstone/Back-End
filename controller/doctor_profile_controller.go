@@ -5,6 +5,7 @@ import (
 	"calmind/model"
 	"calmind/service"
 	"calmind/usecase"
+	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -173,4 +174,67 @@ func (c *DoctorProfileController) SetActiveStatus(ctx echo.Context) error {
 	return helper.JSONSuccessResponse(ctx, map[string]string{
 		"message": message,
 	})
+}
+func (c *DoctorProfileController) UploadAvatar(ctx echo.Context) error {
+	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
+	if !ok {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
+	}
+	dokterID := claims.UserID
+
+	// Get file from form
+	file, err := ctx.FormFile("avatar")
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan file: "+err.Error())
+	}
+
+	// Use helper to upload file
+	filePath, err := helper.UploadFile(file, "uploads/avatars", fmt.Sprintf("user_%d", dokterID), 5*1024*1024, []string{".jpg", ".jpeg", ".png"})
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mengupload file: "+err.Error())
+	}
+
+	// Save avatar URL to database
+	avatarURL := fmt.Sprintf("http://%s/%s", ctx.Request().Host, filePath)
+	dokter := model.Doctor{Avatar: avatarURL}
+	_, err = c.DoctorProfileUsecase.UpdateDoctorProfile(dokterID, &dokter)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate avatar: "+err.Error())
+	}
+
+	return helper.JSONSuccessResponse(ctx, map[string]string{
+		"message":   "Avatar berhasil diupload",
+		"avatarUrl": avatarURL,
+	})
+}
+
+func (c *DoctorProfileController) DeleteAvatar(ctx echo.Context) error {
+	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
+	if !ok {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
+	}
+	dokterID := claims.UserID
+
+	// Get user profile to fetch avatar URL
+	user, err := c.DoctorProfileUsecase.GetDoctorProfile(dokterID)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil profil user: "+err.Error())
+	}
+
+	// Delete avatar file
+	if user.Avatar != "" {
+		filePath := "." + user.Avatar
+		if err := helper.DeleteFile(filePath); err != nil {
+			return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		}
+	}
+
+	// Update avatar field in database
+	user.Avatar = ""
+	_, err = c.DoctorProfileUsecase.UpdateDoctorProfile(dokterID, user)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate avatar di database: "+err.Error())
+	}
+
+	return helper.JSONSuccessResponse(ctx, "Avatar berhasil dihapus")
 }

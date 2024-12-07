@@ -55,15 +55,17 @@ func AdminAuthRoutes(e *echo.Echo, authController *controller.AdminAuthControlle
 }
 
 func AdminManagementRoutes(e *echo.Group, adminManagement *controller.AdminManagementController, artikelController *controller.ArtikelController) {
-	e.GET("/allusers", adminManagement.GetAllUsers)           // Ambil Semua Data User
-	e.GET("/alldocters", adminManagement.GetAllDoctors)       // Ambil Semua Data User
-	e.DELETE("/users/:id", adminManagement.DeleteUser)        // Hapus User berdasarkan ID
-	e.DELETE("/docters/:id", adminManagement.DeleteDoctor)    // Hapus User berdasarkan ID
-	e.POST("/artikel", artikelController.CreateArtikel)       // Tambah artikel
-	e.GET("/artikel", artikelController.GetAllArtikel)        // Lihat semua artikel
-	e.GET("/artikel/:id", artikelController.GetArtikelByID)   // Lihat detail artikel
-	e.PUT("/artikel/:id", artikelController.UpdateArtikel)    // Update artikel
-	e.DELETE("/artikel/:id", artikelController.DeleteArtikel) // Hapus artikel
+	e.GET("/allusers", adminManagement.GetAllUsers)                         // Ambil Semua Data User
+	e.GET("/alldocters", adminManagement.GetAllDoctors)                     // Ambil Semua Data User
+	e.DELETE("/users/:id", adminManagement.DeleteUser)                      // Hapus User berdasarkan ID
+	e.DELETE("/docters/:id", adminManagement.DeleteDoctor)                  // Hapus User berdasarkan ID
+	e.POST("/artikel", artikelController.CreateArtikel)                     // Tambah artikel
+	e.GET("/artikel", artikelController.GetAllArtikel)                      // Lihat semua artikel
+	e.GET("/artikel/:id", artikelController.GetArtikelByID)                 // Lihat detail artikel
+	e.PUT("/artikel/:id", artikelController.UpdateArtikel)                  // Update artikel
+	e.DELETE("/artikel/:id", artikelController.DeleteArtikel)               // Hapus artikel
+	e.POST("/artikel/upload-image", artikelController.UploadArtikelImage)   // Upload image untuk artikel
+	e.DELETE("/artikel/delete-image", artikelController.DeleteArtikelImage) // Hapus image artikel
 }
 
 // Routes untuk Doctor
@@ -85,4 +87,6 @@ func DoctorProfil(e *echo.Group, profilController *controller.DoctorProfileContr
 	e.PUT("/consultation/:id/recommendation", consultationController.GiveRecommendation) // Memberikan rekomendasi
 	e.GET("/artikel", artikelController.GetAllArtikel)                                   // Lihat semua artikel
 	e.GET("/artikel/:id", artikelController.GetArtikelByID)                              // Lihat detail artikel
+	e.POST("/doctor/upload-image", profilController.UploadAvatar)                        // Upload image untuk dokter
+	e.DELETE("/doctor/delete-image", profilController.DeleteAvatar)                      // Hapus image dokter
 }
