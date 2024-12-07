@@ -16,6 +16,7 @@ type UserUsecase interface {
 	Register(*model.User) error
 	Login(email string, password string) (string, error)
 	VerifyOtp(email string, code string) error
+	ResendOtp(email string) error
 }
 
 type AuthUsecase struct {
@@ -118,6 +119,32 @@ func (a *AuthUsecase) VerifyOtp(email string, code string) error {
 	err = a.UserRepo.UpdateUserVerificationStatus(email, true)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (u *AuthUsecase) ResendOtp(email string) error {
+	// Validasi apakah email terdaftar
+	doctor, err := u.UserRepo.GetByUsername(email)
+	if err != nil || doctor == nil {
+		return errors.New("email not registered")
+	}
+
+	// Generate OTP baru
+	otpCode := u.OtpService.GenerateOtp()
+	expiry := time.Now().Add(5 * time.Minute)
+
+	// Simpan atau perbarui OTP
+	err = u.OtpRepo.ResendOtp(email, otpCode, expiry)
+	if err != nil {
+		return errors.New("failed to resend otp")
+	}
+
+	// Kirim OTP melalui email
+	err = helper.SendEmail(email, otpCode)
+	if err != nil {
+		return errors.New("failed to send otp")
 	}
 
 	return nil
