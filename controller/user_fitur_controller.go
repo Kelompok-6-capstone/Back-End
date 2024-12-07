@@ -92,7 +92,7 @@ func (c *UserFiturController) GetDoctorsByTag(ctx echo.Context) error {
 
 	doctors, err := c.UserFiturUsecase.GetDoctorsByTag(tag)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mendapatkan dokter berdasarkan tag: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusNotFound, err.Error())
 	}
 
 	var doctorList []DoctorResponse
@@ -104,6 +104,14 @@ func (c *UserFiturController) GetDoctorsByTag(ctx echo.Context) error {
 			Experience: doctor.Experience,
 			Price:      doctor.Price,
 			Avatar:     doctor.Avatar,
+		})
+	}
+
+	if len(doctorList) == 0 {
+		return helper.JSONSuccessResponse(ctx, map[string]interface{}{
+			"data":    nil,
+			"success": true,
+			"message": "No doctors found for the specified tag.",
 		})
 	}
 
@@ -241,7 +249,7 @@ func (c *UserFiturController) GetDoctorsByTitle(ctx echo.Context) error {
 
 	doctors, err := c.UserFiturUsecase.GetDoctorsByTitle(title)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mendapatkan dokter berdasarkan title: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusNotFound, err.Error())
 	}
 
 	var doctorList []DoctorResponse
@@ -253,6 +261,14 @@ func (c *UserFiturController) GetDoctorsByTitle(ctx echo.Context) error {
 			Experience: doctor.Experience,
 			Price:      doctor.Price,
 			Avatar:     doctor.Avatar,
+		})
+	}
+
+	if len(doctorList) == 0 {
+		return helper.JSONSuccessResponse(ctx, map[string]interface{}{
+			"data":    nil,
+			"success": true,
+			"message": "No doctors found for the specified title.",
 		})
 	}
 

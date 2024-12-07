@@ -2,6 +2,7 @@ package repository
 
 import (
 	"calmind/model"
+	"errors"
 	"fmt"
 
 	"gorm.io/gorm"
@@ -50,13 +51,23 @@ func (r *UserFiturRepositoryImpl) GetAllDoctors() ([]model.Doctor, error) {
 
 // Mendapatkan dokter berdasarkan Tag
 func (r *UserFiturRepositoryImpl) GetDoctorsByTag(tag string) ([]model.Doctor, error) {
+	var tags model.Tags
+	if err := r.DB.Where("name = ?", tag).First(&tags).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("tag '%s' not found", tag)
+		}
+		return nil, fmt.Errorf("failed to fetch tag: %v", err)
+	}
+
 	var doctors []model.Doctor
 	err := r.DB.
 		Joins("JOIN doctor_tags ON doctors.id = doctor_tags.doctor_id").
 		Joins("JOIN tags ON doctor_tags.tag_id = tags.id").
 		Where("tags.name = ?", tag).
 		Preload("Tags").
+		Preload("Title").
 		Find(&doctors).Error
+
 	return doctors, err
 }
 
@@ -101,11 +112,26 @@ func (r *UserFiturRepositoryImpl) GetTitles() ([]model.Title, error) {
 
 // Mendapatkan dokter berdasarkan Title
 func (r *UserFiturRepositoryImpl) GetDoctorsByTitle(title string) ([]model.Doctor, error) {
+	// Validasi apakah title ada di database
+	var existingTitle model.Title
+	if err := r.DB.Where("name = ?", title).First(&existingTitle).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("title '%s' not found", title)
+		}
+		return nil, fmt.Errorf("failed to fetch title: %v", err)
+	}
+
+	// Jika title ditemukan, ambil dokter dengan title tersebut
 	var doctors []model.Doctor
 	err := r.DB.
-		Joins("JOIN titles ON doctors.title_id = titles.id").
-		Where("titles.name = ?", title).
+		Where("title_id = ?", existingTitle.ID).
 		Preload("Title").
+		Preload("Tags").
 		Find(&doctors).Error
-	return doctors, err
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch doctors for title '%s': %v", title, err)
+	}
+
+	return doctors, nil
 }

@@ -3,6 +3,7 @@ package usecase
 import (
 	"calmind/model"
 	"calmind/repository"
+	"fmt"
 )
 
 type UserFiturUsecase interface {
@@ -35,7 +36,11 @@ func (u *UserFiturUsecaseImpl) GetAllDoctors() ([]model.Doctor, error) {
 
 // Mendapatkan dokter berdasarkan tag
 func (u *UserFiturUsecaseImpl) GetDoctorsByTag(tag string) ([]model.Doctor, error) {
-	return u.DoctorRepo.GetDoctorsByTag(tag)
+	doctors, err := u.DoctorRepo.GetDoctorsByTag(tag)
+	if err != nil {
+		return nil, fmt.Errorf("no doctors found for tag '%s': %v", tag, err)
+	}
+	return doctors, nil
 }
 
 // Mendapatkan dokter berdasarkan status (aktif/tidak aktif)
@@ -65,5 +70,9 @@ func (u *UserFiturUsecaseImpl) GetAllTitles() ([]model.Title, error) {
 
 // Mendapatkan dokter berdasarkan title
 func (u *UserFiturUsecaseImpl) GetDoctorsByTitle(title string) ([]model.Doctor, error) {
-	return u.DoctorRepo.GetDoctorsByTitle(title)
+	doctors, err := u.DoctorRepo.GetDoctorsByTitle(title)
+	if err != nil {
+		return nil, fmt.Errorf("no doctors found for title '%s': %v", title, err)
+	}
+	return doctors, nil
 }
