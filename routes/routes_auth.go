@@ -70,6 +70,8 @@ func DoctorAuthRoutes(e *echo.Echo, authController *controller.DoctorAuthControl
 	e.POST("/doctor/login", authController.LoginDoctor)
 	e.GET("/doctor/logout", authController.LogoutDoctor)
 	e.POST("/doctor/verify-otp", authController.VerifyOtp) // verivikasi otp
+	e.POST("/resend-otp", authController.ResendOtp)        // Kirim ulang OTP
+
 }
 
 func DoctorProfil(e *echo.Group, profilController *controller.DoctorProfileController, artikelController *controller.ArtikelController, consultationController *controller.ConsultationController) {

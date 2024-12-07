@@ -12,6 +12,7 @@ type OtpRepository interface {
 	GenerateOtp(email string, code string, expiresAt time.Time) error
 	GetOtpByEmail(email string) (*model.Otp, error)
 	DeleteOtpByEmail(email string) error
+	ResendOtp(email string, code string, expiresAt time.Time) error // Tambahkan ini
 }
 
 type OtpRepositoryImpl struct {
@@ -42,4 +43,21 @@ func (r *OtpRepositoryImpl) GetOtpByEmail(email string) (*model.Otp, error) {
 
 func (r *OtpRepositoryImpl) DeleteOtpByEmail(email string) error {
 	return r.DB.Where("email = ?", email).Delete(&model.Otp{}).Error
+}
+
+func (r *OtpRepositoryImpl) ResendOtp(email string, code string, expiresAt time.Time) error {
+	// Perbarui OTP jika sudah ada
+	err := r.DB.Model(&model.Otp{}).
+		Where("email = ?", email).
+		Updates(map[string]interface{}{
+			"code":       code,
+			"expires_at": expiresAt,
+		}).Error
+
+	// Jika tidak ada, buat OTP baru
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return r.GenerateOtp(email, code, expiresAt)
+	}
+
+	return err
 }

@@ -74,8 +74,26 @@ func (r *UserFiturRepositoryImpl) GetDoctorsByTag(tag string) ([]model.Doctor, e
 // Mendapatkan dokter berdasarkan status (aktif atau tidak)
 func (r *UserFiturRepositoryImpl) GetDoctorsByStatus(isActive bool) ([]model.Doctor, error) {
 	var doctors []model.Doctor
-	err := r.DB.Where("is_active = ?", isActive).Find(&doctors).Error
-	return doctors, err
+	err := r.DB.
+		Where("is_active = ? AND username != '' AND no_hp != '' AND email != '' AND price > 0 AND experience > 0 AND is_verified = true", isActive).
+		Preload("Tags").
+		Preload("Title").
+		Find(&doctors).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch doctors by status: %v", err)
+	}
+
+	// Periksa apakah data lengkap
+	completeDoctors := []model.Doctor{}
+	for _, doctor := range doctors {
+		if doctor.Username != "" && doctor.NoHp != "" && doctor.Email != "" &&
+			doctor.Price > 0 && doctor.Experience > 0 && doctor.Title.ID != 0 {
+			completeDoctors = append(completeDoctors, doctor)
+		}
+	}
+
+	return completeDoctors, nil
 }
 
 // Mencari dokter berdasarkan kueri di beberapa kolom
