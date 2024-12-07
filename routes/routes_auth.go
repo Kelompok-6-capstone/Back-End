@@ -22,9 +22,10 @@ func UserProfil(
 	artikelController *controller.ArtikelController,
 ) {
 	// Endpoint untuk profil pengguna
-	e.GET("/profile", profilController.GetProfile)          // Melihat profil pengguna
-	e.PUT("/profile", profilController.UpdateProfile)       // Memperbarui profil pengguna
-	e.POST("/upload-avatar", profilController.UploadAvatar) // Upload avatar
+	e.GET("/profile", profilController.GetProfile)            // Melihat profil pengguna
+	e.PUT("/profile", profilController.UpdateProfile)         // Memperbarui profil pengguna
+	e.POST("/upload-avatar", profilController.UploadAvatar)   // Upload avatar
+	e.DELETE("/delete-avatar", profilController.DeleteAvatar) // Hapus avatar
 
 	// Endpoint untuk fitur dokter
 	e.GET("/doctors", fitur.GetDoctors)                // Mendapatkan daftar semua dokter
