@@ -18,7 +18,7 @@ func NewDoctorProfileController(DoctorProfileUsecase usecase.DoctorProfileUseCas
 	return &DoctorProfileController{DoctorProfileUsecase: DoctorProfileUsecase}
 }
 
-// Mendapatkan profil dokter
+// GetProfile retrieves the profile of the logged-in doctor
 func (c *DoctorProfileController) GetProfile(ctx echo.Context) error {
 	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
 	if !ok || claims == nil {
@@ -30,7 +30,6 @@ func (c *DoctorProfileController) GetProfile(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil profil dokter: "+err.Error())
 	}
 
-	// Format response lengkap dengan Title dan Tags
 	type TagsResponse struct {
 		ID   int    `json:"id"`
 		Name string `json:"name"`
@@ -83,19 +82,46 @@ func (c *DoctorProfileController) GetProfile(ctx echo.Context) error {
 	return helper.JSONSuccessResponse(ctx, doctorProfile)
 }
 
-// Memperbarui profil dokter
+// UpdateProfile updates the profile of the logged-in doctor
 func (c *DoctorProfileController) UpdateProfile(ctx echo.Context) error {
 	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
 	if !ok || claims == nil {
 		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized access")
 	}
 
-	var doctor model.Doctor
-	if err := ctx.Bind(&doctor); err != nil {
+	var request struct {
+		Username    string       `json:"username"`
+		NoHp        string       `json:"no_hp"`
+		Avatar      string       `json:"avatar"`
+		DateOfBirth string       `json:"date_of_birth"`
+		Address     string       `json:"address"`
+		Schedule    string       `json:"schedule"`
+		Title       string       `json:"title"`
+		Experience  int          `json:"experience"`
+		STRNumber   string       `json:"str_number"`
+		About       string       `json:"about"`
+		Tags        []model.Tags `json:"tags"`
+	}
+
+	if err := ctx.Bind(&request); err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal memproses data: "+err.Error())
 	}
 
-	updatedDoctor, err := c.DoctorProfileUsecase.UpdateDoctorProfile(claims.UserID, &doctor)
+	doctor := &model.Doctor{
+		Username:    request.Username,
+		NoHp:        request.NoHp,
+		Avatar:      request.Avatar,
+		DateOfBirth: request.DateOfBirth,
+		Address:     request.Address,
+		Schedule:    request.Schedule,
+		Title:       model.Title{Name: request.Title},
+		Experience:  request.Experience,
+		STRNumber:   request.STRNumber,
+		About:       request.About,
+		Tags:        request.Tags,
+	}
+
+	updatedDoctor, err := c.DoctorProfileUsecase.UpdateDoctorProfile(claims.UserID, doctor)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate profil dokter: "+err.Error())
 	}
@@ -103,7 +129,7 @@ func (c *DoctorProfileController) UpdateProfile(ctx echo.Context) error {
 	return helper.JSONSuccessResponse(ctx, updatedDoctor)
 }
 
-// Mengatur status aktif dokter
+// SetActiveStatus updates the active status of the logged-in doctor
 func (c *DoctorProfileController) SetActiveStatus(ctx echo.Context) error {
 	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
 	if !ok || claims == nil {
