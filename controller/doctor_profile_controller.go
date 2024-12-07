@@ -18,7 +18,6 @@ func NewDoctorProfileController(DoctorProfileUsecase usecase.DoctorProfileUseCas
 	return &DoctorProfileController{DoctorProfileUsecase: DoctorProfileUsecase}
 }
 
-// GetProfile retrieves the profile of the logged-in doctor
 func (c *DoctorProfileController) GetProfile(ctx echo.Context) error {
 	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
 	if !ok || claims == nil {
@@ -30,27 +29,39 @@ func (c *DoctorProfileController) GetProfile(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil profil dokter: "+err.Error())
 	}
 
+	// Format response lengkap dengan Title dan Tags
 	type TagsResponse struct {
 		ID   int    `json:"id"`
 		Name string `json:"name"`
 	}
 
+	type TitleResponse struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	}
+
 	type DoctorResponse struct {
-		ID          int            `json:"id"`
-		Avatar      string         `json:"avatar"`
-		Username    string         `json:"username"`
-		Email       string         `json:"email"`
-		NoHp        string         `json:"no_hp"`
-		DateOfBirth string         `json:"date_of_birth"`
-		Address     string         `json:"address"`
-		Schedule    string         `json:"schedule"`
-		Title       string         `json:"title"`
-		Price       float64        `json:"price"`
-		Experience  int            `json:"experience"`
-		STRNumber   string         `json:"str_number"`
-		About       string         `json:"about"`
-		IsActive    bool           `json:"is_active"`
-		Tags        []TagsResponse `json:"tags"`
+		ID           int            `json:"id"`
+		Username     string         `json:"username"`
+		NoHp         string         `json:"no_hp"`
+		Email        string         `json:"email"`
+		Password     string         `json:"password"`
+		Role         string         `json:"role"`
+		Avatar       string         `json:"avatar"`
+		DateOfBirth  string         `json:"date_of_birth"`
+		Address      string         `json:"address"`
+		Schedule     string         `json:"schedule"`
+		IsVerified   bool           `json:"is_verified"`
+		IsActive     bool           `json:"is_active"`
+		Price        float64        `json:"price"`
+		Experience   int            `json:"experience"`
+		STRNumber    string         `json:"str_number"`
+		About        string         `json:"about"`
+		JenisKelamin string         `json:"jenis_kelamin"`
+		Title        TitleResponse  `json:"title"`
+		Tags         []TagsResponse `json:"tags"`
+		CreatedAt    string         `json:"created_at"`
+		UpdatedAt    string         `json:"updated_at"`
 	}
 
 	var tagsResponse []TagsResponse
@@ -62,21 +73,30 @@ func (c *DoctorProfileController) GetProfile(ctx echo.Context) error {
 	}
 
 	doctorProfile := DoctorResponse{
-		ID:          doctor.ID,
-		Avatar:      doctor.Avatar,
-		Username:    doctor.Username,
-		Email:       doctor.Email,
-		NoHp:        doctor.NoHp,
-		DateOfBirth: doctor.DateOfBirth,
-		Address:     doctor.Address,
-		Schedule:    doctor.Schedule,
-		Title:       doctor.Title.Name,
-		Price:       doctor.Price,
-		Experience:  doctor.Experience,
-		STRNumber:   doctor.STRNumber,
-		About:       doctor.About,
-		IsActive:    doctor.IsActive,
-		Tags:        tagsResponse,
+		ID:           doctor.ID,
+		Username:     doctor.Username,
+		NoHp:         doctor.NoHp,
+		Email:        doctor.Email,
+		Password:     doctor.Password,
+		Role:         doctor.Role,
+		Avatar:       doctor.Avatar,
+		DateOfBirth:  doctor.DateOfBirth,
+		Address:      doctor.Address,
+		Schedule:     doctor.Schedule,
+		IsVerified:   doctor.IsVerified,
+		IsActive:     doctor.IsActive,
+		Price:        doctor.Price,
+		Experience:   doctor.Experience,
+		STRNumber:    doctor.STRNumber,
+		About:        doctor.About,
+		JenisKelamin: doctor.JenisKelamin,
+		Title: TitleResponse{
+			ID:   doctor.Title.ID,
+			Name: doctor.Title.Name,
+		},
+		Tags:      tagsResponse,
+		CreatedAt: doctor.CreatedAt.Format("2006-01-02T15:04:05.000Z"),
+		UpdatedAt: doctor.UpdatedAt.Format("2006-01-02T15:04:05.000Z"),
 	}
 
 	return helper.JSONSuccessResponse(ctx, doctorProfile)
@@ -121,12 +141,12 @@ func (c *DoctorProfileController) UpdateProfile(ctx echo.Context) error {
 		Tags:        request.Tags,
 	}
 
-	updatedDoctor, err := c.DoctorProfileUsecase.UpdateDoctorProfile(claims.UserID, doctor)
+	_, err := c.DoctorProfileUsecase.UpdateDoctorProfile(claims.UserID, doctor)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate profil dokter: "+err.Error())
 	}
 
-	return helper.JSONSuccessResponse(ctx, updatedDoctor)
+	return helper.JSONSuccessResponse(ctx, "berhasil updated")
 }
 
 // SetActiveStatus updates the active status of the logged-in doctor
