@@ -87,6 +87,6 @@ func DoctorProfil(e *echo.Group, profilController *controller.DoctorProfileContr
 	e.PUT("/consultation/:id/recommendation", consultationController.GiveRecommendation) // Memberikan rekomendasi
 	e.GET("/artikel", artikelController.GetAllArtikel)                                   // Lihat semua artikel
 	e.GET("/artikel/:id", artikelController.GetArtikelByID)                              // Lihat detail artikel
-	e.POST("/doctor/upload-image", profilController.UploadAvatar)                        // Upload image untuk dokter
-	e.DELETE("/doctor/delete-image", profilController.DeleteAvatar)                      // Hapus image dokter
+	e.POST("/upload-image", profilController.UploadAvatar)                               // Upload image untuk dokter
+	e.DELETE("/delete-image", profilController.DeleteAvatar)                             // Hapus image dokter
 }
