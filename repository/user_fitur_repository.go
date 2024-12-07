@@ -62,7 +62,7 @@ func (r *UserFiturRepositoryImpl) GetDoctorsByTag(tag string) ([]model.Doctor, e
 	var doctors []model.Doctor
 	err := r.DB.
 		Joins("JOIN doctor_tags ON doctors.id = doctor_tags.doctor_id").
-		Joins("JOIN tags ON doctor_tags.tag_id = tags.id").
+		Joins("JOIN tags ON doctor_tags.tags_id = tags.id").
 		Where("tags.name = ?", tag).
 		Preload("Tags").
 		Preload("Title").
