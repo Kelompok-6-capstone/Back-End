@@ -5,7 +5,10 @@ import (
 	"calmind/model"
 	"calmind/service"
 	"calmind/usecase"
+	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/labstack/echo/v4"
 )
@@ -70,4 +73,70 @@ func (c *ProfilController) UpdateProfile(ctx echo.Context) error {
 	}
 
 	return helper.JSONSuccessResponse(ctx, "berhasil update profil")
+}
+
+func (c *ProfilController) UploadAvatar(ctx echo.Context) error {
+	claims, ok := ctx.Get("user").(*service.JwtCustomClaims)
+	if !ok {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
+	}
+	userID := claims.UserID
+
+	// Ambil file dari form
+	file, err := ctx.FormFile("avatar")
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan file: "+err.Error())
+	}
+
+	// Validasi ukuran file (contoh: maksimal 5 MB)
+	if file.Size > 5*1024*1024 {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Ukuran file maksimal 5 MB")
+	}
+
+	// Validasi ekstensi file
+	ext := filepath.Ext(file.Filename)
+	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Hanya file dengan format .jpg, .jpeg, atau .png yang diperbolehkan")
+	}
+
+	// Simpan file di direktori uploads
+	uploadDir := "uploads"
+	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
+		err = os.MkdirAll(uploadDir, os.ModePerm)
+		if err != nil {
+			return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat direktori upload")
+		}
+	}
+
+	filePath := fmt.Sprintf("%s/%d_%s", uploadDir, userID, file.Filename)
+	src, err := file.Open()
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuka file")
+	}
+	defer src.Close()
+
+	dst, err := os.Create(filePath)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
+	}
+	defer dst.Close()
+
+	if _, err := helper.CopyFile(src, dst); err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
+	}
+
+	// Update URL avatar di database
+	avatarURL := "/" + filePath
+	user := model.User{
+		Avatar: avatarURL,
+	}
+	_, err = c.ProfilUsecase.UpdateUserProfile(userID, &user)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate avatar: "+err.Error())
+	}
+
+	return helper.JSONSuccessResponse(ctx, map[string]string{
+		"message":   "Avatar berhasil diupload",
+		"avatarUrl": avatarURL,
+	})
 }
