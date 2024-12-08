@@ -217,7 +217,7 @@ func (c *ArtikelController) UploadArtikelImage(ctx echo.Context) error {
 	}
 
 	// Buat URL gambar
-	imageURL := fmt.Sprintf("http://%s/uploads/artikel/%d_%s", ctx.Request().Host, adminID, file.Filename)
+	imageURL := fmt.Sprintf("https://%s/uploads/artikel/%d_%s", ctx.Request().Host, adminID, file.Filename)
 
 	return helper.JSONSuccessResponse(ctx, map[string]string{
 		"message":  "Gambar artikel berhasil diupload",

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"calmind/model"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -10,8 +11,11 @@ import (
 type ConsultationRepository interface {
 	CreateConsultation(consultation *model.Consultation) error
 	FindByDoctorID(doctorID int, consultations *[]model.Consultation) error
-	FindByConsultationID(consultationID string, consultation *model.Consultation) error
+	FindByConsultationID(consultationID int, consultation *model.Consultation) error
 	UpdateRecommendation(consultationID int, recommendation string) error
+	UpdatePaymentStatus(consultationID int, isPaid bool) error
+	FindUnpaidConsultations(consultations *[]model.Consultation) error
+	ExpireConsultations() error
 }
 
 // ConsultationRepositoryImpl is the implementation of ConsultationRepository
@@ -41,11 +45,29 @@ func (r *ConsultationRepositoryImpl) FindByDoctorID(doctorID int, consultations 
 }
 
 // FindByConsultationID retrieves a consultation by its ID
-func (r *ConsultationRepositoryImpl) FindByConsultationID(consultationID string, consultation *model.Consultation) error {
+func (r *ConsultationRepositoryImpl) FindByConsultationID(consultationID int, consultation *model.Consultation) error {
 	return r.DB.Preload("User").Where("id = ?", consultationID).First(consultation).Error
 }
 
 // UpdateRecommendation updates the recommendation for a consultation
 func (r *ConsultationRepositoryImpl) UpdateRecommendation(consultationID int, recommendation string) error {
 	return r.DB.Model(&model.Consultation{}).Where("id = ?", consultationID).Update("rekomendasi", recommendation).Error
+}
+
+// UpdatePaymentStatus updates the payment status of a consultation
+func (r *ConsultationRepositoryImpl) UpdatePaymentStatus(consultationID int, isPaid bool) error {
+	return r.DB.Model(&model.Consultation{}).Where("id = ?", consultationID).Update("is_paid", isPaid).Error
+}
+
+// FindUnpaidConsultations retrieves consultations with unpaid status
+func (r *ConsultationRepositoryImpl) FindUnpaidConsultations(consultations *[]model.Consultation) error {
+	return r.DB.Preload("User").Where("is_paid = ?", false).Find(consultations).Error
+}
+
+// ExpireConsultations marks consultations as expired if they exceed their duration
+func (r *ConsultationRepositoryImpl) ExpireConsultations() error {
+	now := time.Now()
+	return r.DB.Model(&model.Consultation{}).
+		Where("TIMESTAMPADD(MINUTE, duration, start_time) < ? AND is_paid = ?", now, true).
+		Update("rekomendasi", "Expired - waktu konsultasi telah lewat").Error
 }

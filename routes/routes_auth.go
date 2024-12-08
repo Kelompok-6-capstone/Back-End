@@ -10,7 +10,7 @@ import (
 func UserAuthRoutes(e *echo.Echo, authController *controller.AuthController) {
 	e.POST("/user/register", authController.RegisterUser) // Daftar User
 	e.POST("/user/login", authController.LoginUser)       // Login User
-	e.POST("/user/verify-otp", authController.VerifyOtp)  // verivikasi otp
+	e.POST("/user/verify-otp", authController.VerifyOtp)  // Verifikasi OTP
 	e.POST("/user/resend-otp", authController.ResendOtp)  // Kirim ulang OTP
 	e.GET("/user/logout", authController.LogoutUser)      // Logout User
 }
@@ -55,11 +55,11 @@ func AdminAuthRoutes(e *echo.Echo, authController *controller.AdminAuthControlle
 	e.GET("/admin/logout", authController.LogoutAdmin) // Logout Admin
 }
 
-func AdminManagementRoutes(e *echo.Group, adminManagement *controller.AdminManagementController, artikelController *controller.ArtikelController) {
+func AdminManagementRoutes(e *echo.Group, adminManagement *controller.AdminManagementController, artikelController *controller.ArtikelController, consultationController *controller.ConsultationController) {
 	e.GET("/allusers", adminManagement.GetAllUsers)                         // Ambil Semua Data User
-	e.GET("/alldocters", adminManagement.GetAllDoctors)                     // Ambil Semua Data User
+	e.GET("/alldocters", adminManagement.GetAllDoctors)                     // Ambil Semua Data Dokter
 	e.DELETE("/users/:id", adminManagement.DeleteUser)                      // Hapus User berdasarkan ID
-	e.DELETE("/docters/:id", adminManagement.DeleteDoctor)                  // Hapus User berdasarkan ID
+	e.DELETE("/docters/:id", adminManagement.DeleteDoctor)                  // Hapus Dokter berdasarkan ID
 	e.POST("/artikel", artikelController.CreateArtikel)                     // Tambah artikel
 	e.GET("/artikel", artikelController.GetAllArtikel)                      // Lihat semua artikel
 	e.GET("/artikel/:id", artikelController.GetArtikelByID)                 // Lihat detail artikel
@@ -67,24 +67,28 @@ func AdminManagementRoutes(e *echo.Group, adminManagement *controller.AdminManag
 	e.DELETE("/artikel/:id", artikelController.DeleteArtikel)               // Hapus artikel
 	e.POST("/artikel/upload-image", artikelController.UploadArtikelImage)   // Upload image untuk artikel
 	e.DELETE("/artikel/delete-image", artikelController.DeleteArtikelImage) // Hapus image artikel
+
+	// Endpoint untuk konsultasi
+	e.GET("/consultations/unpaid", consultationController.GetUnpaidConsultations)         // Lihat daftar konsultasi yang belum dibayar
+	e.PUT("/consultation/:id/approve", consultationController.ApprovePayment)             // Menyetujui pembayaran
+	e.PUT("/consultations/mark-expired", consultationController.MarkExpiredConsultations) // Menandai konsultasi kedaluwarsa
 }
 
 // Routes untuk Doctor
 func DoctorAuthRoutes(e *echo.Echo, authController *controller.DoctorAuthController) {
-	e.POST("/doctor/register", authController.RegisterDoctor)
-	e.POST("/doctor/login", authController.LoginDoctor)
-	e.GET("/doctor/logout", authController.LogoutDoctor)
-	e.POST("/doctor/verify-otp", authController.VerifyOtp) // verivikasi otp
-	e.POST("/doctor/resend-otp", authController.ResendOtp) // Kirim ulang OTP
-
+	e.POST("/doctor/register", authController.RegisterDoctor) // Daftar Dokter
+	e.POST("/doctor/login", authController.LoginDoctor)       // Login Dokter
+	e.GET("/doctor/logout", authController.LogoutDoctor)      // Logout Dokter
+	e.POST("/doctor/verify-otp", authController.VerifyOtp)    // Verifikasi OTP
+	e.POST("/doctor/resend-otp", authController.ResendOtp)    // Kirim ulang OTP
 }
 
 func DoctorProfil(e *echo.Group, profilController *controller.DoctorProfileController, artikelController *controller.ArtikelController, consultationController *controller.ConsultationController) {
 	e.GET("/profile", profilController.GetProfile)                                       // Mendapatkan profil dokter
 	e.PUT("/profile", profilController.UpdateProfile)                                    // Mengupdate profil dokter
 	e.PUT("/status", profilController.SetActiveStatus)                                   // Mengubah status aktif/tidak aktif dokter
-	e.GET("/consultations", consultationController.GetConsultationsAllDoctor)            // Melihat Daftar pasien
-	e.GET("/consultation/:id", consultationController.GetConsultationDetailByID)         // Melihat Detail keluhan
+	e.GET("/consultations", consultationController.GetConsultationsAllDoctor)            // Melihat daftar pasien
+	e.GET("/consultation/:id", consultationController.GetConsultationDetailByID)         // Melihat detail keluhan
 	e.PUT("/consultation/:id/recommendation", consultationController.GiveRecommendation) // Memberikan rekomendasi
 	e.GET("/artikel", artikelController.GetAllArtikel)                                   // Lihat semua artikel
 	e.GET("/artikel/:id", artikelController.GetArtikelByID)                              // Lihat detail artikel

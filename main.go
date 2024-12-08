@@ -104,7 +104,7 @@ func main() {
 
 	// Group Admin
 	adminGroup := e.Group("/admin", jwtMiddleware.HandlerAdmin)
-	routes.AdminManagementRoutes(adminGroup, adminControllerManagement, artikelController)
+	routes.AdminManagementRoutes(adminGroup, adminControllerManagement, artikelController, consultationController)
 
 	// Group Doctor
 	doctorGroup := e.Group("/doctor", jwtMiddleware.HandlerDoctor)

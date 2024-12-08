@@ -127,7 +127,7 @@ func (c *ProfilController) UploadAvatar(ctx echo.Context) error {
 	}
 
 	// Update URL avatar di database
-	avatarURL := fmt.Sprintf("http://%s/uploads/%d_%s", ctx.Request().Host, userID, file.Filename)
+	avatarURL := fmt.Sprintf("https://%s/uploads/%d_%s", ctx.Request().Host, userID, file.Filename)
 	user := model.User{
 		Avatar: avatarURL,
 	}

@@ -239,7 +239,7 @@ func (c *DoctorProfileController) UploadAvatar(ctx echo.Context) error {
 	}
 
 	// Update URL avatar di database
-	avatarURL := fmt.Sprintf("http://%s/%s", ctx.Request().Host, filePath)
+	avatarURL := fmt.Sprintf("https://%s/%s", ctx.Request().Host, filePath)
 	doctor := model.Doctor{
 		Avatar: avatarURL,
 	}
