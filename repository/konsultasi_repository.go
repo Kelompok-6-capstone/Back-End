@@ -14,8 +14,11 @@ type ConsultationRepository interface {
 	FindByConsultationID(consultationID int, consultation *model.Consultation) error
 	UpdateRecommendation(consultationID int, recommendation string) error
 	UpdatePaymentStatus(consultationID int, isPaid bool) error
+	UpdateApprovalStatus(consultationID int, isApproved bool) error
 	FindUnpaidConsultations(consultations *[]model.Consultation) error
+	FindPendingApproval(consultations *[]model.Consultation) error
 	ExpireConsultations() error
+	FindDoctorByID(doctorID int, doctor *model.Doctor) error
 }
 
 // ConsultationRepositoryImpl is the implementation of ConsultationRepository
@@ -41,12 +44,12 @@ func (r *ConsultationRepositoryImpl) FindByDoctorID(doctorID int, consultations 
 	if doctorID <= 0 {
 		return gorm.ErrRecordNotFound
 	}
-	return r.DB.Preload("User").Where("doctor_id = ?", doctorID).Find(consultations).Error
+	return r.DB.Preload("User").Where("doctor_id = ? AND is_paid = ? AND is_approved = ?", doctorID, true, true).Find(consultations).Error
 }
 
 // FindByConsultationID retrieves a consultation by its ID
 func (r *ConsultationRepositoryImpl) FindByConsultationID(consultationID int, consultation *model.Consultation) error {
-	return r.DB.Preload("User").Where("id = ?", consultationID).First(consultation).Error
+	return r.DB.Preload("User").Preload("Doctor").Where("id = ?", consultationID).First(consultation).Error
 }
 
 // UpdateRecommendation updates the recommendation for a consultation
@@ -59,15 +62,33 @@ func (r *ConsultationRepositoryImpl) UpdatePaymentStatus(consultationID int, isP
 	return r.DB.Model(&model.Consultation{}).Where("id = ?", consultationID).Update("is_paid", isPaid).Error
 }
 
+// UpdateApprovalStatus updates the approval status of a consultation by admin
+func (r *ConsultationRepositoryImpl) UpdateApprovalStatus(consultationID int, isApproved bool) error {
+	return r.DB.Model(&model.Consultation{}).Where("id = ?", consultationID).Update("is_approved", isApproved).Error
+}
+
 // FindUnpaidConsultations retrieves consultations with unpaid status
 func (r *ConsultationRepositoryImpl) FindUnpaidConsultations(consultations *[]model.Consultation) error {
-	return r.DB.Preload("User").Where("is_paid = ?", false).Find(consultations).Error
+	return r.DB.Preload("User").Preload("Doctor").Where("is_paid = ?", false).Find(consultations).Error
+}
+
+// FindPendingApproval retrieves consultations with paid status but not approved by admin
+func (r *ConsultationRepositoryImpl) FindPendingApproval(consultations *[]model.Consultation) error {
+	return r.DB.Preload("User").Preload("Doctor").Where("is_paid = ? AND is_approved = ?", true, false).Find(consultations).Error
 }
 
 // ExpireConsultations marks consultations as expired if they exceed their duration
 func (r *ConsultationRepositoryImpl) ExpireConsultations() error {
 	now := time.Now()
 	return r.DB.Model(&model.Consultation{}).
-		Where("TIMESTAMPADD(MINUTE, duration, start_time) < ? AND is_paid = ?", now, true).
-		Update("rekomendasi", "Expired - waktu konsultasi telah lewat").Error
+		Where("TIMESTAMPADD(MINUTE, duration, start_time) < ? AND is_paid = ? AND status != ?", now, true, "expired").
+		Update("status", "expired").Error
+}
+
+// FindDoctorByID retrieves doctor details by ID
+func (r *ConsultationRepositoryImpl) FindDoctorByID(doctorID int, doctor *model.Doctor) error {
+	if doctorID <= 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return r.DB.First(doctor, doctorID).Error
 }
