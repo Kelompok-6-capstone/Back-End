@@ -58,9 +58,6 @@ func (u *ConsultationUsecaseImpl) UpdateRecommendation(consultationID int, recom
 
 // Mengubah status pembayaran
 func (u *ConsultationUsecaseImpl) UpdatePaymentStatus(consultationID int, isPaid bool) error {
-	// // Gunakan strconv.Itoa untuk mengonversi int ke string
-	// consultationIDStr := strconv.Itoa(consultationID)
-
 	consultation, err := u.GetConsultationByID(consultationID)
 	if err != nil {
 		return errors.New("konsultasi tidak ditemukan")

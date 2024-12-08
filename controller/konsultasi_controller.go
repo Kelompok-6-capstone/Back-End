@@ -116,7 +116,6 @@ func (c *ConsultationController) GiveRecommendation(ctx echo.Context) error {
 	}
 
 	consultationID, _ := strconv.Atoi(ctx.Param("id"))
-
 	if err := ctx.Bind(&request); err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Input tidak valid")
 	}
@@ -138,9 +137,9 @@ func (c *ConsultationController) GiveRecommendation(ctx echo.Context) error {
 
 // Menyetujui pembayaran (admin)
 func (c *ConsultationController) ApprovePayment(ctx echo.Context) error {
-	id, _ := strconv.Atoi(ctx.Param("id"))
+	consultationID, _ := strconv.Atoi(ctx.Param("id"))
 
-	err := c.ConsultationUsecase.UpdatePaymentStatus(id, true)
+	err := c.ConsultationUsecase.UpdatePaymentStatus(consultationID, true)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyetujui pembayaran")
 	}
