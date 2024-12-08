@@ -28,8 +28,6 @@ func (u *doctorProfileUseCaseImpl) GetDoctorProfile(doctorID int) (*model.Doctor
 	}
 	return doctor, nil
 }
-
-// Memperbarui profil dokter
 func (u *doctorProfileUseCaseImpl) UpdateDoctorProfile(doctorID int, doctor *model.Doctor) (*model.Doctor, error) {
 	// Memperbarui Tags jika disediakan
 	if len(doctor.Tags) > 0 {

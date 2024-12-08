@@ -100,52 +100,62 @@ func (c *DoctorProfileController) GetProfile(ctx echo.Context) error {
 
 	return helper.JSONSuccessResponse(ctx, doctorProfile)
 }
-
-// UpdateProfile updates the profile of the logged-in doctor
 func (c *DoctorProfileController) UpdateProfile(ctx echo.Context) error {
 	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
 	if !ok || claims == nil {
 		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized access")
 	}
 
+	// Struct untuk menerima request body
 	var request struct {
-		Username    string       `json:"username"`
-		NoHp        string       `json:"no_hp"`
-		Avatar      string       `json:"avatar"`
-		DateOfBirth string       `json:"date_of_birth"`
-		Address     string       `json:"address"`
-		Schedule    string       `json:"schedule"`
-		Title       string       `json:"title"`
-		Experience  int          `json:"experience"`
-		STRNumber   string       `json:"str_number"`
-		About       string       `json:"about"`
-		Tags        []model.Tags `json:"tags"`
+		Username     string       `json:"username"`
+		NoHp         string       `json:"no_hp"`
+		Avatar       string       `json:"avatar"`
+		DateOfBirth  string       `json:"date_of_birth"`
+		Address      string       `json:"address"`
+		Schedule     string       `json:"schedule"`
+		Title        string       `json:"title"`
+		Experience   int          `json:"experience"`
+		STRNumber    string       `json:"str_number"`
+		About        string       `json:"about"`
+		JenisKelamin string       `json:"jenis_kelamin"`
+		Tags         []model.Tags `json:"tags"`
 	}
 
+	// Bind JSON ke struct
 	if err := ctx.Bind(&request); err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal memproses data: "+err.Error())
 	}
 
-	doctor := &model.Doctor{
-		Username:    request.Username,
-		NoHp:        request.NoHp,
-		Avatar:      request.Avatar,
-		DateOfBirth: request.DateOfBirth,
-		Address:     request.Address,
-		Schedule:    request.Schedule,
-		Title:       model.Title{Name: request.Title},
-		Experience:  request.Experience,
-		STRNumber:   request.STRNumber,
-		About:       request.About,
-		Tags:        request.Tags,
+	// Validasi nilai JenisKelamin
+	if request.JenisKelamin != "" && request.JenisKelamin != "Laki-laki" && request.JenisKelamin != "Perempuan" {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Nilai JenisKelamin tidak valid")
 	}
 
-	_, err := c.DoctorProfileUsecase.UpdateDoctorProfile(claims.UserID, doctor)
+	// Map request ke model Doctor
+	doctor := &model.Doctor{
+		Username:     request.Username,
+		NoHp:         request.NoHp,
+		Avatar:       request.Avatar,
+		DateOfBirth:  request.DateOfBirth,
+		Address:      request.Address,
+		Schedule:     request.Schedule,
+		Title:        model.Title{Name: request.Title},
+		Experience:   request.Experience,
+		STRNumber:    request.STRNumber,
+		About:        request.About,
+		JenisKelamin: request.JenisKelamin,
+		Tags:         request.Tags,
+	}
+
+	// Panggil Usecase untuk update profile
+	updatedDoctor, err := c.DoctorProfileUsecase.UpdateDoctorProfile(claims.UserID, doctor)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate profil dokter: "+err.Error())
 	}
 
-	return helper.JSONSuccessResponse(ctx, "berhasil updated")
+	// Berikan response sukses
+	return helper.JSONSuccessResponse(ctx, updatedDoctor)
 }
 
 // SetActiveStatus updates the active status of the logged-in doctor
