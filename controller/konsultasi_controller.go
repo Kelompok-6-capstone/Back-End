@@ -182,3 +182,53 @@ func (c *ConsultationController) MarkExpiredConsultations(ctx echo.Context) erro
 
 	return helper.JSONSuccessResponse(ctx, "Konsultasi yang kedaluwarsa berhasil diperbarui")
 }
+
+// Mendapatkan konsultasi yang belum dibayar
+func (c *ConsultationController) GetUnpaidConsultations(ctx echo.Context) error {
+	consultations, err := c.ConsultationUsecase.GetUnpaidConsultations()
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mendapatkan konsultasi yang belum dibayar")
+	}
+
+	var responseData []map[string]interface{}
+	for _, consultation := range consultations {
+		responseData = append(responseData, map[string]interface{}{
+			"email":           consultation.User.Email,
+			"price":           consultation.Doctor.Price,
+			"duration":        consultation.Duration,
+			"start_time":      consultation.StartTime,
+			"consultation_id": consultation.ID,
+		})
+	}
+
+	return helper.JSONSuccessResponse(ctx, responseData)
+}
+
+// Memberikan rekomendasi kepada pasien
+func (c *ConsultationController) GiveRecommendation(ctx echo.Context) error {
+	claims, _ := ctx.Get("doctor").(*service.JwtCustomClaims)
+	doctorID := claims.UserID
+
+	var request struct {
+		Rekomendasi string `json:"rekomendasi"`
+	}
+
+	consultationID, _ := strconv.Atoi(ctx.Param("id"))
+	if err := ctx.Bind(&request); err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Input tidak valid")
+	}
+	consultation, err := c.ConsultationUsecase.GetConsultationByID(consultationID)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "Konsultasi tidak ditemukan")
+	}
+	if consultation.DoctorID != doctorID {
+		return helper.JSONErrorResponse(ctx, http.StatusForbidden, "Anda tidak memiliki akses ke konsultasi ini")
+	}
+
+	err = c.ConsultationUsecase.UpdateRecommendation(consultation.ID, request.Rekomendasi)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal memberikan rekomendasi")
+	}
+
+	return helper.JSONSuccessResponse(ctx, "Rekomendasi berhasil diberikan")
+}
