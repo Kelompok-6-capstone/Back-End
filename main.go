@@ -77,6 +77,11 @@ func main() {
 	artikelUsecase := usecase.NewArtikelUsecase(artikelonRepo)
 	artikelController := controller.NewArtikelController(artikelUsecase)
 
+	//    Repositori, usecase, dan controller untuk chatbot ai
+	chatbotRepo := repository.NewChatLogRepository(DB)
+	chatbotUsecase := usecase.NewChatbotUsecase(chatbotRepo)
+	chatbotController := controller.NewChatbotController(chatbotUsecase)
+
 	// Middleware
 	jwtMiddleware := middlewares.NewJWTMiddleware(jwtSecret)
 
@@ -101,6 +106,7 @@ func main() {
 	// Group User
 	userGroup := e.Group("/user", jwtMiddleware.HandlerUser)
 	routes.UserProfil(userGroup, userProfilController, userFiturController, consultationController, artikelController)
+	routes.UserChatbotRoutes(userGroup, chatbotController)
 
 	// Group Admin
 	adminGroup := e.Group("/admin", jwtMiddleware.HandlerAdmin)
