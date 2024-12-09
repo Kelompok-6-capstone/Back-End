@@ -88,15 +88,22 @@ func (c *ConsultationController) CreateConsultation(ctx echo.Context) error {
 	}
 
 	// Buat konsultasi
-	midtransURL, err := c.ConsultationUsecase.CreateConsultation(claims.UserID, request.DoctorID, request.Title, request.Description, claims.Email)
+	paymentURL, consultation, err := c.ConsultationUsecase.CreateConsultation(claims.UserID, request.DoctorID, request.Title, request.Description, claims.Email)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat konsultasi dan link pembayaran: "+err.Error())
 	}
 
-	// Kirim respons dengan link pembayaran
+	// Kirim respons dengan detail konsultasi dan link pembayaran
 	response := map[string]interface{}{
-		"message":     "Konsultasi berhasil dibuat. Silakan lanjutkan ke pembayaran.",
-		"payment_url": midtransURL,
+		"message": "Konsultasi berhasil dibuat. Silakan lanjutkan ke pembayaran.",
+		"consultation": map[string]interface{}{
+			"id":          consultation.ID,
+			"title":       consultation.Title,
+			"description": consultation.Description,
+			"status":      consultation.Status,
+			"total_price": consultation.Doctor.Price,
+		},
+		"payment_url": paymentURL,
 	}
 
 	return helper.JSONSuccessResponse(ctx, response)
@@ -165,41 +172,25 @@ func (c *ConsultationController) GetUserConsultationDetails(ctx echo.Context) er
 	}
 
 	consultationID, _ := strconv.Atoi(ctx.Param("id"))
-	consultation, err := c.ConsultationUsecase.ViewConsultationDetails(claims.UserID, consultationID)
+	consultation, err := c.ConsultationUsecase.GetConsultationByID(consultationID)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil detail konsultasi")
+		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "Konsultasi tidak ditemukan")
 	}
 
-	var rekomendasiList []RecommendationData
-	for _, rekomendasi := range consultation.Rekomendasi {
-		rekomendasiList = append(rekomendasiList, RecommendationData{
-			ID:          rekomendasi.ID,
-			Rekomendasi: rekomendasi.Rekomendasi,
-		})
+	if consultation.UserID != claims.UserID {
+		return helper.JSONErrorResponse(ctx, http.StatusForbidden, "Anda tidak memiliki akses ke konsultasi ini")
 	}
 
-	response := ConsultationDetailResponse{
-		ID:          consultation.ID,
-		Title:       consultation.Title,
-		Description: consultation.Description,
-		Status:      consultation.Status,
-		Duration:    consultation.Duration,
-		User: UserData{
-			Name:      consultation.User.Username,
-			Avatar:    consultation.User.Avatar,
-			Pekerjaan: consultation.User.Pekerjaan,
+	response := map[string]interface{}{
+		"id":          consultation.ID,
+		"title":       consultation.Title,
+		"description": consultation.Description,
+		"status":      consultation.Status,
+		"doctor": map[string]interface{}{
+			"name":  consultation.Doctor.Username,
+			"price": consultation.Doctor.Price,
 		},
-		Doctor: DoctorData{
-			Name:       consultation.Doctor.Username,
-			Avatar:     consultation.Doctor.Avatar,
-			Title:      consultation.Doctor.Title.Name,
-			Experience: consultation.Doctor.Experience,
-			About:      consultation.Doctor.About,
-		},
-		Rekomendasi: rekomendasiList,
-		StartTime:   consultation.StartTime.Format("2006-01-02 15:04:05"),
-		CreatedAt:   consultation.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt:   consultation.UpdatedAt.Format("2006-01-02 15:04:05"),
+		"created_at": consultation.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
 
 	return helper.JSONSuccessResponse(ctx, response)

@@ -37,18 +37,16 @@ func NewConsultationUsecaseImpl(repo *repository.ConsultationRepositoryImpl) *Co
 }
 
 // Membuat konsultasi
-func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, title, description, email string) (string, error) {
-	// Ambil informasi dokter termasuk harga
+func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, title, description, email string) (string, *model.Consultation, error) {
 	doctor, err := uc.Repo.GetDoctorByID(doctorID)
 	if err != nil {
-		return "", fmt.Errorf("doctor not found: %w", err)
+		return "", nil, fmt.Errorf("doctor not found: %w", err)
 	}
 
 	if doctor.Price <= 0 {
-		return "", errors.New("doctor price is invalid")
+		return "", nil, errors.New("doctor price is invalid")
 	}
 
-	// Buat objek konsultasi
 	consultation := &model.Consultation{
 		UserID:      userID,
 		DoctorID:    doctorID,
@@ -59,19 +57,17 @@ func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, titl
 		IsApproved:  false,
 	}
 
-	// Simpan konsultasi
 	consultationID, err := uc.Repo.CreateConsultation(consultation)
 	if err != nil {
-		return "", errors.New("failed to create consultation")
+		return "", nil, errors.New("failed to create consultation")
 	}
 
-	// Buat pembayaran Midtrans dengan harga dokter
-	paymentLink, err := uc.CreateMidtransPayment(consultationID, doctor.Price, email)
+	paymentURL, err := uc.CreateMidtransPayment(consultationID, doctor.Price, email)
 	if err != nil {
-		return "", fmt.Errorf("failed to create midtrans payment: %w", err)
+		return "", nil, fmt.Errorf("failed to create midtrans payment: %w", err)
 	}
 
-	return paymentLink, nil
+	return paymentURL, consultation, nil
 }
 
 // Mendapatkan konsultasi berdasarkan ID
