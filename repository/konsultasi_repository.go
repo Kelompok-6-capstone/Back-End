@@ -23,6 +23,7 @@ type ConsultationRepository interface {
 	AddIncomeForDoctor(doctorID int, amount float64) error
 	AddIncomeForAdmin(amount float64) error
 	GetDoctorByID(doctorID int) (*model.Doctor, error)
+	GetPendingPayments() ([]model.Consultation, error)
 }
 
 type ConsultationRepositoryImpl struct {
@@ -31,6 +32,12 @@ type ConsultationRepositoryImpl struct {
 
 func NewConsultationRepositoryImpl(db *gorm.DB) *ConsultationRepositoryImpl {
 	return &ConsultationRepositoryImpl{DB: db}
+}
+
+func (r *ConsultationRepositoryImpl) GetPendingPayments() ([]model.Consultation, error) {
+	var consultations []model.Consultation
+	err := r.DB.Preload("User").Preload("Doctor").Where("is_paid = ? AND is_approved = ?", true, false).Find(&consultations).Error
+	return consultations, err
 }
 
 // Membuat konsultasi baru
@@ -118,13 +125,6 @@ func (r *ConsultationRepositoryImpl) GetActiveConsultations() ([]model.Consultat
 func (r *ConsultationRepositoryImpl) GetConsultationsWithDoctors(userID int) ([]model.Consultation, error) {
 	var consultations []model.Consultation
 	err := r.DB.Preload("Doctor").Where("user_id = ?", userID).Find(&consultations).Error
-	return consultations, err
-}
-
-// Mendapatkan daftar konsultasi yang belum disetujui pembayarannya
-func (r *ConsultationRepositoryImpl) GetPendingConsultations() ([]model.Consultation, error) {
-	var consultations []model.Consultation
-	err := r.DB.Preload("User").Where("is_paid = ? AND is_approved = ?", true, false).Find(&consultations).Error
 	return consultations, err
 }
 

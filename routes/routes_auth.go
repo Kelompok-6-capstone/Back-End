@@ -70,9 +70,9 @@ func AdminManagementRoutes(e *echo.Group, adminManagement *controller.AdminManag
 	e.POST("/artikel/upload-image", artikelController.UploadArtikelImage)   // Upload image untuk artikel
 	e.DELETE("/artikel/delete-image", artikelController.DeleteArtikelImage) // Hapus image artikel
 
-	e.GET("/consultations/pending", consultationController.GetPendingConsultations)     // Melihat semua konsultasi pending
-	e.GET("/consultations/:id", consultationController.ViewConsultationDetailsForAdmin) // Melihat detail konsultasi user
-	e.PUT("/consultations/:id/approve", consultationController.ApprovePayment)          // Menyetujui pembayaran
+	e.GET("/consultations/pending-payments", consultationController.GetPendingConsultations)       // Daftar pembayaran pending
+	e.GET("/consultations/:id/payment-details", consultationController.GetUserConsultationDetails) // Detail pembayaran
+	e.PUT("/consultations/:id/approve", consultationController.ApprovePayment)                     // Setujui pembayaran
 
 }
 

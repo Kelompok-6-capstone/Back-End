@@ -26,6 +26,8 @@ type ConsultationUsecase interface {
 	GetPendingConsultationsForAdmin() ([]model.Consultation, error)
 	CreateMidtransPayment(consultationID int, amount float64, email string) (string, error)
 	VerifyPayment(consultationID int) (string, error)
+	GetPendingPaymentsForAdmin() ([]model.Consultation, error)
+	GetPaymentDetails(consultationID int) (map[string]interface{}, error)
 }
 
 type ConsultationUsecaseImpl struct {
@@ -110,47 +112,28 @@ func (uc *ConsultationUsecaseImpl) MarkExpiredConsultations() error {
 	}
 	return nil
 }
-
 func (uc *ConsultationUsecaseImpl) ApprovePayment(consultationID int) error {
 	consultation, err := uc.Repo.GetConsultationByID(consultationID)
 	if err != nil {
-		return errors.New("consultation not found")
+		return fmt.Errorf("consultation not found: %w", err)
 	}
 
+	// Validasi apakah pembayaran telah selesai
+	if !consultation.IsPaid {
+		return errors.New("payment not completed")
+	}
+
+	// Cegah persetujuan duplikat
 	if consultation.IsApproved {
 		return errors.New("payment already approved")
 	}
 
-	if consultation.Doctor.Price <= 0 {
-		return errors.New("invalid doctor price")
-	}
-
-	// Tentukan pembagian biaya
-	adminFee := 0.1 * float64(consultation.Doctor.Price) // 10% biaya admin
-	doctorFee := float64(consultation.Doctor.Price) - adminFee
-
-	// Update konsultasi
+	// Perbarui status konsultasi
 	consultation.IsApproved = true
 	consultation.Status = "active"
 	consultation.StartTime = time.Now()
 
-	err = uc.Repo.UpdateConsultation(consultation)
-	if err != nil {
-		return errors.New("failed to update consultation status")
-	}
-
-	// Tambahkan pendapatan dokter dan admin
-	err = uc.Repo.AddIncomeForDoctor(consultation.DoctorID, doctorFee)
-	if err != nil {
-		return errors.New("failed to update doctor income")
-	}
-
-	err = uc.Repo.AddIncomeForAdmin(adminFee)
-	if err != nil {
-		return errors.New("failed to update admin income")
-	}
-
-	return nil
+	return uc.Repo.UpdateConsultation(consultation)
 }
 
 // Mendapatkan detail konsultasi untuk admin
@@ -201,11 +184,6 @@ func (uc *ConsultationUsecaseImpl) GetUserConsultations(userID int) ([]model.Con
 	return uc.Repo.GetConsultationsWithDoctors(userID)
 }
 
-// Mendapatkan daftar konsultasi yang belum disetujui pembayarannya
-func (uc *ConsultationUsecaseImpl) GetPendingConsultationsForAdmin() ([]model.Consultation, error) {
-	return uc.Repo.GetPendingConsultations()
-}
-
 func (uc *ConsultationUsecaseImpl) CreateMidtransPayment(consultationID int, amount float64, email string) (string, error) {
 	// Konfigurasi Midtrans
 	client := snap.Client{}
@@ -233,7 +211,7 @@ func (uc *ConsultationUsecaseImpl) CreateMidtransPayment(consultationID int, amo
 
 func (uc *ConsultationUsecaseImpl) VerifyPayment(consultationID int) (string, error) {
 	client := coreapi.Client{}
-	client.New(os.Getenv("MIDTRANS_SERVER_KEY"), midtrans.Sandbox) // Gunakan midtrans.Production jika live
+	client.New(os.Getenv("MIDTRANS_SERVER_KEY"), midtrans.Sandbox)
 
 	// Gunakan orderID untuk mencari status transaksi
 	orderID := fmt.Sprintf("consultation-%d", consultationID)
@@ -244,5 +222,53 @@ func (uc *ConsultationUsecaseImpl) VerifyPayment(consultationID int) (string, er
 		return "", fmt.Errorf("failed to verify payment: %w", err)
 	}
 
+	// Jika pembayaran berhasil, update is_paid
+	if transactionStatusResp.TransactionStatus == "settlement" {
+		consultation, err := uc.Repo.GetConsultationByID(consultationID)
+		if err != nil {
+			return "", fmt.Errorf("failed to find consultation: %w", err)
+		}
+
+		// Update is_paid tanpa mengubah status lainnya
+		consultation.IsPaid = true
+		err = uc.Repo.UpdateConsultation(consultation)
+		if err != nil {
+			return "", fmt.Errorf("failed to update consultation payment status: %w", err)
+		}
+	}
+
 	return transactionStatusResp.TransactionStatus, nil
+}
+
+func (uc *ConsultationUsecaseImpl) GetPendingPaymentsForAdmin() ([]model.Consultation, error) {
+	return uc.Repo.GetPendingPayments()
+}
+func (uc *ConsultationUsecaseImpl) GetPaymentDetails(consultationID int) (map[string]interface{}, error) {
+	// Ambil detail konsultasi dari database
+	consultation, err := uc.Repo.GetConsultationByID(consultationID)
+	if err != nil {
+		return nil, fmt.Errorf("consultation not found: %w", err)
+	}
+
+	// Ambil detail pembayaran dari Midtrans
+	client := coreapi.Client{}
+	client.New(os.Getenv("MIDTRANS_SERVER_KEY"), midtrans.Sandbox)
+
+	orderID := fmt.Sprintf("consultation-%d", consultationID)
+	transactionStatusResp, err := client.CheckTransaction(orderID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch payment details: %w", err)
+	}
+
+	// Kombinasikan data konsultasi dan detail pembayaran
+	return map[string]interface{}{
+		"consultation": consultation,
+		"payment": map[string]interface{}{
+			"order_id":           transactionStatusResp.OrderID,
+			"payment_type":       transactionStatusResp.PaymentType,
+			"transaction_time":   transactionStatusResp.TransactionTime,
+			"transaction_status": transactionStatusResp.TransactionStatus,
+			"gross_amount":       transactionStatusResp.GrossAmount,
+		},
+	}, nil
 }
