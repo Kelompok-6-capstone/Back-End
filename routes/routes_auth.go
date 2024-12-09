@@ -41,11 +41,9 @@ func UserProfil(
 	e.GET("/doctors/title", fitur.GetDoctorsByTitle) // Mendapatkan dokter berdasarkan title
 
 	// Endpoint untuk konsultasi
-	e.POST("/consultations", konsultasi.CreateConsultation) // Membuat konsultasi
-	e.GET("/user/consultations", konsultasi.GetUserConsultations)
-	e.GET("/user/consultations/:id", konsultasi.GetUserConsultationDetails)
-	e.GET("/consultations", konsultasi.GetUserConsultations)           // Mendapatkan semua konsultasi user
-	e.GET("/consultations/:id", konsultasi.GetUserConsultationDetails) // Mendapatkan detail konsultasi user
+	e.POST("/consultations", konsultasi.CreateConsultation)            // Membuat konsultasi
+	e.GET("/consultations", konsultasi.GetUserConsultations)           // Melihat semua konsultasi user
+	e.GET("/consultations/:id", konsultasi.GetUserConsultationDetails) // Melihat detail konsultasi user
 
 	// Endpoint untuk artikel
 	e.GET("/artikel", artikelController.GetAllArtikel)      // Mendapatkan semua artikel
@@ -72,9 +70,9 @@ func AdminManagementRoutes(e *echo.Group, adminManagement *controller.AdminManag
 	e.POST("/artikel/upload-image", artikelController.UploadArtikelImage)   // Upload image untuk artikel
 	e.DELETE("/artikel/delete-image", artikelController.DeleteArtikelImage) // Hapus image artikel
 
-	e.PUT("/consultations/:id/approve", consultationController.ApprovePayment)                // Menyetujui pembayaran konsultasi
-	e.GET("/admin/consultations/pending", consultationController.GetPendingConsultations)     // Melihat daftar konsultasi pending
-	e.GET("/admin/consultations/:id", consultationController.ViewConsultationDetailsForAdmin) // Melihat detail konsultasi
+	e.GET("/consultations/pending", consultationController.GetPendingConsultations)     // Melihat semua konsultasi pending
+	e.GET("/consultations/:id", consultationController.ViewConsultationDetailsForAdmin) // Melihat detail konsultasi user
+	e.PUT("/consultations/:id/approve", consultationController.ApprovePayment)          // Menyetujui pembayaran
 
 }
 
@@ -91,14 +89,14 @@ func DoctorProfil(e *echo.Group, profilController *controller.DoctorProfileContr
 	e.GET("/profile", profilController.GetProfile)                                        // Mendapatkan profil dokter
 	e.PUT("/profile", profilController.UpdateProfile)                                     // Mengupdate profil dokter
 	e.PUT("/status", profilController.SetActiveStatus)                                    // Mengubah status aktif/tidak aktif dokter
-	e.GET("/consultations", consultationController.GetConsultationsForDoctor)             // Mendapatkan daftar konsultasi dokter
-	e.GET("/consultations/:id", consultationController.ViewConsultationDetails)           // Melihat detail konsultasi tertentu
-	e.POST("/consultations/:id/recommendation", consultationController.AddRecommendation) // Menambahkan rekomendasi untuk konsultasi
 	e.GET("/artikel", artikelController.GetAllArtikel)                                    // Lihat semua artikel
 	e.GET("/artikel/:id", artikelController.GetArtikelByID)                               // Lihat detail artikel
 	e.POST("/upload-image", profilController.UploadAvatar)                                // Upload image untuk dokter
 	e.DELETE("/delete-image", profilController.DeleteAvatar)                              // Hapus image dokter
 	e.GET("/tags", fitur.GetAllTags)                                                      // Mendapatkan semua tag (bidang keahlian)
 	e.GET("/titles", fitur.GetAllTitles)                                                  // Mendapatkan semua title
+	e.GET("/consultations", consultationController.GetConsultationsForDoctor)             // Melihat semua konsultasi terbayar
+	e.GET("/consultations/:id", consultationController.ViewConsultationDetails)           // Melihat detail konsultasi tertentu
+	e.POST("/consultations/:id/recommendation", consultationController.AddRecommendation) // Menambahkan rekomendasi
 
 }
