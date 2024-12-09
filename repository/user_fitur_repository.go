@@ -100,7 +100,7 @@ func (r *UserFiturRepositoryImpl) GetDoctorsByStatus(isActive bool) ([]model.Doc
 func (r *UserFiturRepositoryImpl) SearchDoctors(query string) ([]model.Doctor, error) {
 	var doctors []model.Doctor
 	err := r.DB.Preload("Title").
-		Where("username LIKE ? OR about LIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%").
+		Where("username LIKE ?", "%"+query+"%").
 		Find(&doctors).Error
 	return doctors, err
 }

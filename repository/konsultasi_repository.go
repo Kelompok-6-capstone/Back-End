@@ -11,8 +11,6 @@ import (
 type ConsultationRepository interface {
 	CreateConsultation(*model.Consultation) error
 	ApprovePayment(consultationID int) error
-	EndConsultation(consultationID int) error
-	PayConsultation(consultationID int, amount float64) error
 	GetConsultationsForDoctor(doctorID int) ([]model.Consultation, error)
 	GetConsultationDetails(consultationID, doctorID int) (*model.Consultation, error)
 	AddRecommendation(recommendation *model.Rekomendasi) error
@@ -59,40 +57,6 @@ func (r *ConsultationRepositoryImpl) ApprovePayment(consultationID int) error {
 	}
 
 	return errors.New("payment not completed or already approved")
-}
-
-// Mengakhiri konsultasi (hanya untuk internal logika kedaluwarsa)
-func (r *ConsultationRepositoryImpl) EndConsultation(consultationID int) error {
-	var consultation model.Consultation
-	if err := r.DB.First(&consultation, consultationID).Error; err != nil {
-		return err
-	}
-
-	if time.Since(consultation.StartTime).Minutes() > float64(consultation.Duration) {
-		consultation.Status = "ended"
-		return r.DB.Save(&consultation).Error
-	}
-
-	return errors.New("consultation is still active")
-}
-
-// Membayar konsultasi
-func (r *ConsultationRepositoryImpl) PayConsultation(consultationID int, amount float64) error {
-	var consultation model.Consultation
-	if err := r.DB.First(&consultation, consultationID).Error; err != nil {
-		return err
-	}
-
-	if consultation.IsPaid {
-		return errors.New("consultation already paid")
-	}
-
-	if amount < 100000 { // Harga default dokter
-		return errors.New("insufficient payment amount")
-	}
-
-	consultation.IsPaid = true
-	return r.DB.Save(&consultation).Error
 }
 
 // Mendapatkan daftar konsultasi untuk dokter
