@@ -10,16 +10,16 @@ import (
 // Fungsi untuk melakukan seed data Titles
 func SeedTitles(db *gorm.DB) error {
 	titles := []model.Title{
-		{Name: "Psikiatri Anak dan Remaja"},
-		{Name: "Psikiatri Umum"},
-		{Name: "Psikiatri Geriatri"},
-		{Name: "Psikoterapi"},
-		{Name: "Konsultasi Keluarga"},
-		{Name: "Neuropsikiatri"},
-		{Name: "Psikiatri Komunitas"},
-		{Name: "Psikologi Klinis"},
-		{Name: "Rehabilitasi Psikiatri"},
-		{Name: "Psikologi Pendidikan"},
+		{Name: "Psikiatri Anak dan Remaja", Gambar: "https://example.com/images/psikiatri-anak-remaja.jpg"},
+		{Name: "Psikiatri Umum", Gambar: "https://example.com/images/psikiatri-umum.jpg"},
+		{Name: "Psikiatri Geriatri", Gambar: "https://example.com/images/psikiatri-geriatri.jpg"},
+		{Name: "Psikoterapi", Gambar: "https://example.com/images/psikoterapi.jpg"},
+		{Name: "Konsultasi Keluarga", Gambar: "https://example.com/images/konsultasi-keluarga.jpg"},
+		{Name: "Neuropsikiatri", Gambar: "https://example.com/images/neuropsikiatri.jpg"},
+		{Name: "Psikiatri Komunitas", Gambar: "https://example.com/images/psikiatri-komunitas.jpg"},
+		{Name: "Psikologi Klinis", Gambar: "https://example.com/images/psikologi-klinis.jpg"},
+		{Name: "Rehabilitasi Psikiatri", Gambar: "https://example.com/images/rehabilitasi-psikiatri.jpg"},
+		{Name: "Psikologi Pendidikan", Gambar: "https://example.com/images/psikologi-pendidikan.jpg"},
 	}
 
 	fmt.Println("Seeding Titles...")
@@ -49,18 +49,18 @@ func SeedTitles(db *gorm.DB) error {
 // Fungsi untuk melakukan seed data Specialties
 func SeedSpecialties(db *gorm.DB) error {
 	tags := []model.Tags{
-		{Name: "Stress"},
-		{Name: "Depresi"},
-		{Name: "Trauma"},
-		{Name: "Adiksi"},
-		{Name: "Gangguan Kecemasan"},
-		{Name: "Pengembangan Diri"},
-		{Name: "Gangguan Mood"},
-		{Name: "Pengasuhan & Anak"},
-		{Name: "Pekerjaan"},
-		{Name: "Hubungan & Keluarga"},
-		{Name: "Identitas Seksual"},
-		{Name: "Gangguan Kepribadian"},
+		{Name: "Stress", Gambar: "https://example.com/images/stress.jpg"},
+		{Name: "Depresi", Gambar: "https://example.com/images/depresi.jpg"},
+		{Name: "Trauma", Gambar: "https://example.com/images/trauma.jpg"},
+		{Name: "Adiksi", Gambar: "https://example.com/images/adiksi.jpg"},
+		{Name: "Gangguan Kecemasan", Gambar: "https://example.com/images/kecemasan.jpg"},
+		{Name: "Pengembangan Diri", Gambar: "https://example.com/images/pengembangan-diri.jpg"},
+		{Name: "Gangguan Mood", Gambar: "https://example.com/images/mood.jpg"},
+		{Name: "Pengasuhan & Anak", Gambar: "https://example.com/images/pengasuhan-anak.jpg"},
+		{Name: "Pekerjaan", Gambar: "https://example.com/images/pekerjaan.jpg"},
+		{Name: "Hubungan & Keluarga", Gambar: "https://example.com/images/hubungan-keluarga.jpg"},
+		{Name: "Identitas Seksual", Gambar: "https://example.com/images/identitas-seksual.jpg"},
+		{Name: "Gangguan Kepribadian", Gambar: "https://example.com/images/kepribadian.jpg"},
 	}
 
 	fmt.Println("Seeding Specialties (Tags)...")

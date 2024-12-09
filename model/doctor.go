@@ -29,11 +29,13 @@ type Doctor struct {
 }
 
 type Tags struct {
-	ID   int    `json:"id" gorm:"primaryKey;autoIncrement"`
-	Name string `json:"name" gorm:"unique;not null"`
+	ID     int    `json:"id" gorm:"primaryKey;autoIncrement"`
+	Name   string `json:"name" gorm:"unique;not null"`
+	Gambar string `json:"gambar" gorm:"not null"`
 }
 
 type Title struct {
-	ID   int    `json:"id" gorm:"primaryKey;autoIncrement"`
-	Name string `json:"name" gorm:"unique;not null"`
+	ID     int    `json:"id" gorm:"primaryKey;autoIncrement"`
+	Name   string `json:"name" gorm:"unique;not null"`
+	Gambar string `json:"gambar" gorm:"not null"`
 }
