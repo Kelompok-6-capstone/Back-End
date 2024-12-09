@@ -44,6 +44,8 @@ func UserProfil(
 	e.POST("/consultations", konsultasi.CreateConsultation) // Membuat konsultasi
 	e.GET("/user/consultations", konsultasi.GetUserConsultations)
 	e.GET("/user/consultations/:id", konsultasi.GetUserConsultationDetails)
+	e.GET("/consultations", konsultasi.GetUserConsultations)           // Mendapatkan semua konsultasi user
+	e.GET("/consultations/:id", konsultasi.GetUserConsultationDetails) // Mendapatkan detail konsultasi user
 
 	// Endpoint untuk artikel
 	e.GET("/artikel", artikelController.GetAllArtikel)      // Mendapatkan semua artikel
@@ -70,9 +72,9 @@ func AdminManagementRoutes(e *echo.Group, adminManagement *controller.AdminManag
 	e.POST("/artikel/upload-image", artikelController.UploadArtikelImage)   // Upload image untuk artikel
 	e.DELETE("/artikel/delete-image", artikelController.DeleteArtikelImage) // Hapus image artikel
 
-	e.PUT("/consultations/:id/approve", consultationController.ApprovePayment) // Menyetujui pembayaran konsultasi
-	e.GET("/admin/consultations/pending", consultationController.GetPendingConsultations)
-	e.GET("/consultations/:id", consultationController.ViewConsultationDetailsForAdmin) // Melihat detail konsultasi
+	e.PUT("/consultations/:id/approve", consultationController.ApprovePayment)                // Menyetujui pembayaran konsultasi
+	e.GET("/admin/consultations/pending", consultationController.GetPendingConsultations)     // Melihat daftar konsultasi pending
+	e.GET("/admin/consultations/:id", consultationController.ViewConsultationDetailsForAdmin) // Melihat detail konsultasi
 
 }
 
