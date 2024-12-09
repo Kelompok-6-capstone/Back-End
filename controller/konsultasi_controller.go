@@ -36,11 +36,11 @@ type ConsultationDetailResponse struct {
 	Description string               `json:"description"`
 	Status      string               `json:"status"`
 	Duration    int                  `json:"duration"`
-	StartTime   string               `json:"start_time"`
+	StartTime   string               `json:"start_time,omitempty"`
 	CreatedAt   string               `json:"created_at"`
 	UpdatedAt   string               `json:"updated_at"`
-	User        UserData             `json:"user"`
-	Doctor      DoctorData           `json:"doctor"`
+	User        UserData             `json:"user,omitempty"`
+	Doctor      DoctorData           `json:"doctor,omitempty"`
 	Rekomendasi []RecommendationData `json:"rekomendasi,omitempty"`
 }
 
@@ -82,41 +82,44 @@ func (c *ConsultationController) CreateConsultation(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Input tidak valid")
 	}
 
-	err := c.ConsultationUsecase.CreateConsultation(claims.UserID, request.DoctorID, request.Title, request.Description)
+	// Validasi input
+	if request.DoctorID <= 0 || request.Title == "" || request.Description == "" {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Semua input harus diisi")
+	}
+
+	// Buat konsultasi
+	midtransURL, err := c.ConsultationUsecase.CreateConsultation(claims.UserID, request.DoctorID, request.Title, request.Description, claims.Email)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat konsultasi")
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat konsultasi dan link pembayaran: "+err.Error())
 	}
 
-	return helper.JSONSuccessResponse(ctx, "Konsultasi berhasil dibuat. Silakan lanjutkan ke pembayaran.")
-}
-
-func (c *ConsultationController) PayConsultation(ctx echo.Context) error {
-	claims, ok := ctx.Get("user").(*service.JwtCustomClaims)
-	if !ok || claims == nil {
-		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Pengguna tidak diizinkan")
+	// Kirim respons dengan link pembayaran
+	response := map[string]interface{}{
+		"message":     "Konsultasi berhasil dibuat. Silakan lanjutkan ke pembayaran.",
+		"payment_url": midtransURL,
 	}
 
-	consultationID, _ := strconv.Atoi(ctx.Param("id"))
-	var request struct {
-		Amount float64 `json:"amount"`
-	}
-
-	if err := ctx.Bind(&request); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Input tidak valid")
-	}
-
-	err := c.ConsultationUsecase.PayConsultation(claims.UserID, consultationID, request.Amount)
-	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal memproses pembayaran")
-	}
-
-	return helper.JSONSuccessResponse(ctx, "Pembayaran berhasil. Menunggu persetujuan admin.")
+	return helper.JSONSuccessResponse(ctx, response)
 }
 
 func (c *ConsultationController) ApprovePayment(ctx echo.Context) error {
-	consultationID, _ := strconv.Atoi(ctx.Param("id"))
+	consultationID, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "ID konsultasi tidak valid")
+	}
 
-	err := c.ConsultationUsecase.ApprovePayment(0, consultationID)
+	// Verifikasi status pembayaran dari Midtrans
+	paymentStatus, err := c.ConsultationUsecase.VerifyPayment(consultationID)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal memverifikasi pembayaran: "+err.Error())
+	}
+
+	if paymentStatus != "settlement" {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Pembayaran belum selesai")
+	}
+
+	// Setujui pembayaran setelah diverifikasi
+	err = c.ConsultationUsecase.ApprovePayment(consultationID)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyetujui pembayaran")
 	}

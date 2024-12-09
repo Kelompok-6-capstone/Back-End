@@ -41,8 +41,7 @@ func UserProfil(
 	e.GET("/doctors/title", fitur.GetDoctorsByTitle) // Mendapatkan dokter berdasarkan title
 
 	// Endpoint untuk konsultasi
-	e.POST("/consultations", konsultasi.CreateConsultation)      // Membuat konsultasi
-	e.POST("/consultations/:id/pay", konsultasi.PayConsultation) // Membayar konsultasi
+	e.POST("/consultations", konsultasi.CreateConsultation) // Membuat konsultasi
 	e.GET("/user/consultations", konsultasi.GetUserConsultations)
 	e.GET("/user/consultations/:id", konsultasi.GetUserConsultationDetails)
 
@@ -86,7 +85,7 @@ func DoctorAuthRoutes(e *echo.Echo, authController *controller.DoctorAuthControl
 	e.POST("/doctor/resend-otp", authController.ResendOtp)    // Kirim ulang OTP
 }
 
-func DoctorProfil(e *echo.Group, profilController *controller.DoctorProfileController, artikelController *controller.ArtikelController, consultationController *controller.ConsultationController) {
+func DoctorProfil(e *echo.Group, profilController *controller.DoctorProfileController, artikelController *controller.ArtikelController, consultationController *controller.ConsultationController, fitur *controller.UserFiturController) {
 	e.GET("/profile", profilController.GetProfile)                                        // Mendapatkan profil dokter
 	e.PUT("/profile", profilController.UpdateProfile)                                     // Mengupdate profil dokter
 	e.PUT("/status", profilController.SetActiveStatus)                                    // Mengubah status aktif/tidak aktif dokter
@@ -97,4 +96,7 @@ func DoctorProfil(e *echo.Group, profilController *controller.DoctorProfileContr
 	e.GET("/artikel/:id", artikelController.GetArtikelByID)                               // Lihat detail artikel
 	e.POST("/upload-image", profilController.UploadAvatar)                                // Upload image untuk dokter
 	e.DELETE("/delete-image", profilController.DeleteAvatar)                              // Hapus image dokter
+	e.GET("/tags", fitur.GetAllTags)                                                      // Mendapatkan semua tag (bidang keahlian)
+	e.GET("/titles", fitur.GetAllTitles)                                                  // Mendapatkan semua title
+
 }

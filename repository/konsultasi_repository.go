@@ -22,6 +22,9 @@ type ConsultationRepository interface {
 	GetActiveConsultations() ([]model.Consultation, error)
 	GetConsultationsWithDoctors(userID int) ([]model.Consultation, error)
 	GetPendingConsultations() ([]model.Consultation, error)
+	AddIncomeForDoctor(doctorID int, amount float64) error
+	AddIncomeForAdmin(amount float64) error
+	GetDoctorByID(doctorID int) (*model.Doctor, error)
 }
 
 type ConsultationRepositoryImpl struct {
@@ -33,12 +36,12 @@ func NewConsultationRepositoryImpl(db *gorm.DB) *ConsultationRepositoryImpl {
 }
 
 // Membuat konsultasi baru
-func (r *ConsultationRepositoryImpl) CreateConsultation(consultation *model.Consultation) error {
-	// Default status to pending and unpaid
-	consultation.Status = "pending"
-	consultation.IsPaid = false
-	consultation.IsApproved = false
-	return r.DB.Create(consultation).Error
+func (r *ConsultationRepositoryImpl) CreateConsultation(consultation *model.Consultation) (int, error) {
+	err := r.DB.Create(consultation).Error
+	if err != nil {
+		return 0, err
+	}
+	return consultation.ID, nil
 }
 
 // Menyetujui pembayaran
@@ -159,4 +162,21 @@ func (r *ConsultationRepositoryImpl) GetPendingConsultations() ([]model.Consulta
 	var consultations []model.Consultation
 	err := r.DB.Preload("User").Where("is_paid = ? AND is_approved = ?", true, false).Find(&consultations).Error
 	return consultations, err
+}
+
+func (r *ConsultationRepositoryImpl) AddIncomeForDoctor(doctorID int, amount float64) error {
+	return r.DB.Model(&model.Doctor{}).Where("id = ?", doctorID).Update("income", gorm.Expr("income + ?", amount)).Error
+}
+
+func (r *ConsultationRepositoryImpl) AddIncomeForAdmin(amount float64) error {
+	adminAccount := &model.Admin{ID: 1} // Asumsikan admin ID selalu 1
+	return r.DB.Model(adminAccount).Update("income", gorm.Expr("income + ?", amount)).Error
+}
+
+func (r *ConsultationRepositoryImpl) GetDoctorByID(doctorID int) (*model.Doctor, error) {
+	var doctor model.Doctor
+	if err := r.DB.First(&doctor, doctorID).Error; err != nil {
+		return nil, err
+	}
+	return &doctor, nil
 }

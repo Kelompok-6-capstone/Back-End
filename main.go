@@ -117,7 +117,7 @@ func main() {
 
 	// Group Doctor
 	doctorGroup := e.Group("/doctor", jwtMiddleware.HandlerDoctor)
-	routes.DoctorProfil(doctorGroup, doctorProfilController, artikelController, consultationController)
+	routes.DoctorProfil(doctorGroup, doctorProfilController, artikelController, consultationController, userFiturController)
 
 	// Mulai server
 	log.Fatal(e.Start(":8000"))
