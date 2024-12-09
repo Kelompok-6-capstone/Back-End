@@ -15,7 +15,7 @@ type Doctor struct {
 	Schedule     string    `json:"schedule"`
 	IsVerified   bool      `json:"is_verified" gorm:"default:false"`
 	IsActive     bool      `json:"is_active" gorm:"default:true"`
-	Price        int64     `json:"price" gorm:"default:100000"`
+	Price        float64   `json:"price" gorm:"default:100000"`
 	Experience   int       `json:"experience"`
 	STRNumber    string    `json:"str_number"`
 	Income       float64   `gorm:"default:0"`

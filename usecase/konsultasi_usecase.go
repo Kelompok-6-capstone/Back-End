@@ -38,6 +38,17 @@ func NewConsultationUsecaseImpl(repo *repository.ConsultationRepositoryImpl) *Co
 
 // Membuat konsultasi
 func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, title, description, email string) (string, error) {
+	// Ambil informasi dokter termasuk harga
+	doctor, err := uc.Repo.GetDoctorByID(doctorID)
+	if err != nil {
+		return "", fmt.Errorf("doctor not found: %w", err)
+	}
+
+	if doctor.Price <= 0 {
+		return "", errors.New("doctor price is invalid")
+	}
+
+	// Buat objek konsultasi
 	consultation := &model.Consultation{
 		UserID:      userID,
 		DoctorID:    doctorID,
@@ -54,8 +65,8 @@ func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, titl
 		return "", errors.New("failed to create consultation")
 	}
 
-	// Buat pembayaran Midtrans
-	paymentLink, err := uc.CreateMidtransPayment(consultationID, float64(consultation.Doctor.Price), email)
+	// Buat pembayaran Midtrans dengan harga dokter
+	paymentLink, err := uc.CreateMidtransPayment(consultationID, doctor.Price, email)
 	if err != nil {
 		return "", fmt.Errorf("failed to create midtrans payment: %w", err)
 	}
@@ -202,13 +213,13 @@ func (uc *ConsultationUsecaseImpl) GetPendingConsultationsForAdmin() ([]model.Co
 func (uc *ConsultationUsecaseImpl) CreateMidtransPayment(consultationID int, amount float64, email string) (string, error) {
 	// Konfigurasi Midtrans
 	client := snap.Client{}
-	client.New(os.Getenv("MIDTRANS_SERVER_KEY"), midtrans.Sandbox) // Gunakan midtrans.Production jika sudah live
+	client.New(os.Getenv("MIDTRANS_SERVER_KEY"), midtrans.Sandbox)
 
 	// Buat detail transaksi
 	snapReq := &snap.Request{
 		TransactionDetails: midtrans.TransactionDetails{
 			OrderID:  fmt.Sprintf("consultation-%d", consultationID),
-			GrossAmt: int64(amount), // Pastikan ini sesuai dengan `Doctor.Price`
+			GrossAmt: int64(amount), // Gunakan harga dokter
 		},
 		CustomerDetail: &midtrans.CustomerDetails{
 			Email: email,
