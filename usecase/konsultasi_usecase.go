@@ -244,23 +244,25 @@ func (uc *ConsultationUsecaseImpl) GetPendingPaymentsForAdmin() ([]model.Consult
 	return uc.Repo.GetPendingPayments()
 }
 func (uc *ConsultationUsecaseImpl) GetPaymentDetails(consultationID int) (map[string]interface{}, error) {
-	// Ambil detail konsultasi dari database
 	consultation, err := uc.Repo.GetConsultationByID(consultationID)
 	if err != nil {
 		return nil, fmt.Errorf("consultation not found: %w", err)
 	}
 
-	// Ambil detail pembayaran dari Midtrans
 	client := coreapi.Client{}
 	client.New(os.Getenv("MIDTRANS_SERVER_KEY"), midtrans.Sandbox)
 
 	orderID := fmt.Sprintf("consultation-%d", consultationID)
+
 	transactionStatusResp, err := client.CheckTransaction(orderID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch payment details: %w", err)
 	}
 
-	// Kombinasikan data konsultasi dan detail pembayaran
+	if transactionStatusResp == nil {
+		return nil, fmt.Errorf("payment details not found for consultation %d", consultationID)
+	}
+
 	return map[string]interface{}{
 		"consultation": consultation,
 		"payment": map[string]interface{}{
