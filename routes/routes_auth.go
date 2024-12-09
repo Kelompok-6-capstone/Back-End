@@ -41,9 +41,8 @@ func UserProfil(
 	e.GET("/doctors/title", fitur.GetDoctorsByTitle) // Mendapatkan dokter berdasarkan title
 
 	// Endpoint untuk konsultasi
-	e.POST("/consultations", konsultasi.CreateConsultation)          // Membuat konsultasi
-	e.GET("/consultation/:id", konsultasi.GetConsultationDetailByID) // Melihat detail konsultasi
-	e.POST("/consultation/:id/pay", konsultasi.PayConsultation)      // Membayar konsultasi
+	e.POST("/consultations", konsultasi.CreateConsultation)      // Membuat konsultasi
+	e.POST("/consultations/:id/pay", konsultasi.PayConsultation) // Membayar konsultasi
 
 	// Endpoint untuk artikel
 	e.GET("/artikel", artikelController.GetAllArtikel)      // Mendapatkan semua artikel
@@ -69,10 +68,8 @@ func AdminManagementRoutes(e *echo.Group, adminManagement *controller.AdminManag
 	e.POST("/artikel/upload-image", artikelController.UploadArtikelImage)   // Upload image untuk artikel
 	e.DELETE("/artikel/delete-image", artikelController.DeleteArtikelImage) // Hapus image artikel
 
-	// Endpoint untuk konsultasi
-	e.GET("/consultations/unpaid", consultationController.GetUnpaidConsultations)        // Lihat daftar konsultasi yang belum dibayar
-	e.GET("/consultations/pending-approval", consultationController.GetPendingApprovals) // Lihat konsultasi menunggu persetujuan admin
-	e.PUT("/consultation/:id/approve", consultationController.ApprovePayment)            // Menyetujui pembayaran
+	e.PUT("/consultations/:id/approve", consultationController.ApprovePayment)          // Menyetujui pembayaran konsultasi
+	e.GET("/consultations/:id", consultationController.ViewConsultationDetailsForAdmin) // Melihat detail konsultasi
 }
 
 // Routes untuk Doctor
@@ -85,14 +82,15 @@ func DoctorAuthRoutes(e *echo.Echo, authController *controller.DoctorAuthControl
 }
 
 func DoctorProfil(e *echo.Group, profilController *controller.DoctorProfileController, artikelController *controller.ArtikelController, consultationController *controller.ConsultationController) {
-	e.GET("/profile", profilController.GetProfile)                                       // Mendapatkan profil dokter
-	e.PUT("/profile", profilController.UpdateProfile)                                    // Mengupdate profil dokter
-	e.PUT("/status", profilController.SetActiveStatus)                                   // Mengubah status aktif/tidak aktif dokter
-	e.GET("/consultations", consultationController.GetConsultationsAllDoctor)            // Melihat daftar pasien
-	e.GET("/consultation/:id", consultationController.GetConsultationDetailByID)         // Melihat detail keluhan
-	e.PUT("/consultation/:id/recommendation", consultationController.GiveRecommendation) // Memberikan rekomendasi
-	e.GET("/artikel", artikelController.GetAllArtikel)                                   // Lihat semua artikel
-	e.GET("/artikel/:id", artikelController.GetArtikelByID)                              // Lihat detail artikel
-	e.POST("/upload-image", profilController.UploadAvatar)                               // Upload image untuk dokter
-	e.DELETE("/delete-image", profilController.DeleteAvatar)                             // Hapus image dokter
+	e.GET("/profile", profilController.GetProfile)                                        // Mendapatkan profil dokter
+	e.PUT("/profile", profilController.UpdateProfile)                                     // Mengupdate profil dokter
+	e.PUT("/status", profilController.SetActiveStatus)                                    // Mengubah status aktif/tidak aktif dokter
+	e.GET("/consultations", consultationController.GetConsultationsForDoctor)             // Mendapatkan daftar konsultasi dokter
+	e.GET("/consultations/:id", consultationController.ViewConsultationDetails)           // Melihat detail konsultasi tertentu
+	e.POST("/consultations/:id/recommendation", consultationController.AddRecommendation) // Menambahkan rekomendasi untuk konsultasi
+	e.GET("/artikel", artikelController.GetAllArtikel)                                    // Lihat semua artikel
+	e.GET("/artikel/:id", artikelController.GetArtikelByID)                               // Lihat detail artikel
+	e.POST("/upload-image", profilController.UploadAvatar)                                // Upload image untuk dokter
+	e.DELETE("/delete-image", profilController.DeleteAvatar)                              // Hapus image dokter
+	e.PUT("/consultations/expired", consultationController.MarkExpiredConsultations)      // Menandai konsultasi kedaluwarsa
 }

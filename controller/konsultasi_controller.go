@@ -2,233 +2,197 @@ package controller
 
 import (
 	"calmind/helper"
-	"calmind/model"
 	"calmind/service"
 	"calmind/usecase"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/labstack/echo/v4"
 )
 
 type ConsultationController struct {
-	ConsultationUsecase usecase.ConsultationUsecase
+	ConsultationUsecase *usecase.ConsultationUsecaseImpl
 }
 
-func NewConsultationController(consultationUsecase usecase.ConsultationUsecase) *ConsultationController {
+func NewConsultationController(consultationUsecase *usecase.ConsultationUsecaseImpl) *ConsultationController {
 	return &ConsultationController{ConsultationUsecase: consultationUsecase}
 }
 
 // Membuat konsultasi
 func (c *ConsultationController) CreateConsultation(ctx echo.Context) error {
-	claims, _ := ctx.Get("user").(*service.JwtCustomClaims)
+	claims, ok := ctx.Get("user").(*service.JwtCustomClaims)
+	if !ok || claims == nil {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "User is not authorized")
+	}
 
 	var request struct {
-		DoctorID int    `json:"doctor_id"`
-		Message  string `json:"message"`
+		DoctorID    int    `json:"doctor_id"`
+		Title       string `json:"title"`
+		Description string `json:"description"`
 	}
 
 	if err := ctx.Bind(&request); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Input tidak valid")
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid input")
 	}
 
-	// Ambil harga dokter
-	doctor, err := c.ConsultationUsecase.GetDoctorByID(request.DoctorID)
+	err := c.ConsultationUsecase.CreateConsultation(claims.UserID, request.DoctorID, request.Title, request.Description)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil data dokter")
-	}
-
-	consultation := model.Consultation{
-		UserID:     claims.UserID,
-		DoctorID:   request.DoctorID,
-		Message:    request.Message,
-		IsPaid:     false,
-		IsApproved: false,
-		StartTime:  time.Now(),
-		Duration:   120, // Default duration: 2 hours
-		Status:     "pending",
-	}
-
-	err = c.ConsultationUsecase.CreateConsultation(&consultation)
-	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat konsultasi")
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to create consultation: "+err.Error())
 	}
 
 	return helper.JSONSuccessResponse(ctx, map[string]interface{}{
-		"message":    "Konsultasi berhasil dibuat. Lanjutkan ke pembayaran.",
-		"price":      doctor.Price,
-		"duration":   consultation.Duration,
-		"start_time": consultation.StartTime,
-		"status":     consultation.Status,
+		"message": "Consultation created successfully",
+		"data": map[string]interface{}{
+			"user_id":     claims.UserID,
+			"doctor_id":   request.DoctorID,
+			"title":       request.Title,
+			"description": request.Description,
+			"status":      "pending",
+			"is_paid":     false,
+			"is_approved": false,
+		},
 	})
 }
 
 // Membayar konsultasi
 func (c *ConsultationController) PayConsultation(ctx echo.Context) error {
-	consultationID, _ := strconv.Atoi(ctx.Param("id"))
-
-	err := c.ConsultationUsecase.UpdatePaymentStatus(consultationID, true)
-	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal memproses pembayaran")
-	}
-
-	return helper.JSONSuccessResponse(ctx, "Pembayaran berhasil dilakukan. Menunggu persetujuan admin.")
-}
-
-// Mendapatkan daftar konsultasi (untuk dokter)
-func (c *ConsultationController) GetConsultationsAllDoctor(ctx echo.Context) error {
-	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
+	claims, ok := ctx.Get("user").(*service.JwtCustomClaims)
 	if !ok || claims == nil {
-		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Doctor is not authorized")
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "User is not authorized")
 	}
 
-	doctorID := claims.UserID
-	consultations, err := c.ConsultationUsecase.GetConsultationsAllDoctor(doctorID)
-	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil daftar konsultasi")
-	}
-
-	var responseData []map[string]interface{}
-	for _, consultation := range consultations {
-		if consultation.IsApproved && consultation.IsPaid {
-			user := map[string]interface{}{
-				"id":        consultation.User.ID,
-				"nama":      consultation.User.Username,
-				"usia":      consultation.User.Tgl_lahir,
-				"pekerjaan": consultation.User.Pekerjaan,
-			}
-			responseData = append(responseData, map[string]interface{}{
-				"user":        user,
-				"message":     consultation.Message,
-				"start_time":  consultation.StartTime,
-				"duration":    consultation.Duration,
-				"rekomendasi": consultation.Rekomendasi,
-			})
-		}
-	}
-
-	return helper.JSONSuccessResponse(ctx, responseData)
-}
-
-// Mendapatkan detail konsultasi pasien
-func (c *ConsultationController) GetConsultationDetailByID(ctx echo.Context) error {
 	consultationID, _ := strconv.Atoi(ctx.Param("id"))
+	var request struct {
+		Amount float64 `json:"amount"`
+	}
 
-	consultation, err := c.ConsultationUsecase.GetConsultationByID(consultationID)
+	if err := ctx.Bind(&request); err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid input")
+	}
+
+	err := c.ConsultationUsecase.PayConsultation(claims.UserID, consultationID, request.Amount)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Konsultasi tidak ditemukan")
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to process payment: "+err.Error())
 	}
 
-	// Validasi jika konsultasi sudah kedaluwarsa
-	now := time.Now()
-	endTime := consultation.StartTime.Add(time.Duration(consultation.Duration) * time.Minute)
-	if now.After(endTime) {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Konsultasi sudah kedaluwarsa")
-	}
-
-	responseData := map[string]interface{}{
-		"user": map[string]interface{}{
-			"nama":      consultation.User.Username,
-			"usia":      consultation.User.Tgl_lahir,
-			"pekerjaan": consultation.User.Pekerjaan,
+	return helper.JSONSuccessResponse(ctx, map[string]interface{}{
+		"message": "Payment successful. Waiting for admin approval.",
+		"data": map[string]interface{}{
+			"consultation_id": consultationID,
+			"paid_amount":     request.Amount,
+			"status":          "waiting approval",
 		},
-		"message":     consultation.Message,
-		"rekomendasi": consultation.Rekomendasi,
-	}
-
-	return helper.JSONSuccessResponse(ctx, responseData)
-}
-
-// Mendapatkan konsultasi yang menunggu persetujuan (admin)
-func (c *ConsultationController) GetPendingApprovals(ctx echo.Context) error {
-	consultations, err := c.ConsultationUsecase.GetPendingApprovals()
-	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mendapatkan konsultasi yang menunggu persetujuan")
-	}
-
-	var responseData []map[string]interface{}
-	for _, consultation := range consultations {
-		responseData = append(responseData, map[string]interface{}{
-			"consultation_id": consultation.ID,
-			"user_email":      consultation.User.Email,
-			"doctor_id":       consultation.DoctorID,
-			"status":          consultation.Status,
-			"start_time":      consultation.StartTime,
-		})
-	}
-
-	return helper.JSONSuccessResponse(ctx, responseData)
+	})
 }
 
 // Menyetujui pembayaran (admin)
 func (c *ConsultationController) ApprovePayment(ctx echo.Context) error {
 	consultationID, _ := strconv.Atoi(ctx.Param("id"))
 
-	err := c.ConsultationUsecase.UpdateApprovalStatus(consultationID, true)
+	err := c.ConsultationUsecase.ApprovePayment(0, consultationID) // Admin ID can be retrieved dynamically
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyetujui pembayaran")
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to approve payment: "+err.Error())
 	}
 
-	return helper.JSONSuccessResponse(ctx, "Pembayaran berhasil disetujui")
+	return helper.JSONSuccessResponse(ctx, map[string]interface{}{
+		"message": "Payment approved successfully",
+		"data": map[string]interface{}{
+			"consultation_id": consultationID,
+			"status":          "approved",
+		},
+	})
 }
 
-// Menandai konsultasi yang sudah kedaluwarsa
-func (c *ConsultationController) MarkExpiredConsultations(ctx echo.Context) error {
-	err := c.ConsultationUsecase.MarkExpiredConsultations()
+// Mendapatkan detail konsultasi untuk admin
+func (c *ConsultationController) ViewConsultationDetailsForAdmin(ctx echo.Context) error {
+	consultationID, _ := strconv.Atoi(ctx.Param("id"))
+
+	consultation, err := c.ConsultationUsecase.ViewConsultationDetailsForAdmin(consultationID)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menandai konsultasi yang kedaluwarsa")
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to fetch consultation details: "+err.Error())
 	}
 
-	return helper.JSONSuccessResponse(ctx, "Konsultasi yang kedaluwarsa berhasil diperbarui")
+	return helper.JSONSuccessResponse(ctx, map[string]interface{}{
+		"message": "Consultation details fetched successfully",
+		"data":    consultation,
+	})
 }
 
-// Mendapatkan konsultasi yang belum dibayar
-func (c *ConsultationController) GetUnpaidConsultations(ctx echo.Context) error {
-	consultations, err := c.ConsultationUsecase.GetUnpaidConsultations()
+// Mendapatkan daftar konsultasi untuk dokter
+func (c *ConsultationController) GetConsultationsForDoctor(ctx echo.Context) error {
+	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
+	if !ok || claims == nil {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Doctor is not authorized")
+	}
+
+	consultations, err := c.ConsultationUsecase.GetConsultationsForDoctor(claims.UserID)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mendapatkan konsultasi yang belum dibayar")
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to fetch consultations: "+err.Error())
 	}
 
-	var responseData []map[string]interface{}
-	for _, consultation := range consultations {
-		responseData = append(responseData, map[string]interface{}{
-			"email":           consultation.User.Email,
-			"price":           consultation.Doctor.Price,
-			"duration":        consultation.Duration,
-			"start_time":      consultation.StartTime,
-			"consultation_id": consultation.ID,
-		})
-	}
-
-	return helper.JSONSuccessResponse(ctx, responseData)
+	return helper.JSONSuccessResponse(ctx, map[string]interface{}{
+		"message": "Consultations fetched successfully",
+		"data":    consultations,
+	})
 }
 
-// Memberikan rekomendasi kepada pasien
-func (c *ConsultationController) GiveRecommendation(ctx echo.Context) error {
-	claims, _ := ctx.Get("doctor").(*service.JwtCustomClaims)
-	doctorID := claims.UserID
-
-	var request struct {
-		Rekomendasi string `json:"rekomendasi"`
+// Mendapatkan detail konsultasi untuk dokter
+func (c *ConsultationController) ViewConsultationDetails(ctx echo.Context) error {
+	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
+	if !ok || claims == nil {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Doctor is not authorized")
 	}
 
 	consultationID, _ := strconv.Atoi(ctx.Param("id"))
+	consultation, err := c.ConsultationUsecase.ViewConsultationDetails(claims.UserID, consultationID)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to fetch consultation details: "+err.Error())
+	}
+
+	return helper.JSONSuccessResponse(ctx, map[string]interface{}{
+		"message": "Consultation details fetched successfully",
+		"data":    consultation,
+	})
+}
+
+// Memberikan rekomendasi
+func (c *ConsultationController) AddRecommendation(ctx echo.Context) error {
+	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
+	if !ok || claims == nil {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Doctor is not authorized")
+	}
+
+	consultationID, _ := strconv.Atoi(ctx.Param("id"))
+	var request struct {
+		Recommendation string `json:"recommendation"`
+	}
+
 	if err := ctx.Bind(&request); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Input tidak valid")
-	}
-	consultation, err := c.ConsultationUsecase.GetConsultationByID(consultationID)
-	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "Konsultasi tidak ditemukan")
-	}
-	if consultation.DoctorID != doctorID {
-		return helper.JSONErrorResponse(ctx, http.StatusForbidden, "Anda tidak memiliki akses ke konsultasi ini")
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid input")
 	}
 
-	err = c.ConsultationUsecase.UpdateRecommendation(consultation.ID, request.Rekomendasi)
+	err := c.ConsultationUsecase.AddRecommendation(claims.UserID, consultationID, request.Recommendation)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal memberikan rekomendasi")
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to add recommendation: "+err.Error())
 	}
 
-	return helper.JSONSuccessResponse(ctx, "Rekomendasi berhasil diberikan")
+	return helper.JSONSuccessResponse(ctx, map[string]interface{}{
+		"message": "Recommendation added successfully",
+		"data": map[string]interface{}{
+			"consultation_id": consultationID,
+			"recommendation":  request.Recommendation,
+		},
+	})
+}
+
+// Menandai konsultasi yang telah kedaluwarsa (otomatis di background job)
+func (c *ConsultationController) MarkExpiredConsultations(ctx echo.Context) error {
+	err := c.ConsultationUsecase.MarkExpiredConsultations()
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to mark expired consultations: "+err.Error())
+	}
+
+	return helper.JSONSuccessResponse(ctx, map[string]interface{}{
+		"message": "Expired consultations marked successfully",
+	})
 }

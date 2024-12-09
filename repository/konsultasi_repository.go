@@ -2,93 +2,145 @@ package repository
 
 import (
 	"calmind/model"
+	"errors"
 	"time"
 
 	"gorm.io/gorm"
 )
 
-// ConsultationRepository defines the methods for consultation-related database operations
 type ConsultationRepository interface {
-	CreateConsultation(consultation *model.Consultation) error
-	FindByDoctorID(doctorID int, consultations *[]model.Consultation) error
-	FindByConsultationID(consultationID int, consultation *model.Consultation) error
-	UpdateRecommendation(consultationID int, recommendation string) error
-	UpdatePaymentStatus(consultationID int, isPaid bool) error
-	UpdateApprovalStatus(consultationID int, isApproved bool) error
-	FindUnpaidConsultations(consultations *[]model.Consultation) error
-	FindPendingApproval(consultations *[]model.Consultation) error
-	ExpireConsultations() error
-	FindDoctorByID(doctorID int, doctor *model.Doctor) error
+	CreateConsultation(*model.Consultation) error
+	ApprovePayment(consultationID int) error
+	EndConsultation(consultationID int) error
+	PayConsultation(consultationID int, amount float64) error
+	GetConsultationsForDoctor(doctorID int) ([]model.Consultation, error)
+	GetConsultationDetails(consultationID, doctorID int) (*model.Consultation, error)
+	AddRecommendation(recommendation *model.Rekomendasi) error
+	GetAdminViewConsultation(consultationID int) (*model.Consultation, error)
+	GetConsultationByID(consultationID int) (*model.Consultation, error)
+	UpdateConsultation(consultation *model.Consultation) error
+	GetActiveConsultations() ([]model.Consultation, error)
 }
 
-// ConsultationRepositoryImpl is the implementation of ConsultationRepository
 type ConsultationRepositoryImpl struct {
 	DB *gorm.DB
 }
 
-// NewConsultationRepository creates a new instance of ConsultationRepository
-func NewConsultationRepository(db *gorm.DB) ConsultationRepository {
+func NewConsultationRepositoryImpl(db *gorm.DB) *ConsultationRepositoryImpl {
 	return &ConsultationRepositoryImpl{DB: db}
 }
 
-// CreateConsultation creates a new consultation record
+// Membuat konsultasi baru
 func (r *ConsultationRepositoryImpl) CreateConsultation(consultation *model.Consultation) error {
-	if consultation == nil {
-		return gorm.ErrInvalidData
-	}
+	// Default status to pending and unpaid
+	consultation.Status = "pending"
+	consultation.IsPaid = false
+	consultation.IsApproved = false
 	return r.DB.Create(consultation).Error
 }
 
-// FindByDoctorID retrieves consultations by doctor ID
-func (r *ConsultationRepositoryImpl) FindByDoctorID(doctorID int, consultations *[]model.Consultation) error {
-	if doctorID <= 0 {
-		return gorm.ErrRecordNotFound
+// Menyetujui pembayaran
+func (r *ConsultationRepositoryImpl) ApprovePayment(consultationID int) error {
+	var consultation model.Consultation
+	if err := r.DB.First(&consultation, consultationID).Error; err != nil {
+		return err
 	}
-	return r.DB.Preload("User").Where("doctor_id = ? AND is_paid = ? AND is_approved = ?", doctorID, true, true).Find(consultations).Error
-}
 
-// FindByConsultationID retrieves a consultation by its ID
-func (r *ConsultationRepositoryImpl) FindByConsultationID(consultationID int, consultation *model.Consultation) error {
-	return r.DB.Preload("User").Preload("Doctor").Where("id = ?", consultationID).First(consultation).Error
-}
-
-// UpdateRecommendation updates the recommendation for a consultation
-func (r *ConsultationRepositoryImpl) UpdateRecommendation(consultationID int, recommendation string) error {
-	return r.DB.Model(&model.Consultation{}).Where("id = ?", consultationID).Update("rekomendasi", recommendation).Error
-}
-
-// UpdatePaymentStatus updates the payment status of a consultation
-func (r *ConsultationRepositoryImpl) UpdatePaymentStatus(consultationID int, isPaid bool) error {
-	return r.DB.Model(&model.Consultation{}).Where("id = ?", consultationID).Update("is_paid", isPaid).Error
-}
-
-// UpdateApprovalStatus updates the approval status of a consultation by admin
-func (r *ConsultationRepositoryImpl) UpdateApprovalStatus(consultationID int, isApproved bool) error {
-	return r.DB.Model(&model.Consultation{}).Where("id = ?", consultationID).Update("is_approved", isApproved).Error
-}
-
-// FindUnpaidConsultations retrieves consultations with unpaid status
-func (r *ConsultationRepositoryImpl) FindUnpaidConsultations(consultations *[]model.Consultation) error {
-	return r.DB.Preload("User").Preload("Doctor").Where("is_paid = ?", false).Find(consultations).Error
-}
-
-// FindPendingApproval retrieves consultations with paid status but not approved by admin
-func (r *ConsultationRepositoryImpl) FindPendingApproval(consultations *[]model.Consultation) error {
-	return r.DB.Preload("User").Preload("Doctor").Where("is_paid = ? AND is_approved = ?", true, false).Find(consultations).Error
-}
-
-// ExpireConsultations marks consultations as expired if they exceed their duration
-func (r *ConsultationRepositoryImpl) ExpireConsultations() error {
-	now := time.Now()
-	return r.DB.Model(&model.Consultation{}).
-		Where("TIMESTAMPADD(MINUTE, duration, start_time) < ? AND is_paid = ? AND status != ?", now, true, "expired").
-		Update("status", "expired").Error
-}
-
-// FindDoctorByID retrieves doctor details by ID
-func (r *ConsultationRepositoryImpl) FindDoctorByID(doctorID int, doctor *model.Doctor) error {
-	if doctorID <= 0 {
-		return gorm.ErrRecordNotFound
+	if consultation.IsPaid && !consultation.IsApproved {
+		consultation.IsApproved = true
+		consultation.StartTime = time.Now()
+		consultation.Status = "active"
+		return r.DB.Save(&consultation).Error
 	}
-	return r.DB.First(doctor, doctorID).Error
+
+	return errors.New("payment not completed or already approved")
+}
+
+// Mengakhiri konsultasi (hanya untuk internal logika kedaluwarsa)
+func (r *ConsultationRepositoryImpl) EndConsultation(consultationID int) error {
+	var consultation model.Consultation
+	if err := r.DB.First(&consultation, consultationID).Error; err != nil {
+		return err
+	}
+
+	if time.Since(consultation.StartTime).Minutes() > float64(consultation.Duration) {
+		consultation.Status = "ended"
+		return r.DB.Save(&consultation).Error
+	}
+
+	return errors.New("consultation is still active")
+}
+
+// Membayar konsultasi
+func (r *ConsultationRepositoryImpl) PayConsultation(consultationID int, amount float64) error {
+	var consultation model.Consultation
+	if err := r.DB.First(&consultation, consultationID).Error; err != nil {
+		return err
+	}
+
+	if consultation.IsPaid {
+		return errors.New("consultation already paid")
+	}
+
+	if amount < 100000 { // Harga default dokter
+		return errors.New("insufficient payment amount")
+	}
+
+	consultation.IsPaid = true
+	return r.DB.Save(&consultation).Error
+}
+
+// Mendapatkan daftar konsultasi untuk dokter
+func (r *ConsultationRepositoryImpl) GetConsultationsForDoctor(doctorID int) ([]model.Consultation, error) {
+	var consultations []model.Consultation
+	if err := r.DB.Where("doctor_id = ? AND status = ?", doctorID, "active").Find(&consultations).Error; err != nil {
+		return nil, err
+	}
+	return consultations, nil
+}
+
+// Mendapatkan detail konsultasi untuk dokter
+func (r *ConsultationRepositoryImpl) GetConsultationDetails(consultationID, doctorID int) (*model.Consultation, error) {
+	var consultation model.Consultation
+	if err := r.DB.Where("id = ? AND doctor_id = ?", consultationID, doctorID).First(&consultation).Error; err != nil {
+		return nil, err
+	}
+	return &consultation, nil
+}
+
+// Menambahkan rekomendasi
+func (r *ConsultationRepositoryImpl) AddRecommendation(recommendation *model.Rekomendasi) error {
+	return r.DB.Create(recommendation).Error
+}
+
+// Mendapatkan detail konsultasi untuk admin
+func (r *ConsultationRepositoryImpl) GetAdminViewConsultation(consultationID int) (*model.Consultation, error) {
+	var consultation model.Consultation
+	if err := r.DB.Preload("User").Preload("Doctor").First(&consultation, consultationID).Error; err != nil {
+		return nil, err
+	}
+	return &consultation, nil
+}
+
+// Mendapatkan konsultasi berdasarkan ID
+func (r *ConsultationRepositoryImpl) GetConsultationByID(consultationID int) (*model.Consultation, error) {
+	var consultation model.Consultation
+	if err := r.DB.First(&consultation, consultationID).Error; err != nil {
+		return nil, err
+	}
+	return &consultation, nil
+}
+
+// Memperbarui konsultasi
+func (r *ConsultationRepositoryImpl) UpdateConsultation(consultation *model.Consultation) error {
+	return r.DB.Save(consultation).Error
+}
+
+// Mendapatkan daftar konsultasi aktif
+func (r *ConsultationRepositoryImpl) GetActiveConsultations() ([]model.Consultation, error) {
+	var consultations []model.Consultation
+	if err := r.DB.Where("status = ?", "active").Find(&consultations).Error; err != nil {
+		return nil, err
+	}
+	return consultations, nil
 }

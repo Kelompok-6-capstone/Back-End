@@ -3,6 +3,7 @@ package main
 import (
 	"calmind/config"
 	"calmind/controller"
+	"calmind/helper"
 	"calmind/middlewares"
 	"calmind/repository"
 	"calmind/routes"
@@ -68,9 +69,11 @@ func main() {
 	doctorProfilController := controller.NewDoctorProfileController(doctorProfilUsecase)
 
 	//    Repositori, usecase, dan controller untuk Consultasi
-	consultationRepo := repository.NewConsultationRepository(DB)
-	consultationUsecase := usecase.NewConsultationUsecase(consultationRepo)
+	consultationRepo := repository.NewConsultationRepositoryImpl(DB)
+	consultationUsecase := usecase.NewConsultationUsecaseImpl(consultationRepo)
 	consultationController := controller.NewConsultationController(consultationUsecase)
+
+	helper.StartExpiredConsultationJob(consultationUsecase.MarkExpiredConsultations)
 
 	//    Repositori, usecase, dan controller untuk Consultasi
 	artikelonRepo := repository.NewArtikelRepository(DB)
