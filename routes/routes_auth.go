@@ -92,5 +92,4 @@ func DoctorProfil(e *echo.Group, profilController *controller.DoctorProfileContr
 	e.GET("/artikel/:id", artikelController.GetArtikelByID)                               // Lihat detail artikel
 	e.POST("/upload-image", profilController.UploadAvatar)                                // Upload image untuk dokter
 	e.DELETE("/delete-image", profilController.DeleteAvatar)                              // Hapus image dokter
-	e.PUT("/consultations/expired", consultationController.MarkExpiredConsultations)      // Menandai konsultasi kedaluwarsa
 }

@@ -38,7 +38,7 @@ func InitDB() (*gorm.DB, error) {
 		return nil, fmt.Errorf("gagal membuka koneksi ke database: %w", err)
 	}
 
-	err = db.AutoMigrate(&model.User{}, &model.Admin{}, &model.Doctor{}, &model.Otp{}, &model.Consultation{}, &model.Tags{}, &model.Artikel{}, &model.ChatLog{})
+	err = db.AutoMigrate(&model.User{}, &model.Admin{}, &model.Doctor{}, &model.Otp{}, &model.Consultation{}, &model.Tags{}, &model.Artikel{}, &model.ChatLog{}, &model.Rekomendasi{})
 	if err != nil {
 		return nil, fmt.Errorf("gagal melakukan migrasi: %w", err)
 	}
