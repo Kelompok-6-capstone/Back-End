@@ -93,7 +93,7 @@ func (r *ConsultationRepositoryImpl) PayConsultation(consultationID int, amount 
 // Mendapatkan daftar konsultasi untuk dokter
 func (r *ConsultationRepositoryImpl) GetConsultationsForDoctor(doctorID int) ([]model.Consultation, error) {
 	var consultations []model.Consultation
-	if err := r.DB.Where("doctor_id = ? AND status = ?", doctorID, "active").Find(&consultations).Error; err != nil {
+	if err := r.DB.Preload("User").Where("doctor_id = ? AND status = ?", doctorID, "active").Find(&consultations).Error; err != nil {
 		return nil, err
 	}
 	return consultations, nil
@@ -102,7 +102,7 @@ func (r *ConsultationRepositoryImpl) GetConsultationsForDoctor(doctorID int) ([]
 // Mendapatkan detail konsultasi untuk dokter
 func (r *ConsultationRepositoryImpl) GetConsultationDetails(consultationID, doctorID int) (*model.Consultation, error) {
 	var consultation model.Consultation
-	if err := r.DB.Where("id = ? AND doctor_id = ?", consultationID, doctorID).First(&consultation).Error; err != nil {
+	if err := r.DB.Preload("User").Preload("Doctor").Where("id = ? AND doctor_id = ?", consultationID, doctorID).First(&consultation).Error; err != nil {
 		return nil, err
 	}
 	return &consultation, nil
