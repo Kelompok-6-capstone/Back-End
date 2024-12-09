@@ -208,7 +208,7 @@ func (uc *ConsultationUsecaseImpl) CreateMidtransPayment(consultationID int, amo
 	snapReq := &snap.Request{
 		TransactionDetails: midtrans.TransactionDetails{
 			OrderID:  fmt.Sprintf("consultation-%d", consultationID),
-			GrossAmt: int64(amount),
+			GrossAmt: int64(amount), // Pastikan ini sesuai dengan `Doctor.Price`
 		},
 		CustomerDetail: &midtrans.CustomerDetails{
 			Email: email,
