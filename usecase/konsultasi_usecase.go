@@ -17,6 +17,8 @@ type ConsultationUsecase interface {
 	GetConsultationsForDoctor(doctorID int) ([]model.Consultation, error)
 	ViewConsultationDetails(doctorID, consultationID int) (*model.Consultation, error)
 	AddRecommendation(doctorID, consultationID int, recommendation string) error
+	GetUserConsultations(userID int) ([]model.Consultation, error)
+	GetPendingConsultationsForAdmin() ([]model.Consultation, error)
 }
 
 type ConsultationUsecaseImpl struct {
@@ -166,4 +168,14 @@ func (uc *ConsultationUsecaseImpl) AddRecommendation(doctorID, consultationID in
 		Rekomendasi:    recommendation,
 	}
 	return uc.Repo.AddRecommendation(recommendationObj)
+}
+
+// Mendapatkan daftar konsultasi dengan dokter untuk user tertentu
+func (uc *ConsultationUsecaseImpl) GetUserConsultations(userID int) ([]model.Consultation, error) {
+	return uc.Repo.GetConsultationsWithDoctors(userID)
+}
+
+// Mendapatkan daftar konsultasi yang belum disetujui pembayarannya
+func (uc *ConsultationUsecaseImpl) GetPendingConsultationsForAdmin() ([]model.Consultation, error) {
+	return uc.Repo.GetPendingConsultations()
 }

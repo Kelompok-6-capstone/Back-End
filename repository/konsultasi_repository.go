@@ -20,6 +20,8 @@ type ConsultationRepository interface {
 	GetConsultationByID(consultationID int) (*model.Consultation, error)
 	UpdateConsultation(consultation *model.Consultation) error
 	GetActiveConsultations() ([]model.Consultation, error)
+	GetConsultationsWithDoctors(userID int) ([]model.Consultation, error)
+	GetPendingConsultations() ([]model.Consultation, error)
 }
 
 type ConsultationRepositoryImpl struct {
@@ -143,4 +145,18 @@ func (r *ConsultationRepositoryImpl) GetActiveConsultations() ([]model.Consultat
 		return nil, err
 	}
 	return consultations, nil
+}
+
+// Mendapatkan daftar konsultasi dengan dokter untuk user tertentu
+func (r *ConsultationRepositoryImpl) GetConsultationsWithDoctors(userID int) ([]model.Consultation, error) {
+	var consultations []model.Consultation
+	err := r.DB.Preload("Doctor").Where("user_id = ?", userID).Find(&consultations).Error
+	return consultations, err
+}
+
+// Mendapatkan daftar konsultasi yang belum disetujui pembayarannya
+func (r *ConsultationRepositoryImpl) GetPendingConsultations() ([]model.Consultation, error) {
+	var consultations []model.Consultation
+	err := r.DB.Preload("User").Where("is_paid = ? AND is_approved = ?", true, false).Find(&consultations).Error
+	return consultations, err
 }
