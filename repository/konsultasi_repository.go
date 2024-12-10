@@ -48,7 +48,7 @@ func (r *ConsultationRepositoryImpl) ApprovePayment(consultationID int) error {
 		return errors.New("consultation not found")
 	}
 
-	if consultation.PaymentStatus != "settlement" {
+	if !consultation.IsPaid {
 		return errors.New("payment not completed")
 	}
 
@@ -160,7 +160,7 @@ func (r *ConsultationRepositoryImpl) GetDoctorByID(doctorID int) (*model.Doctor,
 func (r *ConsultationRepositoryImpl) GetPendingPayments() ([]model.Consultation, error) {
 	var consultations []model.Consultation
 	if err := r.DB.Preload("User").Preload("Doctor").
-		Where("payment_status = ? AND is_approved = ?", "pending", false).
+		Where("is_paid = ? AND is_approved = ?", true, false).
 		Find(&consultations).Error; err != nil {
 		return nil, err
 	}
