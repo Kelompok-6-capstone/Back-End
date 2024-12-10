@@ -218,31 +218,7 @@ func (c *ConsultationController) ViewPendingConsultation(ctx echo.Context) error
 
 	return helper.JSONSuccessResponse(ctx, mapConsultationToDTO(*consultation))
 }
-
-// Menyetujui konsultasi
-func (c *ConsultationController) ApproveConsultation(ctx echo.Context) error {
-	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
-	if !ok || claims == nil {
-		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized access.")
-	}
-
-	consultationID, err := strconv.Atoi(ctx.Param("id"))
-	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid consultation ID.")
-	}
-
-	// Memanggil fungsi di Usecase untuk menyetujui konsultasi
-	err = c.ConsultationUsecase.ApproveConsultation(consultationID)
-	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to approve consultation: "+err.Error())
-	}
-
-	return helper.JSONSuccessResponse(ctx, map[string]interface{}{
-		"message": "Consultation approved successfully.",
-	})
-}
-
-func (c *ConsultationController) UpdatePaymentStatus(ctx echo.Context) error {
+func (c *ConsultationController) ApprovePaymentAndConsultation(ctx echo.Context) error {
 	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
 	if !ok || claims == nil {
 		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized access.")
@@ -254,24 +230,21 @@ func (c *ConsultationController) UpdatePaymentStatus(ctx echo.Context) error {
 	}
 
 	var request struct {
-		Status string `json:"status"`
+		Status string `json:"status"` // Status pembayaran
 	}
 
 	if err := ctx.Bind(&request); err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid input.")
 	}
 
-	if request.Status != "paid" && request.Status != "unpaid" {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid status. Allowed values: 'paid', 'unpaid'.")
-	}
-
-	err = c.ConsultationUsecase.UpdatePaymentStatus(consultationID, request.Status)
+	// Panggil usecase untuk menyetujui pembayaran dan konsultasi
+	err = c.ConsultationUsecase.ApprovePaymentAndConsultation(consultationID, request.Status)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to update payment status: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to approve consultation: "+err.Error())
 	}
 
 	return helper.JSONSuccessResponse(ctx, map[string]interface{}{
-		"message": "Payment status updated successfully.",
+		"message": "Consultation and payment approved successfully.",
 	})
 }
 
