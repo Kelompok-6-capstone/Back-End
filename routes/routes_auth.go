@@ -82,19 +82,30 @@ func DoctorAuthRoutes(e *echo.Echo, authController *controller.DoctorAuthControl
 	e.POST("/doctor/resend-otp", authController.ResendOtp)    // Kirim ulang OTP
 }
 
-func DoctorProfil(e *echo.Group, profilController *controller.DoctorProfileController, artikelController *controller.ArtikelController, consultationController *controller.ConsultationController, fitur *controller.UserFiturController) {
+func DoctorProfil(
+	e *echo.Group,
+	profilController *controller.DoctorProfileController,
+	artikelController *controller.ArtikelController,
+	consultationController *controller.ConsultationController,
+	fiturController *controller.UserFiturController,
+) {
+	// Profil Dokter
 	e.GET("/profile", profilController.GetProfile)           // Mendapatkan profil dokter
 	e.PUT("/profile", profilController.UpdateProfile)        // Mengupdate profil dokter
 	e.PUT("/status", profilController.SetActiveStatus)       // Mengubah status aktif/tidak aktif dokter
-	e.GET("/artikel", artikelController.GetAllArtikel)       // Lihat semua artikel
-	e.GET("/artikel/:id", artikelController.GetArtikelByID)  // Lihat detail artikel
-	e.POST("/upload-image", profilController.UploadAvatar)   // Upload image untuk dokter
-	e.DELETE("/delete-image", profilController.DeleteAvatar) // Hapus image dokter
-	e.GET("/tags", fitur.GetAllTags)                         // Mendapatkan semua tag (bidang keahlian)
-	e.GET("/titles", fitur.GetAllTitles)                     // Mendapatkan semua title
+	e.POST("/upload-image", profilController.UploadAvatar)   // Upload avatar dokter
+	e.DELETE("/delete-image", profilController.DeleteAvatar) // Hapus avatar dokter
 
-	e.GET("/consultations/pending", consultationController.GetPendingConsultations)  // Mendapatkan semua konsultasi pending
-	e.GET("/consultations/:id", consultationController.ViewPendingConsultation)      // Mendapatkan detail konsultasi pending
-	e.POST("/consultations/:id/approve", consultationController.ApproveConsultation) // Menyetujui konsultasi
+	// Artikel
+	e.GET("/artikel", artikelController.GetAllArtikel)      // Mendapatkan semua artikel
+	e.GET("/artikel/:id", artikelController.GetArtikelByID) // Mendapatkan detail artikel berdasarkan ID
 
+	// Tags dan Titles
+	e.GET("/tags", fiturController.GetAllTags)     // Mendapatkan semua tag (bidang keahlian)
+	e.GET("/titles", fiturController.GetAllTitles) // Mendapatkan semua title
+
+	// Konsultasi
+	e.GET("/consultations", consultationController.GetConsultationsForDoctor)             // Mendapatkan semua konsultasi pasien dokter
+	e.GET("/consultations/:id", consultationController.ViewConsultationDetails)           // Mendapatkan detail konsultasi tertentu
+	e.POST("/consultations/:id/recommendation", consultationController.AddRecommendation) // Menambahkan rekomendasi pada konsultasi
 }
