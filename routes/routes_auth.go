@@ -44,7 +44,6 @@ func UserProfil(
 	e.POST("/consultations", konsultasi.CreateConsultation)  // Membuat konsultasi
 	e.GET("/consultations", konsultasi.GetUserConsultations) // Mendapatkan semua konsultasi user
 	e.GET("/consultations/:id", konsultasi.GetUserConsultationDetails)
-	e.POST("/midtrans/callback", konsultasi.PaymentNotification)
 
 	// Endpoint untuk artikel
 	e.GET("/artikel", artikelController.GetAllArtikel)      // Mendapatkan semua artikel
