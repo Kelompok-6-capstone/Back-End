@@ -50,10 +50,11 @@ func (r *ConsultationRepositoryImpl) CreateConsultation(consultation *model.Cons
 func (r *ConsultationRepositoryImpl) GetConsultationsForDoctor(doctorID int) ([]model.Consultation, error) {
 	var consultations []model.Consultation
 	if err := r.DB.Preload("User").Preload("Rekomendasi").
-		Where("doctor_id = ? AND status = ?", doctorID, "active").
+		Where("doctor_id = ? AND status IN ?", doctorID, []string{"paid", "approved"}).
 		Find(&consultations).Error; err != nil {
 		return nil, err
 	}
+	fmt.Printf("Consultations found: %+v\n", consultations) // Logging untuk debug
 	return consultations, nil
 }
 

@@ -119,7 +119,7 @@ func (c *ConsultationController) GetConsultationsForDoctor(ctx echo.Context) err
 
 	var response []model.ConsultationDTO
 	for _, cons := range consultations {
-		if cons.Status == "paid" { // Filter hanya yang "paid"
+		if cons.Status == "paid" || cons.Status == "approved" { // Tambahkan "approved"
 			response = append(response, mapConsultationToDTO(cons))
 		}
 	}

@@ -67,7 +67,7 @@ func (uc *ConsultationUsecaseImpl) ApprovePaymentAndConsultation(consultationID 
 
 	// Perbarui status konsultasi dan pembayaran
 	consultation.Status = "approved"
-	consultation.PaymentStatus = paymentStatus
+	consultation.PaymentStatus = "paid" // Pastikan ini juga diperbarui
 
 	// Simpan perubahan ke database
 	err = uc.Repo.UpdateConsultation(consultation)
@@ -122,7 +122,14 @@ func (uc *ConsultationUsecaseImpl) GetConsultationByID(consultationID int) (*mod
 
 // Mendapatkan daftar konsultasi untuk dokter
 func (uc *ConsultationUsecaseImpl) GetConsultationsForDoctor(doctorID int) ([]model.Consultation, error) {
-	return uc.Repo.GetConsultationsForDoctor(doctorID)
+	consultations, err := uc.Repo.GetConsultationsForDoctor(doctorID)
+	if err != nil {
+		return nil, err
+	}
+	if len(consultations) == 0 {
+		fmt.Printf("No consultations found for doctor ID %d\n", doctorID) // Debugging tambahan
+	}
+	return consultations, nil
 }
 
 // Mendapatkan detail konsultasi tertentu untuk dokter
