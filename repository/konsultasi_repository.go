@@ -74,17 +74,6 @@ func (r *ConsultationRepositoryImpl) AddRecommendation(recommendation *model.Rek
 }
 
 // Mendapatkan konsultasi berdasarkan ID
-func (r *ConsultationRepositoryImpl) GetConsultationByID(consultationID int) (*model.Consultation, error) {
-	var consultation model.Consultation
-	if err := r.DB.
-		Preload("User").        // Preload relasi User
-		Preload("Doctor").      // Preload relasi Doctor
-		Preload("Rekomendasi"). // Preload rekomendasi
-		First(&consultation, consultationID).Error; err != nil {
-		return nil, err
-	}
-	return &consultation, nil
-}
 
 func (r *ConsultationRepositoryImpl) GetActiveConsultations() ([]model.Consultation, error) {
 	var consultations []model.Consultation
@@ -97,6 +86,15 @@ func (r *ConsultationRepositoryImpl) GetActiveConsultations() ([]model.Consultat
 
 func (r *ConsultationRepositoryImpl) UpdateConsultation(consultation *model.Consultation) error {
 	return r.DB.Save(consultation).Error
+}
+
+func (r *ConsultationRepositoryImpl) GetConsultationByID(consultationID int) (*model.Consultation, error) {
+	var consultation model.Consultation
+	err := r.DB.Preload("User").Preload("Doctor").First(&consultation, consultationID).Error
+	if err != nil {
+		return nil, err
+	}
+	return &consultation, nil
 }
 
 // Mendapatkan daftar konsultasi untuk user tertentu

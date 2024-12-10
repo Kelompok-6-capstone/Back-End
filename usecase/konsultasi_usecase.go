@@ -54,6 +54,22 @@ func (uc *ConsultationUsecaseImpl) MarkExpiredConsultations() error {
 	return nil
 }
 
+func (uc *ConsultationUsecaseImpl) UpdatePaymentStatus(consultationID int, status string) error {
+	consultation, err := uc.Repo.GetConsultationByID(consultationID)
+	if err != nil {
+		return fmt.Errorf("consultation not found: %w", err)
+	}
+
+	consultation.Status = status
+
+	err = uc.Repo.UpdateConsultation(consultation)
+	if err != nil {
+		return fmt.Errorf("failed to update payment status: %w", err)
+	}
+
+	return nil
+}
+
 // Membuat konsultasi baru
 func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, title, description, email string) (string, *model.Consultation, error) {
 	doctor, err := uc.Repo.GetDoctorByID(doctorID)
@@ -133,12 +149,19 @@ func (uc *ConsultationUsecaseImpl) ApproveConsultation(consultationID int) error
 		return fmt.Errorf("consultation not found: %w", err)
 	}
 
+	// Validasi apakah konsultasi sudah dibayar
 	if consultation.Status != "paid" {
 		return errors.New("consultation is not paid yet")
 	}
 
+	// Update status menjadi "approved"
 	consultation.Status = "approved"
-	return uc.Repo.UpdateConsultation(consultation)
+	err = uc.Repo.UpdateConsultation(consultation)
+	if err != nil {
+		return fmt.Errorf("failed to update consultation status: %w", err)
+	}
+
+	return nil
 }
 
 // Membuat pembayaran menggunakan Midtrans
@@ -174,21 +197,6 @@ func (uc *ConsultationUsecaseImpl) VerifyPayment(consultationID int) (string, er
 	transactionStatusResp, err := client.CheckTransaction(orderID)
 	if err != nil {
 		return "", fmt.Errorf("failed to verify payment: %w", err)
-	}
-
-	if transactionStatusResp.TransactionStatus == "settlement" {
-		consultation, err := uc.Repo.GetConsultationByID(consultationID)
-		if err != nil {
-			return "", fmt.Errorf("consultation not found: %w", err)
-		}
-
-		if consultation.Status != "paid" {
-			consultation.Status = "paid"
-			err = uc.Repo.UpdateConsultation(consultation)
-			if err != nil {
-				return "", fmt.Errorf("failed to update consultation status: %w", err)
-			}
-		}
 	}
 
 	return transactionStatusResp.TransactionStatus, nil

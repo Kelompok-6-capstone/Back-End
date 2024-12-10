@@ -119,7 +119,9 @@ func (c *ConsultationController) GetConsultationsForDoctor(ctx echo.Context) err
 
 	var response []model.ConsultationDTO
 	for _, cons := range consultations {
-		response = append(response, mapConsultationToDTO(cons))
+		if cons.Status == "paid" { // Filter hanya yang "paid"
+			response = append(response, mapConsultationToDTO(cons))
+		}
 	}
 
 	return helper.JSONSuccessResponse(ctx, response)
@@ -229,6 +231,7 @@ func (c *ConsultationController) ApproveConsultation(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid consultation ID.")
 	}
 
+	// Memanggil fungsi di Usecase untuk menyetujui konsultasi
 	err = c.ConsultationUsecase.ApproveConsultation(consultationID)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to approve consultation: "+err.Error())
@@ -236,6 +239,39 @@ func (c *ConsultationController) ApproveConsultation(ctx echo.Context) error {
 
 	return helper.JSONSuccessResponse(ctx, map[string]interface{}{
 		"message": "Consultation approved successfully.",
+	})
+}
+
+func (c *ConsultationController) UpdatePaymentStatus(ctx echo.Context) error {
+	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
+	if !ok || claims == nil {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized access.")
+	}
+
+	consultationID, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid consultation ID.")
+	}
+
+	var request struct {
+		Status string `json:"status"`
+	}
+
+	if err := ctx.Bind(&request); err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid input.")
+	}
+
+	if request.Status != "paid" && request.Status != "unpaid" {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid status. Allowed values: 'paid', 'unpaid'.")
+	}
+
+	err = c.ConsultationUsecase.UpdatePaymentStatus(consultationID, request.Status)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to update payment status: "+err.Error())
+	}
+
+	return helper.JSONSuccessResponse(ctx, map[string]interface{}{
+		"message": "Payment status updated successfully.",
 	})
 }
 

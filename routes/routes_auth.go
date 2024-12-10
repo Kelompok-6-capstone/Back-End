@@ -70,7 +70,9 @@ func AdminManagementRoutes(e *echo.Group, adminManagement *controller.AdminManag
 	e.DELETE("/artikel/delete-image", artikelController.DeleteArtikelImage) // Hapus image artikel
 	e.GET("/consultations", consultationController.GetPendingConsultations)
 	e.GET("/consultations/:id", consultationController.ViewPendingConsultation)
-	e.POST("/consultations/:id/approve", consultationController.ApproveConsultation)
+	e.PUT("/consultations/:id/approve", consultationController.ApproveConsultation)
+	e.PUT("/consultations/:id/payment", consultationController.UpdatePaymentStatus)
+
 }
 
 // Routes untuk Doctor
