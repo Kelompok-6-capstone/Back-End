@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -127,7 +128,8 @@ func (c *ProfilController) UploadAvatar(ctx echo.Context) error {
 	}
 
 	// Update URL avatar di database
-	avatarURL := fmt.Sprintf("https://%s/uploads/%d_%s", ctx.Request().Host, userID, file.Filename)
+	avatarURL := fmt.Sprintf("https://%s/%s?timestamp=%d", ctx.Request().Host, filePath, time.Now().Unix())
+
 	user := model.User{
 		Avatar: avatarURL,
 	}

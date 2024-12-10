@@ -49,7 +49,7 @@ func (r *ConsultationRepositoryImpl) CreateConsultation(consultation *model.Cons
 // Mendapatkan daftar konsultasi untuk dokter
 func (r *ConsultationRepositoryImpl) GetConsultationsForDoctor(doctorID int) ([]model.Consultation, error) {
 	var consultations []model.Consultation
-	if err := r.DB.Preload("User").Preload("Rekomendasi").
+	if err := r.DB.Preload("User").Preload("Doctor").Preload("Rekomendasi").
 		Where("doctor_id = ? AND status IN ?", doctorID, []string{"paid", "approved"}).
 		Find(&consultations).Error; err != nil {
 		return nil, err
