@@ -48,7 +48,7 @@ func (c *ProfilController) GetProfile(ctx echo.Context) error {
 		Email:         user.Email,
 		NoHp:          user.NoHp,
 		Alamat:        user.Alamat,
-		Tgl_lahir:     user.Tgl_lahir,
+		Tgl_lahir:     user.TglLahir,
 		Jenis_kelamin: user.JenisKelamin,
 		Pekerjaan:     user.Pekerjaan,
 	}

@@ -9,7 +9,7 @@ import (
 )
 
 type ConsultationRepository interface {
-	CreateConsultation(*model.Consultation) error
+	CreateConsultation(*model.Consultation) (int, error)
 	ApprovePayment(consultationID int) error
 	GetConsultationsForDoctor(doctorID int) ([]model.Consultation, error)
 	GetConsultationDetails(consultationID, doctorID int) (*model.Consultation, error)
@@ -34,107 +34,119 @@ func NewConsultationRepositoryImpl(db *gorm.DB) *ConsultationRepositoryImpl {
 	return &ConsultationRepositoryImpl{DB: db}
 }
 
-func (r *ConsultationRepositoryImpl) GetPendingPayments() ([]model.Consultation, error) {
-	var consultations []model.Consultation
-	err := r.DB.Preload("User").Preload("Doctor").Where("is_paid = ? AND is_approved = ?", true, false).Find(&consultations).Error
-	return consultations, err
-}
-
-// Membuat konsultasi baru
 func (r *ConsultationRepositoryImpl) CreateConsultation(consultation *model.Consultation) (int, error) {
-	err := r.DB.Create(consultation).Error
-	if err != nil {
+	if err := r.DB.Preload("Doctor").Create(consultation).Error; err != nil {
 		return 0, err
 	}
 	return consultation.ID, nil
 }
 
-// Menyetujui pembayaran
+// **2. Approve Payment**
 func (r *ConsultationRepositoryImpl) ApprovePayment(consultationID int) error {
 	var consultation model.Consultation
 	if err := r.DB.First(&consultation, consultationID).Error; err != nil {
-		return err
+		return errors.New("consultation not found")
 	}
 
-	if consultation.IsPaid && !consultation.IsApproved {
-		consultation.IsApproved = true
-		consultation.StartTime = time.Now()
-		consultation.Status = "active"
-		return r.DB.Save(&consultation).Error
+	if consultation.PaymentStatus != "settlement" {
+		return errors.New("payment not completed")
 	}
 
-	return errors.New("payment not completed or already approved")
+	if consultation.IsApproved {
+		return errors.New("payment already approved")
+	}
+
+	consultation.IsApproved = true
+	consultation.Status = "active"
+	consultation.StartTime = time.Now()
+
+	return r.DB.Save(&consultation).Error
 }
 
-// Mendapatkan daftar konsultasi untuk dokter
 func (r *ConsultationRepositoryImpl) GetConsultationsForDoctor(doctorID int) ([]model.Consultation, error) {
 	var consultations []model.Consultation
-	if err := r.DB.Preload("User").Where("doctor_id = ? AND status = ?", doctorID, "active").Find(&consultations).Error; err != nil {
+	if err := r.DB.Preload("User").Preload("Rekomendasi").
+		Where("doctor_id = ? AND status = ?", doctorID, "active").
+		Find(&consultations).Error; err != nil {
 		return nil, err
 	}
 	return consultations, nil
 }
 
-// Mendapatkan detail konsultasi untuk dokter
 func (r *ConsultationRepositoryImpl) GetConsultationDetails(consultationID, doctorID int) (*model.Consultation, error) {
 	var consultation model.Consultation
-	if err := r.DB.Preload("User").Preload("Doctor").Where("id = ? AND doctor_id = ?", consultationID, doctorID).First(&consultation).Error; err != nil {
+	if err := r.DB.Preload("User").Preload("Doctor").Preload("Rekomendasi").
+		Where("id = ? AND doctor_id = ?", consultationID, doctorID).
+		First(&consultation).Error; err != nil {
 		return nil, err
 	}
 	return &consultation, nil
 }
 
-// Menambahkan rekomendasi
 func (r *ConsultationRepositoryImpl) AddRecommendation(recommendation *model.Rekomendasi) error {
 	return r.DB.Create(recommendation).Error
 }
 
-// Mendapatkan detail konsultasi untuk admin
 func (r *ConsultationRepositoryImpl) GetAdminViewConsultation(consultationID int) (*model.Consultation, error) {
 	var consultation model.Consultation
-	if err := r.DB.Preload("User").Preload("Doctor").First(&consultation, consultationID).Error; err != nil {
+	if err := r.DB.Preload("User").Preload("Doctor").Preload("Rekomendasi").
+		First(&consultation, consultationID).Error; err != nil {
 		return nil, err
 	}
 	return &consultation, nil
 }
 
-// Mendapatkan konsultasi berdasarkan ID
 func (r *ConsultationRepositoryImpl) GetConsultationByID(consultationID int) (*model.Consultation, error) {
 	var consultation model.Consultation
-	if err := r.DB.First(&consultation, consultationID).Error; err != nil {
+	if err := r.DB.Preload("User").Preload("Doctor").Preload("Rekomendasi").
+		First(&consultation, consultationID).Error; err != nil {
 		return nil, err
 	}
 	return &consultation, nil
 }
 
-// Memperbarui konsultasi
 func (r *ConsultationRepositoryImpl) UpdateConsultation(consultation *model.Consultation) error {
 	return r.DB.Save(consultation).Error
 }
 
-// Mendapatkan daftar konsultasi aktif
 func (r *ConsultationRepositoryImpl) GetActiveConsultations() ([]model.Consultation, error) {
 	var consultations []model.Consultation
-	if err := r.DB.Where("status = ?", "active").Find(&consultations).Error; err != nil {
+	if err := r.DB.Preload("User").Preload("Doctor").Preload("Rekomendasi").
+		Where("status = ?", "active").
+		Find(&consultations).Error; err != nil {
+		return nil, err
+	}
+	return consultations, nil
+}
+func (r *ConsultationRepositoryImpl) GetConsultationsWithDoctors(userID int) ([]model.Consultation, error) {
+	var consultations []model.Consultation
+	if err := r.DB.Preload("Doctor").Preload("Rekomendasi").
+		Where("user_id = ?", userID).
+		Find(&consultations).Error; err != nil {
 		return nil, err
 	}
 	return consultations, nil
 }
 
-// Mendapatkan daftar konsultasi dengan dokter untuk user tertentu
-func (r *ConsultationRepositoryImpl) GetConsultationsWithDoctors(userID int) ([]model.Consultation, error) {
+func (r *ConsultationRepositoryImpl) GetPendingConsultations() ([]model.Consultation, error) {
 	var consultations []model.Consultation
-	err := r.DB.Preload("Doctor").Where("user_id = ?", userID).Find(&consultations).Error
-	return consultations, err
+	if err := r.DB.Preload("User").Preload("Doctor").Preload("Rekomendasi").
+		Where("status = ?", "pending").
+		Find(&consultations).Error; err != nil {
+		return nil, err
+	}
+	return consultations, nil
 }
 
 func (r *ConsultationRepositoryImpl) AddIncomeForDoctor(doctorID int, amount float64) error {
-	return r.DB.Model(&model.Doctor{}).Where("id = ?", doctorID).Update("income", gorm.Expr("income + ?", amount)).Error
+	return r.DB.Model(&model.Doctor{}).
+		Where("id = ?", doctorID).
+		Update("income", gorm.Expr("income + ?", amount)).
+		Error
 }
 
 func (r *ConsultationRepositoryImpl) AddIncomeForAdmin(amount float64) error {
-	adminAccount := &model.Admin{ID: 1} // Asumsikan admin ID selalu 1
-	return r.DB.Model(adminAccount).Update("income", gorm.Expr("income + ?", amount)).Error
+	return r.DB.Exec("UPDATE admins SET income = income + ? WHERE id = ?", amount, 1).Error
 }
 
 func (r *ConsultationRepositoryImpl) GetDoctorByID(doctorID int) (*model.Doctor, error) {
@@ -143,4 +155,14 @@ func (r *ConsultationRepositoryImpl) GetDoctorByID(doctorID int) (*model.Doctor,
 		return nil, err
 	}
 	return &doctor, nil
+}
+
+func (r *ConsultationRepositoryImpl) GetPendingPayments() ([]model.Consultation, error) {
+	var consultations []model.Consultation
+	if err := r.DB.Preload("User").Preload("Doctor").
+		Where("payment_status = ? AND is_approved = ?", "pending", false).
+		Find(&consultations).Error; err != nil {
+		return nil, err
+	}
+	return consultations, nil
 }

@@ -47,8 +47,8 @@ func (r *UserProfilRepositoryImpl) UpdateByID(id int, user *model.User) (*model.
 	if user.Alamat != "" {
 		existingUser.Alamat = user.Alamat
 	}
-	if user.Tgl_lahir != "" {
-		existingUser.Tgl_lahir = user.Tgl_lahir
+	if user.TglLahir != "" {
+		existingUser.TglLahir = user.TglLahir
 	}
 	if user.JenisKelamin != "" {
 		existingUser.JenisKelamin = user.JenisKelamin

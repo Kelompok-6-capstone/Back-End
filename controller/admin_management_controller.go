@@ -65,7 +65,7 @@ func (ac *AdminManagementController) GetUserDetail(c echo.Context) error {
 		ID:         user.ID,
 		Username:   user.Username,
 		Email:      user.Email,
-		TglLahir:   user.Tgl_lahir,
+		TglLahir:   user.TglLahir,
 		NoHp:       user.NoHp,
 		Pekerjaan:  user.Pekerjaan,
 		Alamat:     user.Alamat,

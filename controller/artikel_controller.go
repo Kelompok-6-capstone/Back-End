@@ -166,6 +166,21 @@ func (c *ArtikelController) DeleteArtikel(ctx echo.Context) error {
 
 	return helper.JSONSuccessResponse(ctx, map[string]string{"message": "Artikel deleted successfully"})
 }
+
+func (c *ArtikelController) SearchArtikel(ctx echo.Context) error {
+	query := ctx.QueryParam("query")
+	if query == "" {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Query tidak boleh kosong")
+	}
+
+	artikel, err := c.Usecase.SearchArtikel(query)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mencari dokter: "+err.Error())
+	}
+
+	return helper.JSONSuccessResponse(ctx, artikel)
+}
+
 func (c *ArtikelController) UploadArtikelImage(ctx echo.Context) error {
 	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
 	if !ok {

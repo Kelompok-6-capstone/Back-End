@@ -12,6 +12,7 @@ type ArtikelUsecase interface {
 	GetArtikelByID(id int) (*model.Artikel, error)
 	UpdateArtikel(artikel *model.Artikel) error
 	DeleteArtikel(adminID int, id int) error
+	SearchArtikel(query string) ([]model.Artikel, error)
 }
 
 type artikelUsecase struct {
@@ -56,4 +57,8 @@ func (u *artikelUsecase) DeleteArtikel(adminID int, id int) error {
 		return errors.New("unauthorized to delete this artikel")
 	}
 	return u.repo.Delete(id)
+}
+
+func (u *artikelUsecase) SearchArtikel(query string) ([]model.Artikel, error) {
+	return u.repo.SearchArtikel(query)
 }
