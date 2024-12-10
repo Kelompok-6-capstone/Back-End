@@ -68,11 +68,9 @@ func AdminManagementRoutes(e *echo.Group, adminManagement *controller.AdminManag
 	e.DELETE("/artikel/:id", artikelController.DeleteArtikel)               // Hapus artikel
 	e.POST("/artikel/upload-image", artikelController.UploadArtikelImage)   // Upload image untuk artikel
 	e.DELETE("/artikel/delete-image", artikelController.DeleteArtikelImage) // Hapus image artikel
-
-	e.GET("/consultations", consultationController.GetConsultationsForDoctor)             // Mendapatkan semua konsultasi pasien
-	e.GET("/consultations/:id", consultationController.ViewConsultationDetails)           // Mendapatkan detail konsultasi pasien
-	e.POST("/consultations/:id/recommendation", consultationController.AddRecommendation) // Menambahkan rekomendasi untuk konsultasi
-
+	e.GET("/consultations", consultationController.GetPendingConsultations)
+	e.GET("/consultations/:id", consultationController.ViewPendingConsultation)
+	e.POST("/consultations/:id/approve", consultationController.ApproveConsultation)
 }
 
 // Routes untuk Doctor

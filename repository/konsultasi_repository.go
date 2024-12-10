@@ -65,7 +65,10 @@ func (r *ConsultationRepositoryImpl) AddRecommendation(recommendation *model.Rek
 // Mendapatkan konsultasi berdasarkan ID
 func (r *ConsultationRepositoryImpl) GetConsultationByID(consultationID int) (*model.Consultation, error) {
 	var consultation model.Consultation
-	if err := r.DB.Preload("User").Preload("Doctor").Preload("Rekomendasi").
+	if err := r.DB.
+		Preload("User").        // Preload relasi User
+		Preload("Doctor").      // Preload relasi Doctor
+		Preload("Rekomendasi"). // Preload rekomendasi
 		First(&consultation, consultationID).Error; err != nil {
 		return nil, err
 	}
@@ -88,7 +91,10 @@ func (r *ConsultationRepositoryImpl) UpdateConsultation(consultation *model.Cons
 // Mendapatkan daftar konsultasi untuk user tertentu
 func (r *ConsultationRepositoryImpl) GetConsultationsWithDoctors(userID int) ([]model.Consultation, error) {
 	var consultations []model.Consultation
-	if err := r.DB.Preload("Doctor").Preload("Rekomendasi").
+	if err := r.DB.
+		Preload("Doctor").      // Preload relasi Doctor
+		Preload("Rekomendasi"). // Preload rekomendasi
+		Preload("User").        // Preload relasi User
 		Where("user_id = ?", userID).
 		Find(&consultations).Error; err != nil {
 		return nil, err

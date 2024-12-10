@@ -242,12 +242,10 @@ func mapConsultationToDTO(consultation model.Consultation) model.ConsultationDTO
 		User: &model.UserDTO{
 			Username: consultation.User.Username,
 			Email:    consultation.User.Email,
-			Avatar:   consultation.User.Avatar,
 		},
 		Doctor: &model.DoctorDTO{
 			Username: consultation.Doctor.Username,
 			Email:    consultation.Doctor.Email,
-			Avatar:   consultation.Doctor.Avatar,
 			Price:    consultation.Doctor.Price,
 		},
 		Rekomendasi: mapRecommendationsToDTO(consultation.Rekomendasi),
