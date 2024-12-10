@@ -88,10 +88,19 @@ func (c *ConsultationController) CreateConsultation(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to create consultation: "+err.Error())
 	}
 
-	consultationDTO := mapConsultationToDTO(*consultation)
-	consultationDTO.PaymentURL = paymentURL
+	// Mapping response ke SimpleConsultationDTO
+	response := model.SimpleConsultationDTO{
+		ID:          consultation.ID,
+		Title:       consultation.Title,
+		Description: consultation.Description,
+		Duration:    consultation.Duration,
+		Status:      consultation.Status,
+		StartTime:   consultation.StartTime.Format(time.RFC3339),
+		OrderID:     consultation.OrderID,
+		PaymentURL:  paymentURL,
+	}
 
-	return helper.JSONSuccessResponse(ctx, consultationDTO)
+	return helper.JSONSuccessResponse(ctx, response)
 }
 
 // **Doctor Endpoints**
@@ -239,6 +248,7 @@ func mapConsultationToDTO(consultation model.Consultation) model.ConsultationDTO
 		Duration:    consultation.Duration,
 		Status:      consultation.Status,
 		StartTime:   consultation.StartTime.Format(time.RFC3339),
+		OrderID:     consultation.OrderID, // Include OrderID
 		User: &model.UserDTO{
 			Username: consultation.User.Username,
 			Email:    consultation.User.Email,

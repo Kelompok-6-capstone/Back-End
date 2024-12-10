@@ -2,6 +2,7 @@ package repository
 
 import (
 	"calmind/model"
+	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -29,9 +30,19 @@ func NewConsultationRepositoryImpl(db *gorm.DB) *ConsultationRepositoryImpl {
 
 // Membuat konsultasi baru
 func (r *ConsultationRepositoryImpl) CreateConsultation(consultation *model.Consultation) (int, error) {
-	if err := r.DB.Preload("User").Preload("Doctor").Create(consultation).Error; err != nil {
+	// Simpan konsultasi
+	if err := r.DB.Create(consultation).Error; err != nil {
+		fmt.Println("Error saat menyimpan konsultasi:", err)
 		return 0, err
 	}
+
+	// Preload data User dan Doctor
+	if err := r.DB.Preload("User").Preload("Doctor").First(&consultation, consultation.ID).Error; err != nil {
+		fmt.Println("Error saat preload konsultasi:", err)
+		return 0, err
+	}
+
+	fmt.Printf("Consultation setelah Preload: %+v\n", consultation)
 	return consultation.ID, nil
 }
 

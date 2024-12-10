@@ -65,12 +65,16 @@ func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, titl
 		return "", nil, errors.New("doctor price is invalid")
 	}
 
+	// Generate unique Order ID
+	orderID := fmt.Sprintf("CONSULT-%d-%d", userID, time.Now().Unix())
+
 	consultation := &model.Consultation{
 		UserID:      userID,
 		DoctorID:    doctorID,
 		Title:       title,
 		Description: description,
 		Status:      "pending",
+		OrderID:     orderID, // Assign generated Order ID
 		StartTime:   time.Now(),
 	}
 
