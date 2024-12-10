@@ -219,15 +219,17 @@ func (uc *ConsultationUsecaseImpl) VerifyPayment(consultationID int) (string, er
 		return "", fmt.Errorf("gagal memverifikasi pembayaran: %w", err)
 	}
 
+	// Perbarui status pembayaran di database
 	if transactionStatusResp.TransactionStatus == "settlement" {
-		// Perbarui status pembayaran di database
+		fmt.Println("Pembayaran berhasil. Updating is_paid to true.")
 		consultation, err := uc.Repo.GetConsultationByID(consultationID)
 		if err != nil {
 			return "", fmt.Errorf("konsultasi tidak ditemukan: %w", err)
 		}
 
 		consultation.IsPaid = true
-		if err = uc.Repo.UpdateConsultation(consultation); err != nil {
+		err = uc.Repo.UpdateConsultation(consultation)
+		if err != nil {
 			return "", fmt.Errorf("gagal memperbarui status pembayaran konsultasi: %w", err)
 		}
 	}

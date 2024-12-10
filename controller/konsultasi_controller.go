@@ -59,12 +59,23 @@ func (c *ConsultationController) ApprovePayment(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "ID konsultasi tidak valid.")
 	}
 
+	// Periksa status pembayaran di database
+	consultation, err := c.ConsultationUsecase.GetConsultationByID(consultationID)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "Konsultasi tidak ditemukan.")
+	}
+
+	if !consultation.IsPaid {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Pembayaran belum selesai.")
+	}
+
+	// Approve konsultasi
 	err = c.ConsultationUsecase.ApprovePayment(claims.UserID, consultationID)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyetujui pembayaran: "+err.Error())
 	}
 
-	return helper.JSONSuccessResponse(ctx, "Pembayaran berhasil disetujui.")
+	return helper.JSONSuccessResponse(ctx, "Pembayaran berhasil disetujui dan konsultasi diaktifkan.")
 }
 
 // Melihat daftar konsultasi (User)
@@ -220,7 +231,6 @@ func (c *ConsultationController) GetPendingPayments(ctx echo.Context) error {
 	return helper.JSONSuccessResponse(ctx, pendingPayments)
 }
 
-// Melihat detail pembayaran (Admin)
 func (c *ConsultationController) GetPaymentDetails(ctx echo.Context) error {
 	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
 	if !ok || claims == nil {
