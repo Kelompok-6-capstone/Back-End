@@ -90,8 +90,8 @@ func (c *ProfilController) UploadAvatar(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan file: "+err.Error())
 	}
 
-	// Validasi ukuran file (maksimal 5 MB)
-	if file.Size > 5*1024*1024 {
+	// Validasi ukuran file (maksimal 10 MB)
+	if file.Size > 10*1024*1024 {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Ukuran file maksimal 5 MB")
 	}
 

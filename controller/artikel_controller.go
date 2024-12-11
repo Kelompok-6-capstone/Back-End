@@ -195,7 +195,7 @@ func (c *ArtikelController) UploadArtikelImage(ctx echo.Context) error {
 	}
 
 	// Validasi ukuran file (maksimal 5 MB)
-	if file.Size > 5*1024*1024 {
+	if file.Size > 10*1024*1024 {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Ukuran file maksimal 5 MB")
 	}
 
