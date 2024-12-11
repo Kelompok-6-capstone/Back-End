@@ -47,6 +47,7 @@ func UserProfil(
 	// Endpoint untuk artikel
 	e.GET("/artikel", artikelController.GetAllArtikel)      // Mendapatkan semua artikel
 	e.GET("/artikel/:id", artikelController.GetArtikelByID) // Mendapatkan detail artikel berdasarkan ID
+	e.GET("/artikel/search", artikelController.SearchArtikel)
 
 }
 
@@ -57,10 +58,15 @@ func AdminAuthRoutes(e *echo.Echo, authController *controller.AdminAuthControlle
 }
 
 func AdminManagementRoutes(e *echo.Group, adminManagement *controller.AdminManagementController, artikelController *controller.ArtikelController, consultationController *controller.ConsultationController) {
-	e.GET("/allusers", adminManagement.GetAllUsers)                         // Ambil Semua Data User
-	e.GET("/alldocters", adminManagement.GetAllDoctors)                     // Ambil Semua Data Dokter
-	e.DELETE("/users/:id", adminManagement.DeleteUser)                      // Hapus User berdasarkan ID
-	e.DELETE("/docters/:id", adminManagement.DeleteDoctor)                  // Hapus Dokter berdasarkan ID
+	// user
+	e.GET("/allusers", adminManagement.GetAllUsers)    // Ambil Semua Data User
+	e.DELETE("/users/:id", adminManagement.DeleteUser) // Hapus User berdasarkan ID
+
+	// dokter
+	e.GET("/alldocters", adminManagement.GetAllDoctors)    // Ambil Semua Data Dokter
+	e.DELETE("/docters/:id", adminManagement.DeleteDoctor) // Hapus Dokter berdasarkan ID
+
+	// artikel
 	e.POST("/artikel", artikelController.CreateArtikel)                     // Tambah artikel
 	e.GET("/artikel", artikelController.GetAllArtikel)                      // Lihat semua artikel
 	e.GET("/artikel/:id", artikelController.GetArtikelByID)                 // Lihat detail artikel
@@ -68,6 +74,8 @@ func AdminManagementRoutes(e *echo.Group, adminManagement *controller.AdminManag
 	e.DELETE("/artikel/:id", artikelController.DeleteArtikel)               // Hapus artikel
 	e.POST("/artikel/upload-image", artikelController.UploadArtikelImage)   // Upload image untuk artikel
 	e.DELETE("/artikel/delete-image", artikelController.DeleteArtikelImage) // Hapus image artikel
+
+	// konsultasi
 	e.GET("/consultations", consultationController.GetPendingConsultations)
 	e.GET("/consultations/:id", consultationController.ViewPendingConsultation)
 	e.PUT("/consultations/:id/approve", consultationController.ApprovePaymentAndConsultation)
@@ -95,10 +103,6 @@ func DoctorProfil(
 	e.PUT("/status", profilController.SetActiveStatus)       // Mengubah status aktif/tidak aktif dokter
 	e.POST("/upload-image", profilController.UploadAvatar)   // Upload avatar dokter
 	e.DELETE("/delete-image", profilController.DeleteAvatar) // Hapus avatar dokter
-
-	// Artikel
-	e.GET("/artikel", artikelController.GetAllArtikel)      // Mendapatkan semua artikel
-	e.GET("/artikel/:id", artikelController.GetArtikelByID) // Mendapatkan detail artikel berdasarkan ID
 
 	// Tags dan Titles
 	e.GET("/tags", fiturController.GetAllTags)     // Mendapatkan semua tag (bidang keahlian)

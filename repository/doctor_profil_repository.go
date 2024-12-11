@@ -96,7 +96,7 @@ func (r *DoctorProfilRepositoryImpl) UpdateByID(id int, doctor *model.Doctor) (*
 
 // Memperbarui status aktif dokter
 func (r *DoctorProfilRepositoryImpl) UpdateDoctorActiveStatus(id int, isActive bool) error {
-	err := r.DB.Model(&model.Doctor{}).Where("id = ?", id).Update("is_active", isActive).Error
+	err := r.DB.Model(&model.Doctor{}).Where("id = ?", id).UpdateColumn("is_active", isActive).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return fmt.Errorf("doctor with ID %d not found", id)

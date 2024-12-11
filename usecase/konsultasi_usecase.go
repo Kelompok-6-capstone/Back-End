@@ -38,21 +38,23 @@ func NewConsultationUsecaseImpl(repo *repository.ConsultationRepositoryImpl) *Co
 func (uc *ConsultationUsecaseImpl) MarkExpiredConsultations() error {
 	consultations, err := uc.Repo.GetActiveConsultations()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to fetch active consultations: %v", err)
 	}
 
 	now := time.Now()
 	for _, consultation := range consultations {
 		endTime := consultation.StartTime.Add(time.Duration(consultation.Duration) * time.Minute)
 		if now.After(endTime) {
-			consultation.Status = "ended"
-			if err := uc.Repo.UpdateConsultation(&consultation); err != nil {
-				return errors.New("failed to update consultation status")
+			consultation.Status = "expired"
+			err := uc.Repo.UpdateConsultation(&consultation)
+			if err != nil {
+				return fmt.Errorf("failed to update consultation %d: %v", consultation.ID, err)
 			}
 		}
 	}
 	return nil
 }
+
 func (uc *ConsultationUsecaseImpl) ApprovePaymentAndConsultation(consultationID int, paymentStatus string) error {
 	// Validasi pembayaran
 	if paymentStatus != "paid" {

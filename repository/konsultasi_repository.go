@@ -3,6 +3,7 @@ package repository
 import (
 	"calmind/model"
 	"fmt"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -77,12 +78,14 @@ func (r *ConsultationRepositoryImpl) AddRecommendation(recommendation *model.Rek
 // Mendapatkan konsultasi berdasarkan ID
 func (r *ConsultationRepositoryImpl) GetActiveConsultations() ([]model.Consultation, error) {
 	var consultations []model.Consultation
-	err := r.DB.Where("status = ?", "active").Find(&consultations).Error
+	err := r.DB.Where("status = ? AND start_time <= ?", "active", time.Now()).
+		Find(&consultations).Error
 	if err != nil {
 		return nil, err
 	}
 	return consultations, nil
 }
+
 func (r *ConsultationRepositoryImpl) UpdateConsultation(consultation *model.Consultation) error {
 	return r.DB.Save(consultation).Error
 }

@@ -8,11 +8,11 @@ import (
 
 type AdminManagementRepo interface {
 	FindAllUsers() ([]*model.User, error)
-	FindAllDocters() ([]*model.Doctor, error)
-	DeleteUsers(id int) (*model.User, error)
-	DeleteDocter(id int) (*model.Doctor, error)
-	FindUserDetail(id int) (*model.User, error)
-	FindDocterDetail(id int) (*model.Doctor, error)
+	FindAllDoctors() ([]*model.Doctor, error)
+	DeleteUser(id int) (*model.User, error)
+	DeleteDoctor(id int) (*model.Doctor, error)
+	FindAllUsersWithLastConsultation() ([]*model.User, error)
+	FindAllDoctorsWithLastConsultation() ([]*model.Doctor, error)
 }
 
 type AdminManagementRepoImpl struct {
@@ -23,16 +23,56 @@ func NewAdminManagementRepo(db *gorm.DB) AdminManagementRepo {
 	return &AdminManagementRepoImpl{DB: db}
 }
 
+// Find all users
 func (ar *AdminManagementRepoImpl) FindAllUsers() ([]*model.User, error) {
 	var users []*model.User
 	err := ar.DB.Find(&users).Error
-	return users, err
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
 }
 
-func (ar *AdminManagementRepoImpl) DeleteUsers(id int) (*model.User, error) {
+// Find all doctors
+func (ar *AdminManagementRepoImpl) FindAllDoctors() ([]*model.Doctor, error) {
+	var doctors []*model.Doctor
+	err := ar.DB.Find(&doctors).Error
+	if err != nil {
+		return nil, err
+	}
+	return doctors, nil
+}
+
+// Find all users with their last consultation
+func (ar *AdminManagementRepoImpl) FindAllUsersWithLastConsultation() ([]*model.User, error) {
+	var users []*model.User
+	err := ar.DB.Preload("Consultations", func(db *gorm.DB) *gorm.DB {
+		return db.Order("created_at DESC").Limit(1)
+	}).Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+// Find all doctors with their last consultation
+func (ar *AdminManagementRepoImpl) FindAllDoctorsWithLastConsultation() ([]*model.Doctor, error) {
+	var doctors []*model.Doctor
+	err := ar.DB.Preload("Consultations", func(db *gorm.DB) *gorm.DB {
+		return db.Order("created_at DESC").Limit(1)
+	}).Preload("Title").Preload("Tags").Find(&doctors).Error
+	if err != nil {
+		return nil, err
+	}
+	return doctors, nil
+}
+
+// Delete user by ID
+func (ar *AdminManagementRepoImpl) DeleteUser(id int) (*model.User, error) {
 	var user model.User
 	err := ar.DB.First(&user, id).Error
 	if err != nil {
+		return nil, err
 	}
 
 	err = ar.DB.Delete(&user).Error
@@ -43,40 +83,18 @@ func (ar *AdminManagementRepoImpl) DeleteUsers(id int) (*model.User, error) {
 	return &user, nil
 }
 
-func (ar *AdminManagementRepoImpl) FindUserDetail(id int) (*model.User, error) {
-	var user model.User
-	err := ar.DB.First(&user, id).Error
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
-}
-
-func (ar *AdminManagementRepoImpl) FindAllDocters() ([]*model.Doctor, error) {
-	var dokter []*model.Doctor
-	err := ar.DB.Find(&dokter).Error
-	return dokter, err
-}
-
-func (ar *AdminManagementRepoImpl) DeleteDocter(id int) (*model.Doctor, error) {
-	var dokter model.Doctor
-	err := ar.DB.First(&dokter, id).Error
-	if err != nil {
-	}
-
-	err = ar.DB.Delete(&dokter).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return &dokter, nil
-}
-
-func (ar *AdminManagementRepoImpl) FindDocterDetail(id int) (*model.Doctor, error) {
+// Delete doctor by ID
+func (ar *AdminManagementRepoImpl) DeleteDoctor(id int) (*model.Doctor, error) {
 	var doctor model.Doctor
 	err := ar.DB.First(&doctor, id).Error
 	if err != nil {
 		return nil, err
 	}
+
+	err = ar.DB.Delete(&doctor).Error
+	if err != nil {
+		return nil, err
+	}
+
 	return &doctor, nil
 }
