@@ -173,12 +173,31 @@ func (c *ArtikelController) SearchArtikel(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Query tidak boleh kosong")
 	}
 
-	artikel, err := c.Usecase.SearchArtikel(query)
+	// Panggil usecase untuk mencari artikel
+	artikels, err := c.Usecase.SearchArtikel(query)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mencari dokter: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mencari artikel: "+err.Error())
 	}
 
-	return helper.JSONSuccessResponse(ctx, artikel)
+	// Transform hasil pencarian artikel ke dalam DTO
+	var responses []ArtikelResponse
+	for _, artikel := range artikels {
+		responses = append(responses, ArtikelResponse{
+			ID:        artikel.ID,
+			Judul:     artikel.Judul,
+			Gambar:    artikel.Gambar,
+			Isi:       artikel.Isi,
+			CreatedAt: artikel.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt: artikel.UpdatedAt.Format("2006-01-02 15:04:05"),
+			Admin: AdminResponse{
+				ID:       artikel.Admin.ID,
+				Username: artikel.Admin.Username,
+			},
+		})
+	}
+
+	// Kirim respons sukses dengan data artikel yang diformat
+	return helper.JSONSuccessResponse(ctx, responses)
 }
 
 func (c *ArtikelController) UploadArtikelImage(ctx echo.Context) error {
