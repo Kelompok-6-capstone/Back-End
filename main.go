@@ -10,7 +10,6 @@ import (
 	"calmind/service"
 	"calmind/usecase"
 	"log"
-	"net/http"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -89,33 +88,14 @@ func main() {
 	// Middleware
 	jwtMiddleware := middlewares.NewJWTMiddleware(jwtSecret)
 
-	// Echo instance
 	e := echo.New()
 	e.Static("/uploads", "uploads")
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:5174", "http://localhost:5173", "http://127.0.0.1:5500", "https://jovial-mooncake-23a3d0.netlify.app"},
+		AllowOrigins:     []string{"http://localhost:5174", "http://localhost:5173", "http://127.0.0.1:5500", "https://jovial-mooncake-23a3d0.netlify.app"},
 		AllowMethods:     []string{echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.OPTIONS},
 		AllowHeaders:     []string{echo.HeaderAuthorization, echo.HeaderContentType},
 		AllowCredentials: false,
 	}))
-	e.OPTIONS("/*", func(c echo.Context) error {
-		return c.NoContent(http.StatusOK)
-	})
-
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			log.Printf("Origin: %s", c.Request().Header.Get("Origin"))
-			return next(c)
-		}
-	})
-
-	e.GET("/ws", func(c echo.Context) error {
-		helper.HandleWebSocket(c.Response().Writer, c.Request())
-		return nil
-	})
-
-	// Mulai proses broadcast WebSocket
-	go helper.BroadcastMessages()
 
 	// routes auth
 	routes.UserAuthRoutes(e, userController)               // user
