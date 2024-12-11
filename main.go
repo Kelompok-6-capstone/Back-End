@@ -103,9 +103,6 @@ func main() {
 	routes.AdminAuthRoutes(e, adminController)             // admin
 	routes.DoctorAuthRoutes(e, doctorControllerManagement) // dokter
 
-	// Group untuk user, dengan middleware yang memastikan hanya user yang login dapat mengaksesnya
-	// Middleware JWT
-
 	// Group User
 	userGroup := e.Group("/user", jwtMiddleware.HandlerUser)
 	routes.UserProfil(userGroup, userProfilController, userFiturController, consultationController, artikelController)

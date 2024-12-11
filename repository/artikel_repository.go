@@ -55,7 +55,7 @@ func (r *artikelRepository) Delete(id int) error {
 
 func (r *artikelRepository) SearchArtikel(query string) ([]model.Artikel, error) {
 	var artikel []model.Artikel
-	err := r.db.
+	err := r.db.Preload("Admin").
 		Where("judul LIKE ?", "%"+query+"%").
 		Find(&artikel).Error
 	return artikel, err
