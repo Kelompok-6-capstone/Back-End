@@ -33,7 +33,7 @@ func (r *UserFiturRepositoryImpl) GetAllDoctors() ([]model.Doctor, error) {
 	err := r.DB.
 		Preload("Tags").
 		Preload("Title").
-		Where("price > 0 AND experience > 0 AND is_verified = true AND is_active = true").
+		Where("price > 0 AND experience > 0 AND is_verified = true").
 		Find(&doctors).Error
 
 	// Logging data untuk debugging
