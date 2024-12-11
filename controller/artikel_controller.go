@@ -57,10 +57,6 @@ func (c *ArtikelController) CreateArtikel(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 	}
 
-	go func() {
-		helper.Broadcast <- artikel // Ganti dari `helper.broadcast` ke `helper.Broadcast`
-	}()
-
 	// Berhasil
 	return helper.JSONSuccessResponse(ctx, "berhasil update artikel")
 }

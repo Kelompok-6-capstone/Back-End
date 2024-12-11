@@ -77,7 +77,8 @@ func AdminManagementRoutes(e *echo.Group, adminManagement *controller.AdminManag
 	// konsultasi
 	e.GET("/consultations", consultationController.GetPendingConsultations)
 	e.GET("/consultations/:id", consultationController.ViewPendingConsultation)
-	e.PUT("/consultations/:id/approve", consultationController.ApprovePaymentAndConsultation)
+	e.GET("/consultations/pending", consultationController.GetAproveConsultations)
+	e.GET("/consultations/approve", consultationController.GetAllStatusConsultations)
 }
 
 // Routes untuk Doctor

@@ -19,6 +19,8 @@ type ConsultationRepository interface {
 	GetPendingConsultations() ([]model.Consultation, error)
 	GetDoctorByID(doctorID int) (*model.Doctor, error)
 	GetActiveConsultations() ([]model.Consultation, error)
+	GetAllStatusConsultations() ([]model.Consultation, error)
+	GetApprovedConsultations() ([]model.Consultation, error)
 }
 
 type ConsultationRepositoryImpl struct {
@@ -117,6 +119,24 @@ func (r *ConsultationRepositoryImpl) GetPendingConsultations() ([]model.Consulta
 	var consultations []model.Consultation
 	if err := r.DB.Preload("User").Preload("Doctor").
 		Where("status = ?", "pending").
+		Find(&consultations).Error; err != nil {
+		return nil, err
+	}
+	return consultations, nil
+}
+func (r *ConsultationRepositoryImpl) GetApprovedConsultations() ([]model.Consultation, error) {
+	var consultations []model.Consultation
+	if err := r.DB.Preload("User").Preload("Doctor").
+		Where("status = ?", "approved").
+		Find(&consultations).Error; err != nil {
+		return nil, err
+	}
+	return consultations, nil
+}
+func (r *ConsultationRepositoryImpl) GetAllStatusConsultations() ([]model.Consultation, error) {
+	var consultations []model.Consultation
+	if err := r.DB.Preload("User").Preload("Doctor").
+		Where("status IN ?", []string{"approved", "pending"}). // Menampilkan status approved dan pending
 		Find(&consultations).Error; err != nil {
 		return nil, err
 	}

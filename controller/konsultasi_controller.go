@@ -198,6 +198,42 @@ func (c *ConsultationController) GetPendingConsultations(ctx echo.Context) error
 
 	return helper.JSONSuccessResponse(ctx, response)
 }
+func (c *ConsultationController) GetAproveConsultations(ctx echo.Context) error {
+	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
+	if !ok || claims == nil {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized access.")
+	}
+
+	consultations, err := c.ConsultationUsecase.GetApprovedConsultations()
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to retrieve pending consultations.")
+	}
+
+	var response []model.ConsultationDTO
+	for _, cons := range consultations {
+		response = append(response, mapConsultationToDTO(cons))
+	}
+
+	return helper.JSONSuccessResponse(ctx, response)
+}
+func (c *ConsultationController) GetAllStatusConsultations(ctx echo.Context) error {
+	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
+	if !ok || claims == nil {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized access.")
+	}
+
+	consultations, err := c.ConsultationUsecase.GetAllStatusConsultations()
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to retrieve pending consultations.")
+	}
+
+	var response []model.ConsultationDTO
+	for _, cons := range consultations {
+		response = append(response, mapConsultationToDTO(cons))
+	}
+
+	return helper.JSONSuccessResponse(ctx, response)
+}
 
 // Melihat detail konsultasi untuk persetujuan
 func (c *ConsultationController) ViewPendingConsultation(ctx echo.Context) error {

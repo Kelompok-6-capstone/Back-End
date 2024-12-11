@@ -25,6 +25,8 @@ type ConsultationUsecase interface {
 	VerifyPayment(consultationID int) (string, error)
 	MarkExpiredConsultations() error
 	ApprovePaymentAndConsultation(consultationID int, paymentStatus string) error
+	GetApprovedConsultations() ([]model.Consultation, error)
+	GetAllStatusConsultations() ([]model.Consultation, error)
 }
 
 type ConsultationUsecaseImpl struct {
@@ -157,6 +159,12 @@ func (uc *ConsultationUsecaseImpl) GetUserConsultations(userID int) ([]model.Con
 // Mendapatkan daftar konsultasi yang menunggu persetujuan admin
 func (uc *ConsultationUsecaseImpl) GetPendingConsultations() ([]model.Consultation, error) {
 	return uc.Repo.GetPendingConsultations()
+}
+func (uc *ConsultationUsecaseImpl) GetApprovedConsultations() ([]model.Consultation, error) {
+	return uc.Repo.GetApprovedConsultations()
+}
+func (uc *ConsultationUsecaseImpl) GetAllStatusConsultations() ([]model.Consultation, error) {
+	return uc.Repo.GetAllStatusConsultations()
 }
 
 // Membuat pembayaran menggunakan Midtrans
