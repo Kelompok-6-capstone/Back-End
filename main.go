@@ -10,6 +10,7 @@ import (
 	"calmind/service"
 	"calmind/usecase"
 	"log"
+	"net/http"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -94,9 +95,19 @@ func main() {
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:5174", "http://localhost:5173", "http://127.0.0.1:5500"},
 		AllowMethods:     []string{echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.OPTIONS},
-		AllowHeaders:     []string{echo.HeaderAuthorization, echo.HeaderContentType, "X-CSRF-TOKEN"},
-		AllowCredentials: true,
+		AllowHeaders:     []string{echo.HeaderAuthorization, echo.HeaderContentType},
+		AllowCredentials: false,
 	}))
+	e.OPTIONS("/*", func(c echo.Context) error {
+		return c.NoContent(http.StatusOK)
+	})
+
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			log.Printf("Origin: %s", c.Request().Header.Get("Origin"))
+			return next(c)
+		}
+	})
 
 	e.GET("/ws", func(c echo.Context) error {
 		helper.HandleWebSocket(c.Response().Writer, c.Request())
