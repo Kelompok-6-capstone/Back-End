@@ -29,7 +29,6 @@ func NewConsultationRepositoryImpl(db *gorm.DB) *ConsultationRepositoryImpl {
 	return &ConsultationRepositoryImpl{DB: db}
 }
 
-// Membuat konsultasi baru
 func (r *ConsultationRepositoryImpl) CreateConsultation(consultation *model.Consultation) (int, error) {
 	// Simpan konsultasi
 	if err := r.DB.Create(consultation).Error; err != nil {

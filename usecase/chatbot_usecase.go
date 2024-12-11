@@ -30,10 +30,10 @@ func (u *ChatbotUsecaseImpl) GenerateResponse(userID int, message string) (strin
 	// Gabungkan percakapan sebelumnya
 	var contextBuilder strings.Builder
 	for _, log := range logs {
-		contextBuilder.WriteString("User: " + log.Message + "\n")
-		contextBuilder.WriteString("Bot: " + log.Response + "\n")
+		contextBuilder.WriteString(log.Message + "\n")
+		contextBuilder.WriteString(log.Response + "\n")
 	}
-	contextBuilder.WriteString("User: " + message + "\n")
+	contextBuilder.WriteString(message + "\n")
 
 	// Panggil AI untuk respons
 	ctx := context.Background()

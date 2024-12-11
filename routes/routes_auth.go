@@ -48,7 +48,6 @@ func UserProfil(
 	e.GET("/artikel", artikelController.GetAllArtikel)      // Mendapatkan semua artikel
 	e.GET("/artikel/:id", artikelController.GetArtikelByID) // Mendapatkan detail artikel berdasarkan ID
 	e.GET("/artikel/search", artikelController.SearchArtikel)
-
 }
 
 // Routes untuk Admin
