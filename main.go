@@ -86,6 +86,14 @@ func main() {
 	chatbotUsecase := usecase.NewChatbotUsecase(chatbotRepo)
 	chatbotController := controller.NewChatbotController(chatbotUsecase)
 
+	webSocketHub := helper.NewWebSocketHub()
+	go webSocketHub.Run() // Jalankan WebSocketHub secara terpisah
+
+	// Repositori, usecase, dan controller untuk chat (user & dokter)
+	chatRepo := repository.NewChatRepositoryImpl(DB)
+	chatUsecase := usecase.NewChatUsecaseImpl(chatRepo, consultationRepo)
+	chatController := controller.NewChatController(chatUsecase, webSocketHub)
+
 	// Middleware
 	jwtMiddleware := middlewares.NewJWTMiddleware(jwtSecret)
 
@@ -109,7 +117,7 @@ func main() {
 
 	// Group User
 	userGroup := e.Group("/user", jwtMiddleware.HandlerUser)
-	routes.UserProfil(userGroup, userProfilController, userFiturController, consultationController, artikelController)
+	routes.UserProfil(userGroup, userProfilController, userFiturController, consultationController, artikelController, chatController)
 	routes.UserChatbotRoutes(userGroup, chatbotController)
 
 	// Group Admin
@@ -118,7 +126,7 @@ func main() {
 
 	// Group Doctor
 	doctorGroup := e.Group("/doctor", jwtMiddleware.HandlerDoctor)
-	routes.DoctorProfil(doctorGroup, doctorProfilController, artikelController, consultationController, userFiturController)
+	routes.DoctorProfil(doctorGroup, doctorProfilController, artikelController, consultationController, userFiturController, chatController)
 
 	// Mulai server
 	log.Fatal(e.Start(":8000"))
