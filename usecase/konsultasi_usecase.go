@@ -129,7 +129,6 @@ func (u *ConsultationUsecaseImpl) SearchConsultationsByName(doctorID int, search
 	}
 	return consultations, nil
 }
-
 // Mendapatkan konsultasi berdasarkan ID
 func (uc *ConsultationUsecaseImpl) GetConsultationByID(consultationID int) (*model.Consultation, error) {
 	return uc.Repo.GetConsultationByID(consultationID)
