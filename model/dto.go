@@ -2,9 +2,11 @@ package model
 
 // DTO untuk User
 type UserDTO struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Avatar   string `json:"avatar,omitempty"`
+	Avatar    string `json:"avatar,omitempty"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	Pekerjaan string `json:"pekerjaan`
+	TglLahir  string `json:"tgl_lahir"`
 }
 
 type DoctorDTO struct {
@@ -12,6 +14,7 @@ type DoctorDTO struct {
 	Email    string  `json:"email"`
 	Avatar   string  `json:"avatar,omitempty"`
 	Price    float64 `json:"price,omitempty"`
+	About    string  `json:"about"`
 }
 
 type RecommendationDTO struct {
