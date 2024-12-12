@@ -10,6 +10,7 @@ import (
 
 type ConsultationRepository interface {
 	CreateConsultation(*model.Consultation) (int, error)
+	FindConsultationsByDoctorAndName(doctorID int, searchName string, consultations *[]model.Consultation) error
 	GetConsultationsForDoctor(doctorID int) ([]model.Consultation, error)
 	GetConsultationDetails(consultationID, doctorID int) (*model.Consultation, error)
 	AddRecommendation(recommendation *model.Rekomendasi) error
@@ -89,6 +90,18 @@ func (r *ConsultationRepositoryImpl) GetActiveConsultations() ([]model.Consultat
 
 func (r *ConsultationRepositoryImpl) UpdateConsultation(consultation *model.Consultation) error {
 	return r.DB.Save(consultation).Error
+}
+
+// Mendapatkan konsultasi berdasarkan doctorID dan nama user
+func (r *ConsultationRepositoryImpl) FindConsultationsByDoctorAndName(doctorID int, searchName string, consultations *[]model.Consultation) error {
+	query := r.DB.Preload("User").Where("doctor_id = ?", doctorID)
+
+	// Filter berdasarkan nama user jika searchName tidak kosong
+	if searchName != "" {
+		query = query.Where("users.username LIKE ?", "%"+searchName+"%")
+	}
+
+	return query.Find(consultations).Error
 }
 
 func (r *ConsultationRepositoryImpl) GetConsultationByID(consultationID int) (*model.Consultation, error) {

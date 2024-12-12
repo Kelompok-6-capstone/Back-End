@@ -20,7 +20,6 @@ func NewConsultationController(consultationUsecase *usecase.ConsultationUsecaseI
 	return &ConsultationController{ConsultationUsecase: consultationUsecase}
 }
 
-// **User Endpoints**
 
 // Melihat semua konsultasi user
 func (c *ConsultationController) GetUserConsultations(ctx echo.Context) error {
@@ -103,7 +102,6 @@ func (c *ConsultationController) CreateConsultation(ctx echo.Context) error {
 	return helper.JSONSuccessResponse(ctx, response)
 }
 
-// **Doctor Endpoints**
 
 // Melihat semua konsultasi pasien
 func (c *ConsultationController) GetConsultationsForDoctor(ctx echo.Context) error {
@@ -177,7 +175,6 @@ func (c *ConsultationController) AddRecommendation(ctx echo.Context) error {
 	})
 }
 
-// **Admin Endpoints**
 
 // Melihat semua konsultasi yang menunggu persetujuan
 func (c *ConsultationController) GetPendingConsultations(ctx echo.Context) error {
@@ -233,6 +230,25 @@ func (c *ConsultationController) GetAllStatusConsultations(ctx echo.Context) err
 	}
 
 	return helper.JSONSuccessResponse(ctx, response)
+}
+
+// Mendapatkan daftar konsultasi untuk dokter (search by name)
+func (c *ConsultationController) SearchConsultationsByName(ctx echo.Context) error {
+	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
+	if !ok || claims == nil {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Doctor is not authorized.")
+	}
+
+	doctorID := claims.UserID
+	searchName := ctx.QueryParam("nama") // Query param untuk nama user
+
+	consultations, err := c.ConsultationUsecase.SearchConsultationsByName(doctorID, searchName)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to retrieve consultations.")
+	}
+
+	return helper.JSONSuccessResponse(ctx,consultations)
+
 }
 
 // Melihat detail konsultasi untuk persetujuan
