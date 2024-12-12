@@ -5,7 +5,7 @@ type UserDTO struct {
 	Avatar    string `json:"avatar,omitempty"`
 	Username  string `json:"username"`
 	Email     string `json:"email"`
-	Pekerjaan string `json:"pekerjaan`
+	Pekerjaan string `json:"pekerjaan"`
 	TglLahir  string `json:"tgl_lahir"`
 }
 
