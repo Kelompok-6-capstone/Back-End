@@ -7,10 +7,13 @@ import (
 	"calmind/usecase"
 	"fmt"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/labstack/echo/v4"
 )
 
@@ -213,9 +216,9 @@ func (c *ArtikelController) UploadArtikelImage(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan file: "+err.Error())
 	}
 
-	// Validasi ukuran file (maksimal 5 MB)
+	// Validasi ukuran file (maksimal 10 MB)
 	if file.Size > 10*1024*1024 {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Ukuran file maksimal 5 MB")
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Ukuran file maksimal 10 MB")
 	}
 
 	// Validasi ekstensi file
@@ -224,34 +227,41 @@ func (c *ArtikelController) UploadArtikelImage(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Hanya file dengan format .jpg, .jpeg, atau .png yang diperbolehkan")
 	}
 
-	// Simpan file di direktori uploads
-	uploadDir := "uploads/artikel"
-	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
-		err = os.MkdirAll(uploadDir, os.ModePerm)
-		if err != nil {
-			return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat direktori upload")
-		}
-	}
-
-	filePath := fmt.Sprintf("%s/%d_%s", uploadDir, adminID, file.Filename)
+	// Buka file
 	src, err := file.Open()
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuka file")
 	}
 	defer src.Close()
 
-	dst, err := os.Create(filePath)
+	// Konfigurasi S3 dengan kredensial otomatis dari IAM Role
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("us-east-1"), // Ganti sesuai region bucket S3 Anda
+	})
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
-	}
-	defer dst.Close()
-
-	if _, err := helper.CopyFile(src, dst); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat sesi AWS: "+err.Error())
 	}
 
-	// Buat URL gambar
-	imageURL := fmt.Sprintf("https://%s/uploads/artikel/%d_%s", ctx.Request().Host, adminID, file.Filename)
+	// Buat client S3
+	s3Client := s3.New(sess)
+
+	// Nama bucket S3 dan key file
+	bucketName := "calmind-data"
+	fileKey := fmt.Sprintf("uploads/artikel/%d_%s", adminID, file.Filename)
+
+	// Upload file ke S3
+	_, err = s3Client.PutObject(&s3.PutObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(fileKey),
+		Body:   src,
+		ACL:    aws.String("public-read"), // Set akses publik (opsional, sesuaikan kebutuhan Anda)
+	})
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupload file ke S3: "+err.Error())
+	}
+
+	// URL gambar di S3
+	imageURL := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucketName, fileKey)
 
 	return helper.JSONSuccessResponse(ctx, map[string]string{
 		"message":  "Gambar artikel berhasil diupload",
@@ -276,22 +286,42 @@ func (c *ArtikelController) DeleteArtikelImage(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "Artikel tidak ditemukan: "+err.Error())
 	}
 
-	// Hapus file gambar artikel
-	if artikel.Gambar != "" {
-		filePath := "." + artikel.Gambar // Path relatif ke file
-		if _, err := os.Stat(filePath); err == nil {
-			if err := os.Remove(filePath); err != nil {
-				return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus file gambar artikel: "+err.Error())
-			}
-		}
+	// Periksa apakah artikel memiliki gambar
+	if artikel.Gambar == "" {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Artikel tidak memiliki gambar untuk dihapus")
 	}
 
-	// Update URL gambar menjadi kosong di database
-	artikel.Gambar = ""
-	err = c.Usecase.UpdateArtikel(artikel) // Menggunakan variabel `artikel` secara langsung
+	// Ekstrak key gambar dari URL
+	fileKey := artikel.Gambar[strings.LastIndex(artikel.Gambar, "uploads/"):]
+
+	// Konfigurasi S3 dengan kredensial otomatis dari IAM Role
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("us-east-1"), // Ganti sesuai region bucket S3 Anda
+	})
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate gambar artikel di database: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat sesi AWS: "+err.Error())
 	}
 
-	return helper.JSONSuccessResponse(ctx, "Gambar artikel berhasil dihapus")
+	// Buat client S3
+	s3Client := s3.New(sess)
+
+	// Hapus file dari S3
+	_, err = s3Client.DeleteObject(&s3.DeleteObjectInput{
+		Bucket: aws.String("calmind-data"), // Nama bucket S3 Anda
+		Key:    aws.String(fileKey),        // Path file yang akan dihapus
+	})
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus file dari S3: "+err.Error())
+	}
+
+	// Update database untuk menghapus referensi gambar
+	artikel.Gambar = ""
+	err = c.Usecase.UpdateArtikel(artikel)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal memperbarui data artikel: "+err.Error())
+	}
+
+	return helper.JSONSuccessResponse(ctx, map[string]string{
+		"message": "Gambar artikel berhasil dihapus",
+	})
 }
