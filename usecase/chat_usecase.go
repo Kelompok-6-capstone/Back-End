@@ -9,7 +9,7 @@ import (
 
 type ChatUsecase interface {
 	SendChat(chat model.Chat) (*model.ChatDTO, error)
-	GetChatHistory(consultationID int) ([]model.ChatDTO, error)
+	GetChatHistory(userID int) ([]model.ChatDTO, error)
 }
 
 type ChatUsecaseImpl struct {
@@ -25,26 +25,34 @@ func NewChatUsecaseImpl(chatRepo repository.ChatRepository, consultationRepo rep
 }
 
 func (uc *ChatUsecaseImpl) SendChat(chat model.Chat) (*model.ChatDTO, error) {
-	consultation, err := uc.ConsultationRepo.GetConsultationByID(chat.ConsultationID)
-	if err != nil {
-		return nil, errors.New("consultation not found")
+	// Validasi konsultasi dengan pembayaran selesai
+	consultations, err := uc.ConsultationRepo.GetPaidConsultationsByUserID(chat.UserID)
+	if err != nil || len(consultations) == 0 {
+		return nil, errors.New("no valid consultations found for this user")
 	}
 
-	if consultation.Status != "paid" && consultation.Status != "approved" {
-		return nil, errors.New("payment not completed")
+	// Validasi jika ada konsultasi aktif
+	isValid := false
+	for _, consultation := range consultations {
+		endTime := consultation.StartTime.Add(time.Duration(consultation.Duration) * time.Minute)
+		if time.Now().Before(endTime) {
+			isValid = true
+			break
+		}
 	}
 
-	endTime := consultation.StartTime.Add(time.Duration(consultation.Duration) * time.Minute)
-	if time.Now().After(endTime) {
-		return nil, errors.New("consultation time has ended")
+	if !isValid {
+		return nil, errors.New("all consultations have ended or are invalid")
 	}
 
+	// Simpan pesan chat
 	chat.CreatedAt = time.Now()
 	err = uc.ChatRepo.SaveChat(&chat)
 	if err != nil {
 		return nil, errors.New("failed to save chat")
 	}
 
+	// Ambil nama pengirim
 	var senderName string
 	if chat.SenderType == "user" {
 		user, _ := uc.ChatRepo.GetUserByID(chat.SenderID)
@@ -55,22 +63,24 @@ func (uc *ChatUsecaseImpl) SendChat(chat model.Chat) (*model.ChatDTO, error) {
 	}
 
 	return &model.ChatDTO{
-		ID:             chat.ID,
-		ConsultationID: chat.ConsultationID,
-		SenderID:       chat.SenderID,
-		SenderName:     senderName,
-		Message:        chat.Message,
-		SenderType:     chat.SenderType,
-		CreatedAt:      chat.CreatedAt.Format(time.RFC3339),
+		ID:         chat.ID,
+		UserID:     chat.UserID,
+		SenderID:   chat.SenderID,
+		SenderName: senderName,
+		Message:    chat.Message,
+		SenderType: chat.SenderType,
+		CreatedAt:  chat.CreatedAt.Format(time.RFC3339),
 	}, nil
 }
 
-func (uc *ChatUsecaseImpl) GetChatHistory(consultationID int) ([]model.ChatDTO, error) {
-	chats, err := uc.ChatRepo.GetChatHistory(consultationID)
+func (uc *ChatUsecaseImpl) GetChatHistory(userID int) ([]model.ChatDTO, error) {
+	// Ambil riwayat chat
+	chats, err := uc.ChatRepo.GetChatHistoryByUser(userID)
 	if err != nil {
 		return nil, err
 	}
 
+	// Konversi ke DTO
 	var chatDTOs []model.ChatDTO
 	for _, chat := range chats {
 		var senderName string
@@ -81,13 +91,13 @@ func (uc *ChatUsecaseImpl) GetChatHistory(consultationID int) ([]model.ChatDTO, 
 		}
 
 		chatDTOs = append(chatDTOs, model.ChatDTO{
-			ID:             chat.ID,
-			ConsultationID: chat.ConsultationID,
-			SenderID:       chat.SenderID,
-			SenderName:     senderName,
-			Message:        chat.Message,
-			SenderType:     chat.SenderType,
-			CreatedAt:      chat.CreatedAt.Format(time.RFC3339),
+			ID:         chat.ID,
+			UserID:     chat.UserID,
+			SenderID:   chat.SenderID,
+			SenderName: senderName,
+			Message:    chat.Message,
+			SenderType: chat.SenderType,
+			CreatedAt:  chat.CreatedAt.Format(time.RFC3339),
 		})
 	}
 	return chatDTOs, nil

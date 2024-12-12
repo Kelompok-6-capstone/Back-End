@@ -22,6 +22,7 @@ type ConsultationRepository interface {
 	GetActiveConsultations() ([]model.Consultation, error)
 	GetAllStatusConsultations() ([]model.Consultation, error)
 	GetApprovedConsultations() ([]model.Consultation, error)
+	GetPaidConsultationsByUserID(userID int) ([]model.Consultation, error)
 }
 
 type ConsultationRepositoryImpl struct {
@@ -163,4 +164,11 @@ func (r *ConsultationRepositoryImpl) GetDoctorByID(doctorID int) (*model.Doctor,
 		return nil, err
 	}
 	return &doctor, nil
+}
+
+func (r *ConsultationRepositoryImpl) GetPaidConsultationsByUserID(userID int) ([]model.Consultation, error) {
+	var consultations []model.Consultation
+	err := r.DB.Where("user_id = ? AND status IN ('paid', 'approved')", userID).
+		Find(&consultations).Error
+	return consultations, err
 }
