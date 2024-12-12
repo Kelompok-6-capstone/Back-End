@@ -86,13 +86,10 @@ func main() {
 	chatbotUsecase := usecase.NewChatbotUsecase(chatbotRepo)
 	chatbotController := controller.NewChatbotController(chatbotUsecase)
 
-	webSocketHub := helper.NewWebSocketHub()
-	go webSocketHub.Run() // Jalankan WebSocketHub secara terpisah
-
 	// Repositori, usecase, dan controller untuk chat (user & dokter)
 	chatRepo := repository.NewChatRepositoryImpl(DB)
 	chatUsecase := usecase.NewChatUsecaseImpl(chatRepo, consultationRepo)
-	chatController := controller.NewChatController(chatUsecase, webSocketHub)
+	chatController := controller.NewChatController(chatUsecase)
 
 	// Middleware
 	jwtMiddleware := middlewares.NewJWTMiddleware(jwtSecret)

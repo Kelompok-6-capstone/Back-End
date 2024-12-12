@@ -53,7 +53,6 @@ func UserProfil(
 	// Chat
 	e.POST("/chat/send", chatController.SendChat)             // Kirim pesan
 	e.GET("/chat/history/:id", chatController.GetChatHistory) // Riwayat pesan
-	e.GET("/chat/ws", chatController.WebSocketHandler)        // WebSocket handler
 }
 
 // Routes untuk Doctor
@@ -91,7 +90,6 @@ func DoctorProfil(
 
 	e.POST("/chat/send", chatController.SendChat)             // Kirim pesan
 	e.GET("/chat/history/:id", chatController.GetChatHistory) // Riwayat pesan
-	e.GET("/chat/ws", chatController.WebSocketHandler)        // WebSocket handler
 }
 
 // Routes untuk Admin
