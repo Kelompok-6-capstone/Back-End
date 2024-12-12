@@ -2,11 +2,11 @@ package model
 
 // DTO untuk User
 type UserDTO struct {
-	Avatar    string `json:"avatar,omitempty"`
+	Avatar    string `gorm:"" json:"avatar"`
 	Username  string `json:"username"`
 	Email     string `json:"email"`
-	Pekerjaan string `json:"pekerjaan"`
-	TglLahir  string `json:"tgl_lahir"`
+	TglLahir  string `gorm:"" json:"tgl_lahir"`
+	Pekerjaan string `gorm:"" json:"pekerjaan"`
 }
 
 type DoctorDTO struct {

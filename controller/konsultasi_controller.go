@@ -20,6 +20,7 @@ func NewConsultationController(consultationUsecase *usecase.ConsultationUsecaseI
 	return &ConsultationController{ConsultationUsecase: consultationUsecase}
 }
 
+// **User Endpoints**
 
 // Melihat semua konsultasi user
 func (c *ConsultationController) GetUserConsultations(ctx echo.Context) error {
@@ -102,7 +103,6 @@ func (c *ConsultationController) CreateConsultation(ctx echo.Context) error {
 	return helper.JSONSuccessResponse(ctx, response)
 }
 
-
 // Melihat semua konsultasi pasien
 func (c *ConsultationController) GetConsultationsForDoctor(ctx echo.Context) error {
 	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
@@ -175,7 +175,6 @@ func (c *ConsultationController) AddRecommendation(ctx echo.Context) error {
 	})
 }
 
-
 // Melihat semua konsultasi yang menunggu persetujuan
 func (c *ConsultationController) GetPendingConsultations(ctx echo.Context) error {
 	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
@@ -232,25 +231,6 @@ func (c *ConsultationController) GetAllStatusConsultations(ctx echo.Context) err
 	return helper.JSONSuccessResponse(ctx, response)
 }
 
-// Mendapatkan daftar konsultasi untuk dokter (search by name)
-func (c *ConsultationController) SearchConsultationsByName(ctx echo.Context) error {
-	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
-	if !ok || claims == nil {
-		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Doctor is not authorized.")
-	}
-
-	doctorID := claims.UserID
-	searchName := ctx.QueryParam("nama") // Query param untuk nama user
-
-	consultations, err := c.ConsultationUsecase.SearchConsultationsByName(doctorID, searchName)
-	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to retrieve consultations.")
-	}
-
-	return helper.JSONSuccessResponse(ctx,consultations)
-
-}
-
 // Melihat detail konsultasi untuk persetujuan
 func (c *ConsultationController) ViewPendingConsultation(ctx echo.Context) error {
 	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
@@ -300,7 +280,6 @@ func (c *ConsultationController) ApprovePaymentAndConsultation(ctx echo.Context)
 	})
 }
 
-// **Mapping Helper**
 func mapConsultationToDTO(consultation model.Consultation) model.ConsultationDTO {
 	return model.ConsultationDTO{
 		ID:          consultation.ID,
@@ -311,13 +290,18 @@ func mapConsultationToDTO(consultation model.Consultation) model.ConsultationDTO
 		StartTime:   consultation.StartTime.Format(time.RFC3339),
 		OrderID:     consultation.OrderID, // Include OrderID
 		User: &model.UserDTO{
-			Username: consultation.User.Username,
-			Email:    consultation.User.Email,
+			Avatar:    consultation.User.Avatar,
+			Username:  consultation.User.Username,
+			Email:     consultation.User.Email,
+			Pekerjaan: consultation.User.Pekerjaan, // Pastikan ini benar
+			TglLahir:  consultation.User.TglLahir,
 		},
 		Doctor: &model.DoctorDTO{
+			Avatar:   consultation.User.Avatar,
 			Username: consultation.Doctor.Username,
 			Email:    consultation.Doctor.Email,
 			Price:    consultation.Doctor.Price,
+			About:    consultation.Doctor.About, // Pastikan ini benar
 		},
 		Rekomendasi: mapRecommendationsToDTO(consultation.Rekomendasi),
 	}
