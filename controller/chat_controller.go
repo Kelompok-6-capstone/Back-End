@@ -26,9 +26,22 @@ func NewChatController(chatUsecase *usecase.ChatUsecaseImpl, webSocketHub *helpe
 
 // Mengirim pesan
 func (c *ChatController) SendChat(ctx echo.Context) error {
-	claims, ok := ctx.Get("user").(*service.JwtCustomClaims)
+	// Ambil klaim berdasarkan middleware
+	var claims *service.JwtCustomClaims
+	var ok bool
+
+	if ctx.Get("user") != nil {
+		claims, ok = ctx.Get("user").(*service.JwtCustomClaims)
+	} else if ctx.Get("doctor") != nil {
+		claims, ok = ctx.Get("doctor").(*service.JwtCustomClaims)
+	}
+
 	if !ok || claims == nil {
 		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized access.")
+	}
+
+	if claims.Role != "user" && claims.Role != "doctor" {
+		return helper.JSONErrorResponse(ctx, http.StatusForbidden, "Access denied.")
 	}
 
 	var request struct {
@@ -64,9 +77,17 @@ func (c *ChatController) SendChat(ctx echo.Context) error {
 	return helper.JSONSuccessResponse(ctx, chatDTO)
 }
 
-// Mendapatkan riwayat pesan
 func (c *ChatController) GetChatHistory(ctx echo.Context) error {
-	claims, ok := ctx.Get("user").(*service.JwtCustomClaims)
+	// Ambil klaim berdasarkan middleware
+	var claims *service.JwtCustomClaims
+	var ok bool
+
+	if ctx.Get("user") != nil {
+		claims, ok = ctx.Get("user").(*service.JwtCustomClaims)
+	} else if ctx.Get("doctor") != nil {
+		claims, ok = ctx.Get("doctor").(*service.JwtCustomClaims)
+	}
+
 	if !ok || claims == nil {
 		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized access.")
 	}
