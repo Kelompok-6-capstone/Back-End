@@ -5,10 +5,11 @@ import (
 	"calmind/model"
 	"calmind/service"
 	"calmind/usecase"
+	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/labstack/echo/v4"
 )
@@ -200,63 +201,65 @@ func (c *ArtikelController) SearchArtikel(ctx echo.Context) error {
 }
 
 func (c *ArtikelController) UploadArtikelImage(ctx echo.Context) error {
-	// Validasi admin dari JWT
-	_, ok := ctx.Get("admin").(*service.JwtCustomClaims)
+	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
 	if !ok {
 		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
 	}
+	adminID := claims.UserID
 
-	// Ambil file dari form-data
+	// Ambil file dari form
 	file, err := ctx.FormFile("gambar")
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan file: "+err.Error())
 	}
 
 	// Validasi ukuran file (maksimal 5 MB)
-	const maxFileSize = 5 * 1024 * 1024
-	if file.Size > maxFileSize {
+	if file.Size > 10*1024*1024 {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Ukuran file maksimal 5 MB")
 	}
 
 	// Validasi ekstensi file
-	allowedExtensions := map[string]bool{
-		".jpg":  true,
-		".jpeg": true,
-		".png":  true,
-	}
 	ext := filepath.Ext(file.Filename)
-	if !allowedExtensions[ext] {
+	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Hanya file dengan format .jpg, .jpeg, atau .png yang diperbolehkan")
 	}
 
-	// Inisialisasi S3 uploader
-	uploader, err := helper.NewS3Uploader()
-	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menginisialisasi S3: "+err.Error())
+	// Simpan file di direktori uploads
+	uploadDir := "uploads/artikel"
+	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
+		err = os.MkdirAll(uploadDir, os.ModePerm)
+		if err != nil {
+			return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat direktori upload")
+		}
 	}
 
-	// Buka file
+	filePath := fmt.Sprintf("%s/%d_%s", uploadDir, adminID, file.Filename)
 	src, err := file.Open()
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuka file: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuka file")
 	}
 	defer src.Close()
 
-	// Unggah file ke folder S3
-	folder := "artikel-images"
-	imageURL, err := uploader.UploadFile(src, file, folder)
+	dst, err := os.Create(filePath)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengunggah file ke S3: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
+	}
+	defer dst.Close()
+
+	if _, err := helper.CopyFile(src, dst); err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
 	}
 
-	// Kembalikan URL file yang diunggah
+	// Buat URL gambar
+	imageURL := fmt.Sprintf("https://%s/uploads/artikel/%d_%s", ctx.Request().Host, adminID, file.Filename)
+
 	return helper.JSONSuccessResponse(ctx, map[string]string{
 		"message":  "Gambar artikel berhasil diupload",
 		"imageUrl": imageURL,
 	})
 }
 func (c *ArtikelController) DeleteArtikelImage(ctx echo.Context) error {
-	// Ambil ID artikel dari query parameter
+	// Ambil ID artikel dari parameter
 	artikelIDStr := ctx.QueryParam("artikel_id")
 	if artikelIDStr == "" {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Artikel ID diperlukan")
@@ -267,40 +270,28 @@ func (c *ArtikelController) DeleteArtikelImage(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Artikel ID tidak valid")
 	}
 
-	// Ambil data artikel dari database
+	// Ambil artikel dari database untuk mendapatkan URL gambar
 	artikel, err := c.Usecase.GetArtikelByID(artikelID)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "Artikel tidak ditemukan: "+err.Error())
 	}
 
-	// Periksa apakah artikel memiliki gambar
-	if artikel.Gambar == "" {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Artikel tidak memiliki gambar untuk dihapus")
+	// Hapus file gambar artikel
+	if artikel.Gambar != "" {
+		filePath := "." + artikel.Gambar // Path relatif ke file
+		if _, err := os.Stat(filePath); err == nil {
+			if err := os.Remove(filePath); err != nil {
+				return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus file gambar artikel: "+err.Error())
+			}
+		}
 	}
 
-	// Inisialisasi S3 uploader
-	uploader, err := helper.NewS3Uploader()
-	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menginisialisasi S3: "+err.Error())
-	}
-
-	// Ambil nama file dari URL gambar
-	fileKey := artikel.Gambar[strings.LastIndex(artikel.Gambar, "/")+1:]
-
-	// Hapus file dari S3
-	err = uploader.DeleteFile(fileKey)
-	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus gambar dari S3: "+err.Error())
-	}
-
-	// Update artikel untuk mengosongkan URL gambar
+	// Update URL gambar menjadi kosong di database
 	artikel.Gambar = ""
-	err = c.Usecase.UpdateArtikel(artikel)
+	err = c.Usecase.UpdateArtikel(artikel) // Menggunakan variabel `artikel` secara langsung
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate data artikel di database: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate gambar artikel di database: "+err.Error())
 	}
 
-	return helper.JSONSuccessResponse(ctx, map[string]string{
-		"message": "Gambar artikel berhasil dihapus",
-	})
+	return helper.JSONSuccessResponse(ctx, "Gambar artikel berhasil dihapus")
 }
