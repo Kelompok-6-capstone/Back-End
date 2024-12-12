@@ -111,6 +111,7 @@ func DoctorProfil(
 
 	// Konsultasi
 	e.GET("/consultations", consultationController.GetConsultationsForDoctor)             // Mendapatkan semua konsultasi pasien dokter
+	e.GET("/consultations/search", consultationController.SearchConsultationsByName) // Mencari konsultasi berdasarkan nama user
 	e.GET("/consultations/:id", consultationController.ViewConsultationDetails)           // Mendapatkan detail konsultasi tertentu
 	e.POST("/consultations/:id/recommendation", consultationController.AddRecommendation) // Menambahkan rekomendasi pada konsultasi
 }

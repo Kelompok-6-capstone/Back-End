@@ -15,6 +15,7 @@ import (
 
 type ConsultationUsecase interface {
 	CreateConsultation(userID, doctorID int, title, description, email string) (string, *model.Consultation, error)
+	SearchConsultationsByName(doctorID int, searchName string) ([]model.Consultation, error)
 	GetConsultationByID(consultationID int) (*model.Consultation, error)
 	GetConsultationsForDoctor(doctorID int) ([]model.Consultation, error)
 	ViewConsultationDetails(doctorID, consultationID int) (*model.Consultation, error)
@@ -119,6 +120,15 @@ func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, titl
 	return paymentURL, consultation, nil
 }
 
+// Mendapatkan konsultasi berdasarkan nama user
+func (u *ConsultationUsecaseImpl) SearchConsultationsByName(doctorID int, searchName string) (*[]model.Consultation, error) {
+	var consultations *[]model.Consultation
+	err := u.Repo.FindConsultationsByDoctorAndName(doctorID, searchName, consultations)
+	if err != nil {
+		return nil, err
+	}
+	return consultations, nil
+}
 // Mendapatkan konsultasi berdasarkan ID
 func (uc *ConsultationUsecaseImpl) GetConsultationByID(consultationID int) (*model.Consultation, error) {
 	return uc.Repo.GetConsultationByID(consultationID)
