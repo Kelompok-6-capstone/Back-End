@@ -6,15 +6,25 @@ import (
 	"calmind/service"
 	"calmind/usecase"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
+	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 )
 
 type ChatController struct {
 	ChatUsecase  *usecase.ChatUsecaseImpl
 	WebSocketHub *helper.WebSocketHub
+}
+
+// Tambahkan upgrader untuk WebSocket
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		// Mengizinkan semua origin (dapat disesuaikan)
+		return true
+	},
 }
 
 func NewChatController(chatUsecase *usecase.ChatUsecaseImpl, webSocketHub *helper.WebSocketHub) *ChatController {
@@ -107,6 +117,26 @@ func (c *ChatController) GetChatHistory(ctx echo.Context) error {
 
 // WebSocket handler
 func (c *ChatController) WebSocketHandler(ctx echo.Context) error {
-	c.WebSocketHub.HandleConnections(ctx.Response(), ctx.Request())
-	return nil
+	// Upgrade connection to WebSocket
+	ws, err := upgrader.Upgrade(ctx.Response(), ctx.Request(), nil)
+	if err != nil {
+		return err
+	}
+	defer ws.Close()
+
+	// Lakukan sesuatu dengan WebSocket connection
+	for {
+		_, msg, err := ws.ReadMessage()
+		if err != nil {
+			log.Println("WebSocket read error:", err)
+			return err
+		}
+		log.Printf("Received message: %s", msg)
+
+		// Kirim kembali pesan ke klien
+		if err := ws.WriteMessage(websocket.TextMessage, msg); err != nil {
+			log.Println("WebSocket write error:", err)
+			return err
+		}
+	}
 }
