@@ -8,84 +8,46 @@ import (
 	"time"
 )
 
-// ChatUsecase defines the interface for chat-related operations.
 type ChatUsecase interface {
-	GetOrCreateRoom(userID int, doctorID int) (string, error)
-	ValidateChatAccess(userID int, doctorID int) error
+	ValidateChatAccess(userID int, receiverID int) error
 	SendChat(chat model.Chat) (*model.ChatDTO, error)
 	GetChatHistory(roomID string) ([]model.ChatDTO, error)
 }
 
-// ChatUsecaseImpl is the implementation of ChatUsecase.
 type ChatUsecaseImpl struct {
 	ChatRepo         repository.ChatRepository
 	ConsultationRepo repository.ConsultationRepository
 }
 
-// NewChatUsecaseImpl creates a new instance of ChatUsecaseImpl.
-func NewChatUsecaseImpl(chatRepo repository.ChatRepository, consultationRepo repository.ConsultationRepository) *ChatUsecaseImpl {
+func NewChatUsecase(chatRepo repository.ChatRepository, ConsultationRepo repository.ConsultationRepository) *ChatUsecaseImpl {
 	return &ChatUsecaseImpl{
 		ChatRepo:         chatRepo,
-		ConsultationRepo: consultationRepo,
+		ConsultationRepo: ConsultationRepo,
 	}
 }
 
-// GetOrCreateRoom retrieves or creates a chat room between a user and a doctor.
-func (uc *ChatUsecaseImpl) GetOrCreateRoom(userID int, doctorID int) (string, error) {
-	// Check if the chat room already exists
-	room, err := uc.ChatRepo.GetRoomByUserAndDoctor(userID, doctorID)
-	if err == nil && room != nil {
-		return room.RoomID, nil
-	}
-
-	// Create a new chat room
-	roomID := fmt.Sprintf("room-%d-%d", userID, doctorID)
-	err = uc.ChatRepo.CreateRoom(roomID, userID, doctorID)
-	if err != nil {
-		return "", fmt.Errorf("failed to create chat room: %w", err)
-	}
-	return roomID, nil
-}
-
-// ValidateChatAccess checks if the user and doctor have an active consultation.
-func (uc *ChatUsecaseImpl) ValidateChatAccess(userID int, doctorID int) error {
-	consultations, err := uc.ConsultationRepo.GetActiveConsultations(userID, doctorID)
-	if err != nil {
-		return fmt.Errorf("failed to check consultation status: %w", err)
-	}
-
-	if len(consultations) == 0 {
+func (uc *ChatUsecaseImpl) ValidateChatAccess(userID int, receiverID int) error {
+	// Validate if there is an active consultation between the user and the doctor.
+	activeConsultations, err := uc.ConsultationRepo.GetActiveConsultations(userID, receiverID)
+	if err != nil || len(activeConsultations) == 0 {
 		return errors.New("no active consultation found, please complete a payment to start chatting")
 	}
-
 	return nil
 }
 
-// SendChat handles the sending of chat messages between a user and a doctor.
 func (uc *ChatUsecaseImpl) SendChat(chat model.Chat) (*model.ChatDTO, error) {
-	// Validate access to chat
-	err := uc.ValidateChatAccess(chat.UserID, chat.DoctorID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get or create the chat room
-	roomID, err := uc.GetOrCreateRoom(chat.UserID, chat.DoctorID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Assign the RoomID to the chat and set the timestamp
+	// Generate RoomID if it doesn't exist.
+	roomID := fmt.Sprintf("room-%d-%d", chat.UserID, chat.DoctorID)
 	chat.RoomID = roomID
 	chat.CreatedAt = time.Now()
 
-	// Save the chat message
-	err = uc.ChatRepo.SaveChat(&chat)
+	// Save the chat to the database.
+	err := uc.ChatRepo.SaveChat(&chat)
 	if err != nil {
-		return nil, fmt.Errorf("failed to save chat message: %w", err)
+		return nil, fmt.Errorf("failed to save chat: %v", err)
 	}
 
-	// Convert to ChatDTO and return
+	// Return the chat data as DTO.
 	return &model.ChatDTO{
 		ID:         chat.ID,
 		RoomID:     chat.RoomID,
@@ -98,15 +60,12 @@ func (uc *ChatUsecaseImpl) SendChat(chat model.Chat) (*model.ChatDTO, error) {
 	}, nil
 }
 
-// GetChatHistory retrieves the chat history for a given RoomID.
 func (uc *ChatUsecaseImpl) GetChatHistory(roomID string) ([]model.ChatDTO, error) {
-	// Fetch chat messages by RoomID
 	chats, err := uc.ChatRepo.GetChatsByRoomID(roomID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch chat history: %w", err)
+		return nil, err
 	}
 
-	// Convert to DTOs for the response
 	var chatDTOs []model.ChatDTO
 	for _, chat := range chats {
 		chatDTOs = append(chatDTOs, model.ChatDTO{
@@ -120,6 +79,5 @@ func (uc *ChatUsecaseImpl) GetChatHistory(roomID string) ([]model.ChatDTO, error
 			CreatedAt:  chat.CreatedAt.Format(time.RFC3339),
 		})
 	}
-
 	return chatDTOs, nil
 }

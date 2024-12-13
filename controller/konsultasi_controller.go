@@ -288,8 +288,11 @@ func mapConsultationToDTO(consultation model.Consultation) model.ConsultationDTO
 		Duration:    consultation.Duration,
 		Status:      consultation.Status,
 		StartTime:   consultation.StartTime.Format(time.RFC3339),
-		OrderID:     consultation.OrderID, // Include OrderID
+		OrderID:     consultation.OrderID,  // Include OrderID
+		UserID:      consultation.UserID,   // Tambahkan UserID
+		DoctorID:    consultation.DoctorID, // Tambahkan DoctorID
 		User: &model.UserDTO{
+			ID:        consultation.User.ID, // Tambahkan ID user
 			Avatar:    consultation.User.Avatar,
 			Username:  consultation.User.Username,
 			Email:     consultation.User.Email,
@@ -297,10 +300,10 @@ func mapConsultationToDTO(consultation model.Consultation) model.ConsultationDTO
 			TglLahir:  consultation.User.TglLahir,
 		},
 		Doctor: &model.DoctorDTO{
-			Avatar:   consultation.User.Avatar,
+			ID:       consultation.Doctor.ID, // Tambahkan ID dokter
+			Avatar:   consultation.Doctor.Avatar,
 			Username: consultation.Doctor.Username,
 			Email:    consultation.Doctor.Email,
-			Price:    consultation.Doctor.Price,
 			About:    consultation.Doctor.About, // Pastikan ini benar
 		},
 		Rekomendasi: mapRecommendationsToDTO(consultation.Rekomendasi),

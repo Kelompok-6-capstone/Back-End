@@ -22,7 +22,7 @@ func NewChatController(chatUsecase usecase.ChatUsecase) *ChatController {
 	}
 }
 
-// SendChat handles the sending of chat messages between a user and a doctor.
+// SendChat handles sending chat messages between a user and a doctor.
 func (c *ChatController) SendChat(ctx echo.Context) error {
 	// Retrieve claims from middleware (user or doctor).
 	var claims *service.JwtCustomClaims
@@ -32,6 +32,8 @@ func (c *ChatController) SendChat(ctx echo.Context) error {
 		claims, ok = ctx.Get("user").(*service.JwtCustomClaims)
 	} else if ctx.Get("doctor") != nil {
 		claims, ok = ctx.Get("doctor").(*service.JwtCustomClaims)
+	} else {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized access.")
 	}
 
 	if !ok || claims == nil {
@@ -40,33 +42,45 @@ func (c *ChatController) SendChat(ctx echo.Context) error {
 
 	// Parse the request body.
 	var request struct {
-		DoctorID int    `json:"doctor_id"`
+		UserID   int    `json:"user_id,omitempty"`   // Required for doctors
+		DoctorID int    `json:"doctor_id,omitempty"` // Required for users
 		Message  string `json:"message"`
 	}
 
-	if err := ctx.Bind(&request); err != nil || request.Message == "" || request.DoctorID <= 0 {
+	if err := ctx.Bind(&request); err != nil || request.Message == "" {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid input.")
 	}
 
-	// Validate chat access for the user or doctor.
-	err := c.ChatUsecase.ValidateChatAccess(claims.UserID, request.DoctorID)
+	// Validate input based on the role.
+	if claims.Role == "user" && request.DoctorID <= 0 {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Doctor ID is required for users.")
+	}
+
+	if claims.Role == "doctor" && request.UserID <= 0 {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "User ID is required for doctors.")
+	}
+
+	// Determine sender and receiver.
+	senderID := claims.UserID
+	receiverID := request.DoctorID // Default for user
+	if claims.Role == "doctor" {
+		senderID = claims.UserID
+		receiverID = request.UserID
+	}
+
+	// Validate chat access.
+	err := c.ChatUsecase.ValidateChatAccess(claims.UserID, receiverID)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusForbidden, err.Error())
 	}
 
-	// Determine the sender type (user or doctor).
-	senderType := "user"
-	if claims.Role == "doctor" {
-		senderType = "doctor"
-	}
-
-	// Construct the chat message object.
+	// Build the chat message.
 	chat := model.Chat{
-		UserID:     claims.UserID,
-		DoctorID:   request.DoctorID,
-		SenderID:   claims.UserID,
+		UserID:     receiverID,
+		DoctorID:   senderID,
+		SenderID:   senderID,
 		Message:    request.Message,
-		SenderType: senderType,
+		SenderType: claims.Role,
 	}
 
 	// Send the chat message via the usecase.
