@@ -5,10 +5,8 @@ import (
 	"calmind/model"
 	"calmind/service"
 	"calmind/usecase"
-	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -201,63 +199,28 @@ func (c *ArtikelController) SearchArtikel(ctx echo.Context) error {
 }
 
 func (c *ArtikelController) UploadArtikelImage(ctx echo.Context) error {
-	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
-	if !ok {
-		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
-	}
-	adminID := claims.UserID
-
-	// Ambil file dari form
 	file, err := ctx.FormFile("gambar")
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan file: "+err.Error())
 	}
 
-	// Validasi ukuran file (maksimal 5 MB)
-	if file.Size > 10*1024*1024 {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Ukuran file maksimal 5 MB")
-	}
-
-	// Validasi ekstensi file
-	ext := filepath.Ext(file.Filename)
-	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Hanya file dengan format .jpg, .jpeg, atau .png yang diperbolehkan")
-	}
-
-	// Simpan file di direktori uploads
-	uploadDir := "uploads/artikel"
-	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
-		err = os.MkdirAll(uploadDir, os.ModePerm)
-		if err != nil {
-			return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat direktori upload")
-		}
-	}
-
-	filePath := fmt.Sprintf("%s/%d_%s", uploadDir, adminID, file.Filename)
 	src, err := file.Open()
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuka file")
 	}
 	defer src.Close()
 
-	dst, err := os.Create(filePath)
+	imageURL, err := helper.UploadToImgBB("1de578cf5b7279dc8a90e60f11d62f3a", file.Filename, src)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengunggah gambar: "+err.Error())
 	}
-	defer dst.Close()
-
-	if _, err := helper.CopyFile(src, dst); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
-	}
-
-	// Buat URL gambar
-	imageURL := fmt.Sprintf("https://%s/uploads/artikel/%d_%s", ctx.Request().Host, adminID, file.Filename)
 
 	return helper.JSONSuccessResponse(ctx, map[string]string{
 		"message":  "Gambar artikel berhasil diupload",
 		"imageUrl": imageURL,
 	})
 }
+
 func (c *ArtikelController) DeleteArtikelImage(ctx echo.Context) error {
 	// Ambil ID artikel dari parameter
 	artikelIDStr := ctx.QueryParam("artikel_id")
