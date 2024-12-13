@@ -312,13 +312,14 @@ func (c *ConsultationController) MidtransNotification(ctx echo.Context) error {
 
 func mapConsultationToDTO(consultation model.Consultation) model.ConsultationDTO {
 	return model.ConsultationDTO{
-		ID:          consultation.ID,
-		Title:       consultation.Title,
-		Description: consultation.Description,
-		Duration:    consultation.Duration,
-		Status:      consultation.Status,
-		StartTime:   consultation.StartTime.Format(time.RFC3339),
-		OrderID:     consultation.OrderID, // Include OrderID
+		ID:            consultation.ID,
+		Title:         consultation.Title,
+		Description:   consultation.Description,
+		Duration:      consultation.Duration,
+		Status:        consultation.Status,
+		PaymentStatus: consultation.PaymentStatus,
+		StartTime:     consultation.StartTime.Format(time.RFC3339),
+		OrderID:       consultation.OrderID, // Include OrderID
 		User: &model.UserDTO{
 			Avatar:    consultation.User.Avatar,
 			Username:  consultation.User.Username,
