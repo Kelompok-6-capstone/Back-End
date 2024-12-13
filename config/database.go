@@ -61,7 +61,6 @@ func InitDB() (*gorm.DB, error) {
 		&model.Artikel{},
 		&model.ChatLog{},
 		&model.Rekomendasi{},
-		&model.Chat{},
 	}
 
 	for _, model := range models {
