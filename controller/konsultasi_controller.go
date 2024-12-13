@@ -91,14 +91,15 @@ func (c *ConsultationController) CreateConsultation(ctx echo.Context) error {
 
 	// Mapping response ke SimpleConsultationDTO
 	response := model.SimpleConsultationDTO{
-		ID:          consultation.ID,
-		Title:       consultation.Title,
-		Description: consultation.Description,
-		Duration:    consultation.Duration,
-		Status:      consultation.Status,
-		StartTime:   consultation.StartTime.Format(time.RFC3339),
-		OrderID:     consultation.OrderID,
-		PaymentURL:  paymentURL,
+		ID:            consultation.ID,
+		Title:         consultation.Title,
+		Description:   consultation.Description,
+		Duration:      consultation.Duration,
+		Status:        consultation.Status,
+		PaymentStatus: consultation.PaymentStatus,
+		StartTime:     consultation.StartTime.Format(time.RFC3339),
+		OrderID:       consultation.OrderID,
+		PaymentURL:    paymentURL,
 	}
 
 	return helper.JSONSuccessResponse(ctx, response)

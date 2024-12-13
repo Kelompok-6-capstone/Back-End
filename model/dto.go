@@ -39,12 +39,14 @@ type ConsultationDTO struct {
 }
 
 type SimpleConsultationDTO struct {
-	ID          int    `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Duration    int    `json:"duration"`
-	Status      string `json:"status"`
-	StartTime   string `json:"start_time"`
-	OrderID     string `json:"order_id"`
-	PaymentURL  string `json:"payment_url"`
+	ID            int    `json:"id"`
+	Title         string `json:"title"`
+	Description   string `json:"description"`
+	Duration      int    `json:"duration"`
+	Status        string `json:"status"`
+	PaymentStatus string `json:"payment_status" gorm:"type:varchar(20)"` // pending, completed, failed
+
+	StartTime  string `json:"start_time"`
+	OrderID    string `json:"order_id"`
+	PaymentURL string `json:"payment_url"`
 }
