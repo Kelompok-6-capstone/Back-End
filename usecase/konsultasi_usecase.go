@@ -5,6 +5,7 @@ import (
 	"calmind/repository"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -183,14 +184,14 @@ func (uc *ConsultationUsecaseImpl) GetApprovedConsultations() ([]model.Consultat
 func (uc *ConsultationUsecaseImpl) GetAllStatusConsultations() ([]model.Consultation, error) {
 	return uc.Repo.GetAllStatusConsultations()
 }
-
 func (uc *ConsultationUsecaseImpl) UpdatePaymentStatus(orderID, transactionStatus string) error {
 	consultation, err := uc.Repo.GetConsultationByOrderID(orderID)
 	if err != nil {
+		log.Printf("Consultation not found for order_id=%s: %v", orderID, err)
 		return fmt.Errorf("consultation not found: %w", err)
 	}
 
-	// Perbarui status pembayaran berdasarkan status dari Midtrans
+	// Update payment status
 	switch transactionStatus {
 	case "settlement":
 		consultation.PaymentStatus = "paid"
@@ -199,14 +200,17 @@ func (uc *ConsultationUsecaseImpl) UpdatePaymentStatus(orderID, transactionStatu
 	case "cancel", "deny", "expire":
 		consultation.PaymentStatus = "failed"
 	default:
+		log.Printf("Unknown transaction status: %s", transactionStatus)
 		return fmt.Errorf("unknown transaction status: %s", transactionStatus)
 	}
 
-	// Simpan pembaruan ke database
+	// Save updated consultation
 	if err := uc.Repo.UpdateConsultation(consultation); err != nil {
+		log.Printf("Failed to update consultation for order_id=%s: %v", orderID, err)
 		return fmt.Errorf("failed to update consultation: %w", err)
 	}
 
+	log.Printf("Payment status updated successfully for order_id=%s", orderID)
 	return nil
 }
 
