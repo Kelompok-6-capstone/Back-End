@@ -31,15 +31,17 @@ type ConsultationUsecase interface {
 }
 
 type ConsultationUsecaseImpl struct {
-	Repo *repository.ConsultationRepositoryImpl
+	Repo repository.ConsultationRepository
 }
 
-func NewConsultationUsecaseImpl(repo *repository.ConsultationRepositoryImpl) *ConsultationUsecaseImpl {
+func NewConsultationUsecaseImpl(repo repository.ConsultationRepository) *ConsultationUsecaseImpl {
 	return &ConsultationUsecaseImpl{Repo: repo}
 }
 
+// Menandai konsultasi yang sudah expired
 func (uc *ConsultationUsecaseImpl) MarkExpiredConsultations() error {
-	consultations, err := uc.Repo.GetActiveConsultations()
+	// Mengambil semua konsultasi aktif tanpa memfilter berdasarkan userID dan doctorID
+	consultations, err := uc.Repo.GetAllActiveConsultations()
 	if err != nil {
 		return fmt.Errorf("failed to fetch active consultations: %v", err)
 	}
@@ -49,8 +51,8 @@ func (uc *ConsultationUsecaseImpl) MarkExpiredConsultations() error {
 		endTime := consultation.StartTime.Add(time.Duration(consultation.Duration) * time.Minute)
 		if now.After(endTime) {
 			consultation.Status = "expired"
-			err := uc.Repo.UpdateConsultation(&consultation)
-			if err != nil {
+			// Perbarui status konsultasi ke database
+			if err := uc.Repo.UpdateConsultation(&consultation); err != nil {
 				return fmt.Errorf("failed to update consultation %d: %v", consultation.ID, err)
 			}
 		}
@@ -58,25 +60,21 @@ func (uc *ConsultationUsecaseImpl) MarkExpiredConsultations() error {
 	return nil
 }
 
+// Menyetujui pembayaran dan konsultasi
 func (uc *ConsultationUsecaseImpl) ApprovePaymentAndConsultation(consultationID int, paymentStatus string) error {
-	// Validasi pembayaran
 	if paymentStatus != "paid" {
 		return errors.New("invalid payment status, only 'paid' is allowed")
 	}
 
-	// Dapatkan data konsultasi berdasarkan ID
 	consultation, err := uc.Repo.GetConsultationByID(consultationID)
 	if err != nil {
 		return fmt.Errorf("consultation not found: %w", err)
 	}
 
-	// Perbarui status konsultasi dan pembayaran
 	consultation.Status = "approved"
-	consultation.PaymentStatus = "paid" // Pastikan ini juga diperbarui
+	consultation.PaymentStatus = "paid"
 
-	// Simpan perubahan ke database
-	err = uc.Repo.UpdateConsultation(consultation)
-	if err != nil {
+	if err := uc.Repo.UpdateConsultation(consultation); err != nil {
 		return fmt.Errorf("failed to update consultation: %w", err)
 	}
 
@@ -94,7 +92,6 @@ func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, titl
 		return "", nil, errors.New("doctor price is invalid")
 	}
 
-	// Generate unique Order ID
 	orderID := fmt.Sprintf("CONSULT-%d-%d", userID, time.Now().Unix())
 
 	consultation := &model.Consultation{
@@ -103,13 +100,13 @@ func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, titl
 		Title:       title,
 		Description: description,
 		Status:      "pending",
-		OrderID:     orderID, // Assign generated Order ID
+		OrderID:     orderID,
 		StartTime:   time.Now(),
 	}
 
 	consultationID, err := uc.Repo.CreateConsultation(consultation)
 	if err != nil {
-		return "", nil, errors.New("failed to create consultation")
+		return "", nil, fmt.Errorf("failed to create consultation: %w", err)
 	}
 
 	paymentURL, err := uc.CreateMidtransPayment(consultationID, doctor.Price, email)
@@ -120,15 +117,6 @@ func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, titl
 	return paymentURL, consultation, nil
 }
 
-// Mendapatkan konsultasi berdasarkan nama user
-func (u *ConsultationUsecaseImpl) SearchConsultationsByName(doctorID int, searchName string) (*[]model.Consultation, error) {
-	var consultations *[]model.Consultation
-	err := u.Repo.FindConsultationsByDoctorAndName(doctorID, searchName, consultations)
-	if err != nil {
-		return nil, err
-	}
-	return consultations, nil
-}
 // Mendapatkan konsultasi berdasarkan ID
 func (uc *ConsultationUsecaseImpl) GetConsultationByID(consultationID int) (*model.Consultation, error) {
 	return uc.Repo.GetConsultationByID(consultationID)
@@ -136,17 +124,10 @@ func (uc *ConsultationUsecaseImpl) GetConsultationByID(consultationID int) (*mod
 
 // Mendapatkan daftar konsultasi untuk dokter
 func (uc *ConsultationUsecaseImpl) GetConsultationsForDoctor(doctorID int) ([]model.Consultation, error) {
-	consultations, err := uc.Repo.GetConsultationsForDoctor(doctorID)
-	if err != nil {
-		return nil, err
-	}
-	if len(consultations) == 0 {
-		fmt.Printf("No consultations found for doctor ID %d\n", doctorID) // Debugging tambahan
-	}
-	return consultations, nil
+	return uc.Repo.GetConsultationsForDoctor(doctorID)
 }
 
-// Mendapatkan detail konsultasi tertentu untuk dokter
+// Mendapatkan detail konsultasi tertentu
 func (uc *ConsultationUsecaseImpl) ViewConsultationDetails(doctorID, consultationID int) (*model.Consultation, error) {
 	return uc.Repo.GetConsultationDetails(consultationID, doctorID)
 }
@@ -161,18 +142,22 @@ func (uc *ConsultationUsecaseImpl) AddRecommendation(doctorID, consultationID in
 	return uc.Repo.AddRecommendation(recommendationObj)
 }
 
-// Mendapatkan daftar konsultasi untuk user tertentu
+// Mendapatkan konsultasi untuk user tertentu
 func (uc *ConsultationUsecaseImpl) GetUserConsultations(userID int) ([]model.Consultation, error) {
 	return uc.Repo.GetConsultationsWithDoctors(userID)
 }
 
-// Mendapatkan daftar konsultasi yang menunggu persetujuan admin
+// Mendapatkan konsultasi yang menunggu persetujuan
 func (uc *ConsultationUsecaseImpl) GetPendingConsultations() ([]model.Consultation, error) {
 	return uc.Repo.GetPendingConsultations()
 }
+
+// Mendapatkan konsultasi yang sudah disetujui
 func (uc *ConsultationUsecaseImpl) GetApprovedConsultations() ([]model.Consultation, error) {
 	return uc.Repo.GetApprovedConsultations()
 }
+
+// Mendapatkan konsultasi dengan semua status
 func (uc *ConsultationUsecaseImpl) GetAllStatusConsultations() ([]model.Consultation, error) {
 	return uc.Repo.GetAllStatusConsultations()
 }

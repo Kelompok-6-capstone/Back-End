@@ -15,47 +15,51 @@ func UserAuthRoutes(e *echo.Echo, authController *controller.AuthController) {
 	e.GET("/user/logout", authController.LogoutUser)      // Logout User
 }
 
-func UserProfil(
+// Routes untuk Profil dan Fitur User
+func UserProfilRoutes(
 	e *echo.Group,
 	profilController *controller.ProfilController,
-	fitur *controller.UserFiturController,
-	konsultasi *controller.ConsultationController,
+	fiturController *controller.UserFiturController,
+	konsultasiController *controller.ConsultationController,
 	artikelController *controller.ArtikelController,
 	chatController *controller.ChatController,
+	custServiceController *controller.CustServiceController,
 ) {
-	// Endpoint untuk profil pengguna
-	e.GET("/profile", profilController.GetProfile)            // Melihat profil pengguna
-	e.PUT("/profile", profilController.UpdateProfile)         // Memperbarui profil pengguna
+	// Profil pengguna
+	e.GET("/profile", profilController.GetProfile)            // Lihat profil pengguna
+	e.PUT("/profile", profilController.UpdateProfile)         // Perbarui profil pengguna
 	e.POST("/upload-avatar", profilController.UploadAvatar)   // Upload avatar
 	e.DELETE("/delete-avatar", profilController.DeleteAvatar) // Hapus avatar
 
-	// Endpoint untuk fitur dokter
-	e.GET("/doctors", fitur.GetDoctors)                // Mendapatkan daftar semua dokter
-	e.GET("/doctors/tag", fitur.GetDoctorsByTag)       // Mendapatkan dokter berdasarkan tag
-	e.GET("/doctors/status", fitur.GetDoctorsByStatus) // Mendapatkan dokter berdasarkan status
-	e.GET("/doctors/search", fitur.SearchDoctors)      // Mencari dokter berdasarkan query
-	e.GET("/doctors/:id", fitur.GetDoctorDetail)       // Mendapatkan detail dokter berdasarkan ID
-	e.GET("/tags", fitur.GetAllTags)                   // Mendapatkan semua tag (bidang keahlian)
+	// Fitur dokter
+	e.GET("/doctors", fiturController.GetDoctors)                // Semua dokter
+	e.GET("/doctors/tag", fiturController.GetDoctorsByTag)       // Dokter berdasarkan tag
+	e.GET("/doctors/status", fiturController.GetDoctorsByStatus) // Dokter berdasarkan status
+	e.GET("/doctors/search", fiturController.SearchDoctors)      // Cari dokter berdasarkan query
+	e.GET("/doctors/:id", fiturController.GetDoctorDetail)       // Detail dokter
+	e.GET("/tags", fiturController.GetAllTags)                   // Semua tag
+	e.GET("/titles", fiturController.GetAllTitles)               // Semua title
 
-	// Endpoint untuk title
-	e.GET("/titles", fitur.GetAllTitles)             // Mendapatkan semua title
-	e.GET("/doctors/title", fitur.GetDoctorsByTitle) // Mendapatkan dokter berdasarkan title
+	// Konsultasi
+	e.POST("/consultations", konsultasiController.CreateConsultation)            // Buat konsultasi baru
+	e.GET("/consultations", konsultasiController.GetUserConsultations)           // Semua konsultasi pengguna
+	e.GET("/consultations/:id", konsultasiController.GetUserConsultationDetails) // Detail konsultasi
 
-	e.POST("/consultations", konsultasi.CreateConsultation)            // Membuat konsultasi
-	e.GET("/consultations", konsultasi.GetUserConsultations)           // Mendapatkan semua konsultasi user
-	e.GET("/consultations/:id", konsultasi.GetUserConsultationDetails) // Mendapatkan detail konsultasi user
-
-	// Endpoint untuk artikel
-	e.GET("/artikel", artikelController.GetAllArtikel)      // Mendapatkan semua artikel
-	e.GET("/artikel/:id", artikelController.GetArtikelByID) // Mendapatkan detail artikel berdasarkan ID
+	// Artikel
+	e.GET("/artikel", artikelController.GetAllArtikel)      // Semua artikel
+	e.GET("/artikel/:id", artikelController.GetArtikelByID) // Detail artikel
 	e.GET("/artikel/search", artikelController.SearchArtikel)
 
 	// Chat
-	e.POST("/chat/send", chatController.SendChat)             // Kirim pesan
-	e.GET("/chat/history/:id", chatController.GetChatHistory) // Riwayat pesan
+	e.POST("/chat/send", chatController.SendChat)                  // Kirim pesan
+	e.GET("/chat/history/:room_id", chatController.GetChatHistory) // Riwayat chat berdasarkan room
+
+	// cs
+	e.POST("/customer-service", custServiceController.GetResponse)
+	e.GET("/customer-service", custServiceController.GetQuestion)
 }
 
-// Routes untuk Doctor
+// Routes untuk Auth Dokter
 func DoctorAuthRoutes(e *echo.Echo, authController *controller.DoctorAuthController) {
 	e.POST("/doctor/register", authController.RegisterDoctor) // Daftar Dokter
 	e.POST("/doctor/login", authController.LoginDoctor)       // Login Dokter
@@ -64,32 +68,33 @@ func DoctorAuthRoutes(e *echo.Echo, authController *controller.DoctorAuthControl
 	e.POST("/doctor/resend-otp", authController.ResendOtp)    // Kirim ulang OTP
 }
 
-func DoctorProfil(
+// Routes untuk Profil dan Fitur Dokter
+func DoctorProfilRoutes(
 	e *echo.Group,
 	profilController *controller.DoctorProfileController,
-	artikelController *controller.ArtikelController,
 	consultationController *controller.ConsultationController,
-	fiturController *controller.UserFiturController,
+	userFiturController *controller.UserFiturController,
 	chatController *controller.ChatController,
+	custServiceController *controller.CustServiceController,
 ) {
-	// Profil Dokter
-	e.GET("/profile", profilController.GetProfile)           // Mendapatkan profil dokter
-	e.PUT("/profile", profilController.UpdateProfile)        // Mengupdate profil dokter
-	e.PUT("/status", profilController.SetActiveStatus)       // Mengubah status aktif/tidak aktif dokter
-	e.POST("/upload-image", profilController.UploadAvatar)   // Upload avatar dokter
-	e.DELETE("/delete-image", profilController.DeleteAvatar) // Hapus avatar dokter
-
-	// Tags dan Titles
-	e.GET("/tags", fiturController.GetAllTags)     // Mendapatkan semua tag (bidang keahlian)
-	e.GET("/titles", fiturController.GetAllTitles) // Mendapatkan semua title
+	// Endpoint untuk Profil Dokter
+	e.GET("/profile", profilController.GetProfile)
+	e.PUT("/profile", profilController.UpdateProfile)
+	e.PUT("/status", profilController.SetActiveStatus)
+	e.POST("/upload-image", profilController.UploadAvatar)
+	e.DELETE("/delete-image", profilController.DeleteAvatar)
 
 	// Konsultasi
-	e.GET("/consultations", consultationController.GetConsultationsForDoctor)             // Mendapatkan semua konsultasi pasien dokter
-	e.GET("/consultations/:id", consultationController.ViewConsultationDetails)           // Mendapatkan detail konsultasi tertentu
-	e.POST("/consultations/:id/recommendation", consultationController.AddRecommendation) // Menambahkan rekomendasi pada konsultasi
+	e.GET("/consultations", consultationController.GetConsultationsForDoctor)
+	e.GET("/consultations/:id", consultationController.ViewConsultationDetails)
 
-	e.POST("/chat/send", chatController.SendChat)             // Kirim pesan
-	e.GET("/chat/history/:id", chatController.GetChatHistory) // Riwayat pesan
+	// Chat
+	e.POST("/chat/send", chatController.SendChat)
+	e.GET("/chat/history/:room_id", chatController.GetChatHistory)
+
+	// cs
+	e.POST("/customer-service", custServiceController.GetResponse)
+	e.GET("/customer-service", custServiceController.GetQuestion)
 }
 
 // Routes untuk Admin
@@ -98,28 +103,34 @@ func AdminAuthRoutes(e *echo.Echo, authController *controller.AdminAuthControlle
 	e.GET("/admin/logout", authController.LogoutAdmin) // Logout Admin
 }
 
-func AdminManagementRoutes(e *echo.Group, adminManagement *controller.AdminManagementController, artikelController *controller.ArtikelController, consultationController *controller.ConsultationController) {
-	// user
-	e.GET("/allusers", adminManagement.GetAllUsers)    // Ambil Semua Data User
-	e.DELETE("/users/:id", adminManagement.DeleteUser) // Hapus User berdasarkan ID
+// Routes untuk Manajemen Admin
+func AdminManagementRoutes(
+	e *echo.Group,
+	adminManagementController *controller.AdminManagementController,
+	artikelController *controller.ArtikelController,
+	konsultasiController *controller.ConsultationController,
+) {
+	// User management
+	e.GET("/allusers", adminManagementController.GetAllUsers)    // Semua user
+	e.DELETE("/users/:id", adminManagementController.DeleteUser) // Hapus user berdasarkan ID
 
-	// dokter
-	e.GET("/alldocters", adminManagement.GetAllDoctors)    // Ambil Semua Data Dokter
-	e.DELETE("/docters/:id", adminManagement.DeleteDoctor) // Hapus Dokter berdasarkan ID
+	// Doctor management
+	e.GET("/alldoctors", adminManagementController.GetAllDoctors)    // Semua dokter
+	e.DELETE("/doctors/:id", adminManagementController.DeleteDoctor) // Hapus dokter berdasarkan ID
 
-	// artikel
+	// Artikel management
 	e.POST("/artikel", artikelController.CreateArtikel)                     // Tambah artikel
-	e.GET("/artikel", artikelController.GetAllArtikel)                      // Lihat semua artikel
-	e.GET("/artikel/:id", artikelController.GetArtikelByID)                 // Lihat detail artikel
-	e.PUT("/artikel/:id", artikelController.UpdateArtikel)                  // Update artikel
+	e.GET("/artikel", artikelController.GetAllArtikel)                      // Semua artikel
+	e.GET("/artikel/:id", artikelController.GetArtikelByID)                 // Detail artikel
+	e.PUT("/artikel/:id", artikelController.UpdateArtikel)                  // Perbarui artikel
 	e.DELETE("/artikel/:id", artikelController.DeleteArtikel)               // Hapus artikel
-	e.POST("/artikel/upload-image", artikelController.UploadArtikelImage)   // Upload image untuk artikel
-	e.DELETE("/artikel/delete-image", artikelController.DeleteArtikelImage) // Hapus image artikel
+	e.POST("/artikel/upload-image", artikelController.UploadArtikelImage)   // Upload gambar artikel
+	e.DELETE("/artikel/delete-image", artikelController.DeleteArtikelImage) // Hapus gambar artikel
 
-	// konsultasi
-	e.GET("/consultations", consultationController.GetAllStatusConsultations)
-	e.GET("/consultations/:id", consultationController.ViewPendingConsultation)
-	e.GET("/consultations/pending", consultationController.GetPendingConsultations)
-	e.GET("/consultations/approve", consultationController.GetAproveConsultations)
-	e.PUT("/consultations/:id/approve", consultationController.ApprovePaymentAndConsultation)
+	// Konsultasi management
+	e.GET("/consultations", konsultasiController.GetAllStatusConsultations)                 // Semua konsultasi
+	e.GET("/consultations/:id", konsultasiController.ViewPendingConsultation)               // Konsultasi tertunda
+	e.GET("/consultations/pending", konsultasiController.GetPendingConsultations)           // Konsultasi pending
+	e.GET("/consultations/approved", konsultasiController.GetAproveConsultations)           // Konsultasi approved
+	e.PUT("/consultations/:id/approve", konsultasiController.ApprovePaymentAndConsultation) // Approve konsultasi
 }
