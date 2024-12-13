@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 // DTO untuk User
 type UserDTO struct {
 	Avatar    string `gorm:"" json:"avatar"`
@@ -36,6 +38,8 @@ type ConsultationDTO struct {
 	Doctor        *DoctorDTO          `json:"doctor,omitempty"`
 	PaymentStatus string              `json:"payment_status" gorm:"type:varchar(20)"` // pending, completed, failed
 	PaymentURL    string              `json:"payment_url,omitempty"`
+	CreatedAt     time.Time           `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt     time.Time           `json:"updated_at" gorm:"autoUpdateTime"`
 	Rekomendasi   []RecommendationDTO `json:"rekomendasi,omitempty"`
 }
 

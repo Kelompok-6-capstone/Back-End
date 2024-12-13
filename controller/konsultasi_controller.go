@@ -320,6 +320,8 @@ func mapConsultationToDTO(consultation model.Consultation) model.ConsultationDTO
 		PaymentStatus: consultation.PaymentStatus,
 		StartTime:     consultation.StartTime.Format(time.RFC3339),
 		OrderID:       consultation.OrderID, // Include OrderID
+		CreatedAt:     consultation.CreatedAt,
+		UpdatedAt:     consultation.UpdatedAt,
 		User: &model.UserDTO{
 			Avatar:    consultation.User.Avatar,
 			Username:  consultation.User.Username,
