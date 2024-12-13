@@ -21,7 +21,6 @@ func UserProfil(
 	fitur *controller.UserFiturController,
 	konsultasi *controller.ConsultationController,
 	artikelController *controller.ArtikelController,
-	chatController *controller.ChatController,
 	custServiceController *controller.CustServiceController,
 ) {
 	// Endpoint untuk profil pengguna
@@ -51,10 +50,6 @@ func UserProfil(
 	e.GET("/artikel/:id", artikelController.GetArtikelByID) // Mendapatkan detail artikel berdasarkan ID
 	e.GET("/artikel/search", artikelController.SearchArtikel)
 
-	// Chat
-	e.POST("/chat/send", chatController.SendChat)                  // Kirim pesan
-	e.GET("/chat/history/:room_id", chatController.GetChatHistory) // Riwayat chat berdasarkan room
-
 	// cs
 	e.POST("/customer-service", custServiceController.GetResponse)
 	e.GET("/customer-service", custServiceController.GetQuestion)
@@ -75,7 +70,6 @@ func DoctorProfil(
 	artikelController *controller.ArtikelController,
 	consultationController *controller.ConsultationController,
 	fiturController *controller.UserFiturController,
-	chatController *controller.ChatController,
 	custServiceController *controller.CustServiceController,
 ) {
 	// Profil Dokter
@@ -93,13 +87,6 @@ func DoctorProfil(
 	e.GET("/consultations", consultationController.GetConsultationsForDoctor)             // Mendapatkan semua konsultasi pasien dokter
 	e.GET("/consultations/:id", consultationController.ViewConsultationDetails)           // Mendapatkan detail konsultasi tertentu
 	e.POST("/consultations/:id/recommendation", consultationController.AddRecommendation) // Menambahkan rekomendasi pada konsultasi
-
-	e.POST("/chat/send", chatController.SendChat)             // Kirim pesan
-	e.GET("/chat/history/:id", chatController.GetChatHistory) // Riwayat pesan
-
-	// chat
-	e.POST("/chat/send", chatController.SendChat)                  // Kirim pesan
-	e.GET("/chat/history/:room_id", chatController.GetChatHistory) // Riwayat chat berdasarkan room
 
 	// cs
 	e.POST("/customer-service", custServiceController.GetResponse)

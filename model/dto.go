@@ -2,21 +2,19 @@ package model
 
 // DTO untuk User
 type UserDTO struct {
-	ID        int    `json:"id"` // Tambahkan ID user
-	Avatar    string `json:"avatar"`
+	Avatar    string `gorm:"" json:"avatar"`
 	Username  string `json:"username"`
 	Email     string `json:"email"`
-	TglLahir  string `json:"tgl_lahir"`
-	Pekerjaan string `json:"pekerjaan"`
+	TglLahir  string `gorm:"" json:"tgl_lahir"`
+	Pekerjaan string `gorm:"" json:"pekerjaan"`
 }
 
 type DoctorDTO struct {
-	ID       int    `json:"id"` // Tambahkan ID dokter
-	Avatar   string `json:"avatar"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Price    int    `json:"price"`
-	About    string `json:"about"`
+	Username string  `json:"username"`
+	Email    string  `json:"email"`
+	Avatar   string  `json:"avatar,omitempty"`
+	Price    float64 `json:"price,omitempty"`
+	About    string  `json:"about"`
 }
 
 type RecommendationDTO struct {
@@ -32,13 +30,12 @@ type ConsultationDTO struct {
 	Description string              `json:"description"`
 	Duration    int                 `json:"duration"`
 	Status      string              `json:"status"`
-	StartTime   string              `json:"start_time"`
-	OrderID     string              `json:"order_id"`
-	UserID      int                 `json:"user_id"`   // Tambahkan UserID
-	DoctorID    int                 `json:"doctor_id"` // Tambahkan DoctorID
-	User        *UserDTO            `json:"user"`
-	Doctor      *DoctorDTO          `json:"doctor"`
-	Rekomendasi []RecommendationDTO `json:"rekomendasi"`
+	StartTime   string              `json:"start_time,omitempty"`
+	OrderID     string              `json:"order_id,omitempty"`
+	User        *UserDTO            `json:"user,omitempty"`
+	Doctor      *DoctorDTO          `json:"doctor,omitempty"`
+	PaymentURL  string              `json:"payment_url,omitempty"`
+	Rekomendasi []RecommendationDTO `json:"rekomendasi,omitempty"`
 }
 
 type SimpleConsultationDTO struct {
