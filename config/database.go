@@ -17,7 +17,9 @@ type ConfigDB struct {
 	Name     string
 }
 
+// InitDB initializes the database connection and handles migrations
 func InitDB() (*gorm.DB, error) {
+	// Load database configuration from environment variables
 	configDB := ConfigDB{
 		Host:     os.Getenv("DATABASE_HOST"),
 		User:     os.Getenv("DATABASE_USER"),
@@ -26,31 +28,28 @@ func InitDB() (*gorm.DB, error) {
 		Name:     os.Getenv("DATABASE_NAME"),
 	}
 
-	// Validasi konfigurasi database
+	// Validate configuration
 	if configDB.Host == "" || configDB.User == "" || configDB.Password == "" || configDB.Port == "" || configDB.Name == "" {
 		return nil, fmt.Errorf("konfigurasi database tidak lengkap, periksa file .env Anda")
 	}
 
-	// Format DSN
-	dsn := fmt.Sprintf("%v:%v@tcp(%v:%v)/%v?charset=utf8mb4&parseTime=True&loc=Local",
+	// Format DSN (Data Source Name)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		configDB.User,
 		configDB.Password,
 		configDB.Host,
 		configDB.Port,
-		configDB.Name)
+		configDB.Name,
+	)
 
-	// Buka koneksi ke database
+	// Open database connection
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, fmt.Errorf("gagal membuka koneksi ke database: %w", err)
 	}
+	fmt.Println("Koneksi database berhasil.")
 
-	// Nonaktifkan pemeriksaan foreign key sementara (jika perlu)
-	if err := db.Exec("SET FOREIGN_KEY_CHECKS=0;").Error; err != nil {
-		return nil, fmt.Errorf("gagal menonaktifkan foreign key checks: %w", err)
-	}
-
-	// Migrasi model
+	// Migrate database models
 	models := []interface{}{
 		&model.User{},
 		&model.Admin{},
@@ -67,11 +66,7 @@ func InitDB() (*gorm.DB, error) {
 		if err := db.AutoMigrate(model); err != nil {
 			return nil, fmt.Errorf("gagal melakukan migrasi untuk model %T: %w", model, err)
 		}
-	}
-
-	// Aktifkan kembali foreign key checks
-	if err := db.Exec("SET FOREIGN_KEY_CHECKS=1;").Error; err != nil {
-		return nil, fmt.Errorf("gagal mengaktifkan kembali foreign key checks: %w", err)
+		fmt.Printf("Migrasi berhasil untuk model: %T\n", model)
 	}
 
 	// Seed Titles

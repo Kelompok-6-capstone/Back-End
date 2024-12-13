@@ -46,12 +46,6 @@ func (c *CustServiceController) GetResponse(ctx echo.Context) error {
 		})
 	}
 
-	// Save question for admin
-	// err := c.CustServiceUsecase.SaveCustService(claims.UserID, request.Message)
-	// if err != nil {
-	// 	return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan pertanyaan")
-	// }
-
 	return helper.JSONSuccessResponse(ctx, map[string]interface{}{
 		"message":  request.Message,
 		"response": "Jawaban atas pertanyaan anda tidak tersedia. Silahkan hubungi Admin melalui kontak berikut https://wa.me/+6283820440747",

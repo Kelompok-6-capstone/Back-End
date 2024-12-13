@@ -20,13 +20,13 @@ type Doctor struct {
 	STRNumber     string         `json:"str_number"`
 	Income        float64        `gorm:"default:0"`
 	About         string         `json:"about"`
-	JenisKelamin  string         `gorm:"type:enum('Laki-laki', 'Perempuan');" json:"jenis_kelamin"`
+	JenisKelamin  string         `gorm:"type:enum('Laki-laki', 'Perempuan')" json:"jenis_kelamin"`
 	TitleID       int            `json:"title_id"`
 	Title         Title          `json:"title" gorm:"foreignKey:TitleID"`
 	Tags          []Tags         `json:"tags" gorm:"many2many:doctor_tags"`
 	CreatedAt     time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt     time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
-	Consultations []Consultation `json:"consultations" gorm:"foreignKey:UserID"`
+	Consultations []Consultation `json:"consultations" gorm:"foreignKey:DoctorID"` // Perbaiki relasi ini
 }
 
 type Tags struct {

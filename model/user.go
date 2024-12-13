@@ -17,5 +17,5 @@ type User struct {
 	IsVerified    bool           `json:"is_verified" gorm:"default:false"`
 	CreatedAt     time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt     time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
-	Consultations []Consultation `json:"consultations" gorm:"foreignKey:DoctorID"`
+	Consultations []Consultation `json:"consultations" gorm:"foreignKey:UserID"` // Perbaiki relasi ini
 }
