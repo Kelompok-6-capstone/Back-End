@@ -102,24 +102,33 @@ func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, titl
 		return "", nil, errors.New("doctor price is invalid")
 	}
 
-	orderID := fmt.Sprintf("consultation-%d-%d", userID, time.Now().Unix())
-
+	// Buat konsultasi tanpa order_id
 	consultation := &model.Consultation{
 		UserID:      userID,
 		DoctorID:    doctorID,
 		Title:       title,
 		Description: description,
 		Status:      "pending",
-		OrderID:     orderID,
 		StartTime:   time.Now(),
 	}
 
+	// Simpan ke database untuk mendapatkan consultationID
 	consultationID, err := uc.Repo.CreateConsultation(consultation)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to create consultation: %w", err)
 	}
 
-	paymentURL, err := uc.CreateMidtransPayment(consultationID, doctor.Price, email)
+	// Buat order_id berdasarkan consultationID
+	consultation.OrderID = fmt.Sprintf("consultation-%d", consultationID)
+
+	// Perbarui database dengan order_id
+	err = uc.Repo.UpdateConsultation(consultation)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to update order_id: %w", err)
+	}
+
+	// Buat URL pembayaran menggunakan Midtrans
+	paymentURL, err := uc.CreateMidtransPayment(consultation.OrderID, doctor.Price, email)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to create midtrans payment: %w", err)
 	}
@@ -185,10 +194,17 @@ func (uc *ConsultationUsecaseImpl) GetAllStatusConsultations() ([]model.Consulta
 	return uc.Repo.GetAllStatusConsultations()
 }
 func (uc *ConsultationUsecaseImpl) UpdatePaymentStatus(orderID, transactionStatus string) error {
+	// Ambil data konsultasi berdasarkan orderID
 	consultation, err := uc.Repo.GetConsultationByOrderID(orderID)
 	if err != nil {
 		log.Printf("Consultation not found for order_id=%s: %v", orderID, err)
 		return fmt.Errorf("consultation not found: %w", err)
+	}
+
+	// Validasi status lama agar tidak mengubah status paid menjadi pending atau failed
+	if consultation.PaymentStatus == "paid" {
+		log.Printf("Payment already completed for order_id=%s", orderID)
+		return nil
 	}
 
 	// Update payment status sesuai status transaksi
@@ -215,13 +231,13 @@ func (uc *ConsultationUsecaseImpl) UpdatePaymentStatus(orderID, transactionStatu
 }
 
 // Membuat pembayaran menggunakan Midtrans
-func (uc *ConsultationUsecaseImpl) CreateMidtransPayment(consultationID int, amount float64, email string) (string, error) {
+func (uc *ConsultationUsecaseImpl) CreateMidtransPayment(orderID string, amount float64, email string) (string, error) {
 	client := snap.Client{}
 	client.New(os.Getenv("MIDTRANS_SERVER_KEY"), midtrans.Sandbox)
 
 	snapReq := &snap.Request{
 		TransactionDetails: midtrans.TransactionDetails{
-			OrderID:  fmt.Sprintf("consultation-%d-%d", consultationID, time.Now().Unix()),
+			OrderID:  orderID, // Gunakan orderID langsung
 			GrossAmt: int64(amount),
 		},
 		CustomerDetail: &midtrans.CustomerDetails{

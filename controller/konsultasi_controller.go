@@ -298,7 +298,7 @@ func (c *ConsultationController) MidtransNotification(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid notification data"})
 	}
 
-	// Update payment status
+	// Update payment status di database
 	err := c.ConsultationUsecase.UpdatePaymentStatus(orderID, transactionStatus)
 	if err != nil {
 		log.Printf("Failed to update payment status for order_id=%s: %v", orderID, err)
