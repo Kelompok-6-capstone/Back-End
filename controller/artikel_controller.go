@@ -197,7 +197,6 @@ func (c *ArtikelController) SearchArtikel(ctx echo.Context) error {
 	// Kirim respons sukses dengan data artikel yang diformat
 	return helper.JSONSuccessResponse(ctx, responses)
 }
-
 func (c *ArtikelController) UploadArtikelImage(ctx echo.Context) error {
 	file, err := ctx.FormFile("gambar")
 	if err != nil {
@@ -210,9 +209,34 @@ func (c *ArtikelController) UploadArtikelImage(ctx echo.Context) error {
 	}
 	defer src.Close()
 
-	imageURL, err := helper.UploadToImgBB(os.Getenv("API_KEY_IMBB"), file.Filename, src)
+	// Unggah gambar ke ImgBB dan dapatkan URL serta delete_url
+	imageURL, deleteURL, err := helper.UploadToImgBB(os.Getenv("API_KEY_IMBB"), file.Filename, src)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengunggah gambar: "+err.Error())
+	}
+
+	// Simpan URL gambar dan delete_url ke database
+	artikelIDStr := ctx.QueryParam("artikel_id")
+	if artikelIDStr == "" {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Artikel ID diperlukan")
+	}
+
+	artikelID, err := strconv.Atoi(artikelIDStr)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Artikel ID tidak valid")
+	}
+
+	artikel, err := c.Usecase.GetArtikelByID(artikelID)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "Artikel tidak ditemukan: "+err.Error())
+	}
+
+	artikel.Gambar = imageURL
+	artikel.DeleteURL = deleteURL // Tambahkan kolom `DeleteURL` di model Artikel
+
+	err = c.Usecase.UpdateArtikel(artikel)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan URL gambar di database: "+err.Error())
 	}
 
 	return helper.JSONSuccessResponse(ctx, map[string]string{
@@ -233,24 +257,23 @@ func (c *ArtikelController) DeleteArtikelImage(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Artikel ID tidak valid")
 	}
 
-	// Ambil artikel dari database untuk mendapatkan URL gambar
+	// Ambil artikel dari database untuk mendapatkan URL gambar dan delete_url
 	artikel, err := c.Usecase.GetArtikelByID(artikelID)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "Artikel tidak ditemukan: "+err.Error())
 	}
 
-	// Hapus file gambar artikel
-	if artikel.Gambar != "" {
-		filePath := "." + artikel.Gambar // Path relatif ke file
-		if _, err := os.Stat(filePath); err == nil {
-			if err := os.Remove(filePath); err != nil {
-				return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus file gambar artikel: "+err.Error())
-			}
+	// Hapus file gambar dari ImgBB
+	if artikel.DeleteURL != "" { // Menggunakan delete_url untuk penghapusan
+		err := helper.DeleteFromImgBB(artikel.DeleteURL)
+		if err != nil {
+			return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus gambar dari ImgBB: "+err.Error())
 		}
 	}
 
 	// Update URL gambar menjadi kosong di database
 	artikel.Gambar = ""
+	artikel.DeleteURL = ""
 	err = c.Usecase.UpdateArtikel(artikel) // Menggunakan variabel `artikel` secara langsung
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate gambar artikel di database: "+err.Error())

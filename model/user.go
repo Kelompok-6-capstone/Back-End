@@ -14,6 +14,7 @@ type User struct {
 	TglLahir      string         `gorm:"" json:"tgl_lahir"`
 	JenisKelamin  string         `gorm:"type:enum('Laki-laki', 'Perempuan');default:'Laki-laki'" json:"jenis_kelamin"`
 	Pekerjaan     string         `gorm:"" json:"pekerjaan"`
+	DeleteURL     string         `json:"delete_url"`
 	IsVerified    bool           `json:"is_verified" gorm:"default:false"`
 	CreatedAt     time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt     time.Time      `json:"updated_at" gorm:"autoUpdateTime"`

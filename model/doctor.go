@@ -22,6 +22,7 @@ type Doctor struct {
 	About         string         `json:"about"`
 	JenisKelamin  string         `gorm:"type:enum('Laki-laki', 'Perempuan')" json:"jenis_kelamin"`
 	TitleID       int            `json:"title_id"`
+	DeleteURL     string         `json:"delete_url"`
 	Title         Title          `json:"title" gorm:"foreignKey:TitleID"`
 	Tags          []Tags         `json:"tags" gorm:"many2many:doctor_tags"`
 	CreatedAt     time.Time      `json:"created_at" gorm:"autoCreateTime"`
