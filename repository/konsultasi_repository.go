@@ -23,6 +23,7 @@ type ConsultationRepository interface {
 	GetAllStatusConsultations() ([]model.Consultation, error)
 	GetApprovedConsultations() ([]model.Consultation, error)
 	ValidateUserAndDoctor(userID, doctorID int) error
+	GetConsultationByOrderID(orderID string) (*model.Consultation, error)
 }
 
 type ConsultationRepositoryImpl struct {
@@ -168,6 +169,14 @@ func (r *ConsultationRepositoryImpl) GetAllStatusConsultations() ([]model.Consul
 		return nil, err
 	}
 	return consultations, nil
+}
+
+func (r *ConsultationRepositoryImpl) GetConsultationByOrderID(orderID string) (*model.Consultation, error) {
+	var consultation model.Consultation
+	if err := r.DB.Where("order_id = ?", orderID).First(&consultation).Error; err != nil {
+		return nil, err
+	}
+	return &consultation, nil
 }
 
 // Mendapatkan dokter berdasarkan ID

@@ -115,3 +115,7 @@ func AdminManagementRoutes(e *echo.Group, adminManagement *controller.AdminManag
 	e.GET("/consultations/approve", consultationController.GetAproveConsultations)
 	e.PUT("/consultations/:id/approve", consultationController.ApprovePaymentAndConsultation)
 }
+
+func WebhookRoutes(e *echo.Echo, consultationController *controller.ConsultationController) {
+	e.POST("/notifications/midtrans", consultationController.MidtransNotification)
+}

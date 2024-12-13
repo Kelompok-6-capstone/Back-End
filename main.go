@@ -127,6 +127,8 @@ func main() {
 
 	routes.UserCustServiceRoutes(e, cscontroller)
 
+	routes.WebhookRoutes(e, consultationController)
+
 	// Mulai server
 	log.Fatal(e.Start(":8000"))
 }

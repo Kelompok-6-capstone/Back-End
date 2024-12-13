@@ -280,6 +280,28 @@ func (c *ConsultationController) ApprovePaymentAndConsultation(ctx echo.Context)
 	})
 }
 
+func (c *ConsultationController) MidtransNotification(ctx echo.Context) error {
+	var notification map[string]interface{}
+	if err := ctx.Bind(&notification); err != nil {
+		return ctx.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid payload"})
+	}
+
+	transactionStatus, ok := notification["transaction_status"].(string)
+	orderID, ok := notification["order_id"].(string)
+
+	if !ok || transactionStatus == "" || orderID == "" {
+		return ctx.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid notification data"})
+	}
+
+	// Logika pembaruan status
+	err := c.ConsultationUsecase.UpdatePaymentStatus(orderID, transactionStatus)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{"message": "Failed to update payment status"})
+	}
+
+	return ctx.JSON(http.StatusOK, map[string]string{"message": "Notification processed"})
+}
+
 func mapConsultationToDTO(consultation model.Consultation) model.ConsultationDTO {
 	return model.ConsultationDTO{
 		ID:          consultation.ID,

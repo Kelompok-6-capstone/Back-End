@@ -28,6 +28,7 @@ type ConsultationUsecase interface {
 	ApprovePaymentAndConsultation(consultationID int, paymentStatus string) error
 	GetApprovedConsultations() ([]model.Consultation, error)
 	GetAllStatusConsultations() ([]model.Consultation, error)
+	UpdatePaymentStatus(orderID, transactionStatus string) error
 }
 
 type ConsultationUsecaseImpl struct {
@@ -181,6 +182,32 @@ func (uc *ConsultationUsecaseImpl) GetApprovedConsultations() ([]model.Consultat
 }
 func (uc *ConsultationUsecaseImpl) GetAllStatusConsultations() ([]model.Consultation, error) {
 	return uc.Repo.GetAllStatusConsultations()
+}
+
+func (uc *ConsultationUsecaseImpl) UpdatePaymentStatus(orderID, transactionStatus string) error {
+	consultation, err := uc.Repo.GetConsultationByOrderID(orderID)
+	if err != nil {
+		return fmt.Errorf("consultation not found: %w", err)
+	}
+
+	// Perbarui status pembayaran berdasarkan status dari Midtrans
+	switch transactionStatus {
+	case "settlement":
+		consultation.PaymentStatus = "paid"
+	case "pending":
+		consultation.PaymentStatus = "pending"
+	case "cancel", "deny", "expire":
+		consultation.PaymentStatus = "failed"
+	default:
+		return fmt.Errorf("unknown transaction status: %s", transactionStatus)
+	}
+
+	// Simpan pembaruan ke database
+	if err := uc.Repo.UpdateConsultation(consultation); err != nil {
+		return fmt.Errorf("failed to update consultation: %w", err)
+	}
+
+	return nil
 }
 
 // Membuat pembayaran menggunakan Midtrans
