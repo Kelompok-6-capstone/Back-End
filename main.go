@@ -114,7 +114,7 @@ func main() {
 
 	// Group User
 	userGroup := e.Group("/user", jwtMiddleware.HandlerUser)
-	routes.UserProfil(userGroup, userProfilController, userFiturController, consultationController, artikelController, cscontroller)
+	routes.UserProfil(userGroup, userProfilController, userFiturController, consultationController, artikelController)
 	routes.UserChatbotRoutes(userGroup, chatbotController)
 
 	// Group Admin
@@ -123,7 +123,9 @@ func main() {
 
 	// Group Doctor
 	doctorGroup := e.Group("/doctor", jwtMiddleware.HandlerDoctor)
-	routes.DoctorProfil(doctorGroup, doctorProfilController, artikelController, consultationController, userFiturController, cscontroller)
+	routes.DoctorProfil(doctorGroup, doctorProfilController, artikelController, consultationController, userFiturController)
+
+	routes.UserCustServiceRoutes(e, cscontroller)
 
 	// Mulai server
 	log.Fatal(e.Start(":8000"))

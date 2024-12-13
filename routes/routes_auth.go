@@ -21,7 +21,6 @@ func UserProfil(
 	fitur *controller.UserFiturController,
 	konsultasi *controller.ConsultationController,
 	artikelController *controller.ArtikelController,
-	custServiceController *controller.CustServiceController,
 ) {
 	// Endpoint untuk profil pengguna
 	e.GET("/profile", profilController.GetProfile)            // Melihat profil pengguna
@@ -49,10 +48,6 @@ func UserProfil(
 	e.GET("/artikel", artikelController.GetAllArtikel)      // Mendapatkan semua artikel
 	e.GET("/artikel/:id", artikelController.GetArtikelByID) // Mendapatkan detail artikel berdasarkan ID
 	e.GET("/artikel/search", artikelController.SearchArtikel)
-
-	// cs
-	e.POST("/customer-service", custServiceController.GetResponse)
-	e.GET("/customer-service", custServiceController.GetQuestion)
 }
 
 // Routes untuk Doctor
@@ -70,7 +65,6 @@ func DoctorProfil(
 	artikelController *controller.ArtikelController,
 	consultationController *controller.ConsultationController,
 	fiturController *controller.UserFiturController,
-	custServiceController *controller.CustServiceController,
 ) {
 	// Profil Dokter
 	e.GET("/profile", profilController.GetProfile)           // Mendapatkan profil dokter
@@ -88,9 +82,6 @@ func DoctorProfil(
 	e.GET("/consultations/:id", consultationController.ViewConsultationDetails)           // Mendapatkan detail konsultasi tertentu
 	e.POST("/consultations/:id/recommendation", consultationController.AddRecommendation) // Menambahkan rekomendasi pada konsultasi
 
-	// cs
-	e.POST("/customer-service", custServiceController.GetResponse)
-	e.GET("/customer-service", custServiceController.GetQuestion)
 }
 
 // Routes untuk Admin
