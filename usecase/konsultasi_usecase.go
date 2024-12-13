@@ -102,7 +102,7 @@ func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, titl
 		return "", nil, errors.New("doctor price is invalid")
 	}
 
-	orderID := fmt.Sprintf("CONSULT-%d-%d", userID, time.Now().Unix())
+	orderID := fmt.Sprintf("consultation-%d-%d", userID, time.Now().Unix())
 
 	consultation := &model.Consultation{
 		UserID:      userID,
@@ -191,7 +191,7 @@ func (uc *ConsultationUsecaseImpl) UpdatePaymentStatus(orderID, transactionStatu
 		return fmt.Errorf("consultation not found: %w", err)
 	}
 
-	// Update payment status
+	// Update payment status sesuai status transaksi
 	switch transactionStatus {
 	case "settlement":
 		consultation.PaymentStatus = "paid"
@@ -204,7 +204,7 @@ func (uc *ConsultationUsecaseImpl) UpdatePaymentStatus(orderID, transactionStatu
 		return fmt.Errorf("unknown transaction status: %s", transactionStatus)
 	}
 
-	// Save updated consultation
+	// Simpan perubahan ke database
 	if err := uc.Repo.UpdateConsultation(consultation); err != nil {
 		log.Printf("Failed to update consultation for order_id=%s: %v", orderID, err)
 		return fmt.Errorf("failed to update consultation: %w", err)

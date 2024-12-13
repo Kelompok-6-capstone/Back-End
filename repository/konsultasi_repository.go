@@ -3,6 +3,7 @@ package repository
 import (
 	"calmind/model"
 	"fmt"
+	"log"
 	"time"
 
 	"gorm.io/gorm"
@@ -173,7 +174,9 @@ func (r *ConsultationRepositoryImpl) GetAllStatusConsultations() ([]model.Consul
 
 func (r *ConsultationRepositoryImpl) GetConsultationByOrderID(orderID string) (*model.Consultation, error) {
 	var consultation model.Consultation
-	if err := r.DB.Where("order_id = ?", orderID).First(&consultation).Error; err != nil {
+	err := r.DB.Where("order_id = ?", orderID).First(&consultation).Error
+	if err != nil {
+		log.Printf("Consultation not found for order_id=%s: %v", orderID, err)
 		return nil, err
 	}
 	return &consultation, nil
