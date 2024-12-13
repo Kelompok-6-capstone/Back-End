@@ -1,59 +1,47 @@
 package helper
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
-	"io"
+	"fmt"
 	"mime/multipart"
-	"net/http"
+	"os"
+
+	"github.com/nedpals/supabase-go"
 )
 
-func UploadToImgBB(apiKey string, filePath string, file multipart.File) (string, error) {
-	url := "https://api.imgbb.com/1/upload?key=" + apiKey
+// GetSupabaseClient - Membuat client Supabase
+func GetSupabaseClient() *supabase.Client {
+	supabaseURL := os.Getenv("SUPABASE_URL")
+	supabaseKey := os.Getenv("SUPABASE_API_KEY")
+	return supabase.CreateClient(supabaseURL, supabaseKey)
+}
 
-	// Buat multipart writer
-	var b bytes.Buffer
-	writer := multipart.NewWriter(&b)
+// UploadToSupabase - Mengunggah gambar ke Supabase Storage
+func UploadToSupabase(file multipart.File, fileName string) (string, error) {
+	client := GetSupabaseClient()
+	bucketName := os.Getenv("SUPABASE_BUCKET_NAME")
 
-	// Tambahkan file ke form data
-	part, err := writer.CreateFormFile("image", filePath)
-	if err != nil {
-		return "", err
-	}
-	_, err = io.Copy(part, file)
-	if err != nil {
-		return "", err
-	}
-
-	writer.Close()
-
-	// Kirim permintaan POST ke ImgBB
-	req, err := http.NewRequest("POST", url, &b)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	// Decode respons JSON
-	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", err
+	// Upload file ke Supabase Storage
+	response := client.Storage.From(bucketName).Upload(fileName, file)
+	if response.Message != "" { // Jika ada pesan error dari response
+		return "", errors.New("gagal mengunggah file ke Supabase: " + response.Message)
 	}
 
-	// Periksa apakah upload berhasil
-	if result["status"].(float64) != 200 {
-		return "", errors.New("Gagal mengunggah ke ImgBB")
+	// Buat URL gambar berdasarkan key
+	fileURL := fmt.Sprintf("%s/storage/v1/object/public/%s/%s", os.Getenv("SUPABASE_URL"), bucketName, response.Key)
+	return fileURL, nil
+}
+
+// DeleteFromSupabase - Menghapus gambar dari Supabase Storage
+func DeleteFromSupabase(fileName string) error {
+	client := GetSupabaseClient()
+	bucketName := os.Getenv("SUPABASE_BUCKET_NAME")
+
+	// Hapus file dari Supabase Storage
+	response := client.Storage.From(bucketName).Remove([]string{fileName})
+	if response.Message != "" { // Jika ada pesan error dari response
+		return errors.New("gagal menghapus file: " + response.Message)
 	}
 
-	// Ambil URL gambar
-	data := result["data"].(map[string]interface{})
-	return data["url"].(string), nil
+	return nil
 }

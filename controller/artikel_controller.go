@@ -6,8 +6,8 @@ import (
 	"calmind/service"
 	"calmind/usecase"
 	"net/http"
-	"os"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 )
@@ -197,20 +197,23 @@ func (c *ArtikelController) SearchArtikel(ctx echo.Context) error {
 	// Kirim respons sukses dengan data artikel yang diformat
 	return helper.JSONSuccessResponse(ctx, responses)
 }
-
 func (c *ArtikelController) UploadArtikelImage(ctx echo.Context) error {
+	// Ambil file dari form
 	file, err := ctx.FormFile("gambar")
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan file: "+err.Error())
 	}
 
+	// Buka file gambar
 	src, err := file.Open()
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuka file")
 	}
 	defer src.Close()
 
-	imageURL, err := helper.UploadToImgBB("1de578cf5b7279dc8a90e60f11d62f3a", file.Filename, src)
+	// Upload gambar ke Supabase
+	fileName := file.Filename
+	imageURL, err := helper.UploadToSupabase(src, fileName)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengunggah gambar: "+err.Error())
 	}
@@ -220,7 +223,6 @@ func (c *ArtikelController) UploadArtikelImage(ctx echo.Context) error {
 		"imageUrl": imageURL,
 	})
 }
-
 func (c *ArtikelController) DeleteArtikelImage(ctx echo.Context) error {
 	// Ambil ID artikel dari parameter
 	artikelIDStr := ctx.QueryParam("artikel_id")
@@ -239,22 +241,24 @@ func (c *ArtikelController) DeleteArtikelImage(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "Artikel tidak ditemukan: "+err.Error())
 	}
 
-	// Hapus file gambar artikel
-	if artikel.Gambar != "" {
-		filePath := "." + artikel.Gambar // Path relatif ke file
-		if _, err := os.Stat(filePath); err == nil {
-			if err := os.Remove(filePath); err != nil {
-				return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus file gambar artikel: "+err.Error())
-			}
-		}
-	}
+	// Ambil nama file dari URL gambar
+	imagePath := artikel.Gambar
+	fileName := imagePath[strings.LastIndex(imagePath, "/")+1:]
 
-	// Update URL gambar menjadi kosong di database
-	artikel.Gambar = ""
-	err = c.Usecase.UpdateArtikel(artikel) // Menggunakan variabel `artikel` secara langsung
+	// Hapus file dari Supabase
+	err = helper.DeleteFromSupabase(fileName)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate gambar artikel di database: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 	}
 
-	return helper.JSONSuccessResponse(ctx, "Gambar artikel berhasil dihapus")
+	// Update database untuk mengosongkan URL gambar
+	artikel.Gambar = ""
+	err = c.Usecase.UpdateArtikel(artikel)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate artikel di database")
+	}
+
+	return helper.JSONSuccessResponse(ctx, map[string]string{
+		"message": "Gambar artikel berhasil dihapus",
+	})
 }
