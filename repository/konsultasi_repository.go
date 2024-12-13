@@ -22,6 +22,7 @@ type ConsultationRepository interface {
 	GetActiveConsultations() ([]model.Consultation, error)
 	GetAllStatusConsultations() ([]model.Consultation, error)
 	GetApprovedConsultations() ([]model.Consultation, error)
+	ValidateUserAndDoctor(userID, doctorID int) error
 }
 
 type ConsultationRepositoryImpl struct {
@@ -35,18 +36,31 @@ func NewConsultationRepositoryImpl(db *gorm.DB) *ConsultationRepositoryImpl {
 func (r *ConsultationRepositoryImpl) CreateConsultation(consultation *model.Consultation) (int, error) {
 	// Simpan konsultasi
 	if err := r.DB.Create(consultation).Error; err != nil {
-		fmt.Println("Error saat menyimpan konsultasi:", err)
-		return 0, err
+		return 0, fmt.Errorf("failed to create consultation: %w", err)
 	}
 
 	// Preload data User dan Doctor
-	if err := r.DB.Preload("User").Preload("Doctor").First(&consultation, consultation.ID).Error; err != nil {
+	if err := r.DB.Preload("User").Preload("Doctor").Preload("Rekomendasi").First(&consultation, consultation.ID).Error; err != nil {
 		fmt.Println("Error saat preload konsultasi:", err)
 		return 0, err
 	}
 
 	fmt.Printf("Consultation setelah Preload: %+v\n", consultation)
 	return consultation.ID, nil
+}
+
+func (r *ConsultationRepositoryImpl) ValidateUserAndDoctor(userID, doctorID int) error {
+	var user model.User
+	if err := r.DB.First(&user, userID).Error; err != nil {
+		return fmt.Errorf("user not found with ID %d", userID)
+	}
+
+	var doctor model.Doctor
+	if err := r.DB.First(&doctor, doctorID).Error; err != nil {
+		return fmt.Errorf("doctor not found with ID %d", doctorID)
+	}
+
+	return nil
 }
 
 // Mendapatkan daftar konsultasi untuk dokter

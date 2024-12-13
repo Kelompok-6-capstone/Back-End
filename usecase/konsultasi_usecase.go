@@ -85,6 +85,12 @@ func (uc *ConsultationUsecaseImpl) ApprovePaymentAndConsultation(consultationID 
 
 // Membuat konsultasi baru
 func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, title, description, email string) (string, *model.Consultation, error) {
+	// Validasi user dan dokter
+	err := uc.Repo.ValidateUserAndDoctor(userID, doctorID)
+	if err != nil {
+		return "", nil, err
+	}
+
 	doctor, err := uc.Repo.GetDoctorByID(doctorID)
 	if err != nil {
 		return "", nil, fmt.Errorf("doctor not found: %w", err)
@@ -94,7 +100,6 @@ func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, titl
 		return "", nil, errors.New("doctor price is invalid")
 	}
 
-	// Generate unique Order ID
 	orderID := fmt.Sprintf("CONSULT-%d-%d", userID, time.Now().Unix())
 
 	consultation := &model.Consultation{
@@ -103,13 +108,13 @@ func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, titl
 		Title:       title,
 		Description: description,
 		Status:      "pending",
-		OrderID:     orderID, // Assign generated Order ID
+		OrderID:     orderID,
 		StartTime:   time.Now(),
 	}
 
 	consultationID, err := uc.Repo.CreateConsultation(consultation)
 	if err != nil {
-		return "", nil, errors.New("failed to create consultation")
+		return "", nil, fmt.Errorf("failed to create consultation: %w", err)
 	}
 
 	paymentURL, err := uc.CreateMidtransPayment(consultationID, doctor.Price, email)
