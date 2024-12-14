@@ -36,7 +36,7 @@ func ResponseAI(ctx context.Context, question string) (string, error) {
 	answerString = strings.ReplaceAll(answerString, "\n\n", " -")
 
 	// Batasi panjang respons berdasarkan jumlah kalimat
-	maxSentences := 5 // Jumlah maksimum kalimat
+	maxSentences := 5                             // Jumlah maksimum kalimat
 	sentences := strings.Split(answerString, ".") // Pisahkan berdasarkan titik
 	if len(sentences) > maxSentences {
 		answerString = strings.Join(sentences[:maxSentences], ".") + "."

@@ -86,13 +86,23 @@ func main() {
 	chatbotUsecase := usecase.NewChatbotUsecase(chatbotRepo)
 	chatbotController := controller.NewChatbotController(chatbotUsecase)
 
+	//    Repositori, usecase, dan controller untuk profil admin
+	adminprofil := repository.NewAdminProfileRepository(DB)
+	adminusecase := usecase.NewAdminProfileUseCase(adminprofil)
+	admincontroller := controller.NewAdminController(adminusecase)
+
+	// customer service
+	cs := repository.NewCustServiceRepository(DB)
+	csusecase := usecase.NewCustServiceUsecase(cs)
+	cscontroller := controller.NewCustServiceController(csusecase)
+
 	// Middleware
 	jwtMiddleware := middlewares.NewJWTMiddleware(jwtSecret)
 
 	e := echo.New()
 	e.Static("/uploads", "uploads")
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{"https://jovial-mooncake-23a3d0.netlify.app", "http://localhost:5173", "http://localhost:5174"},
+		AllowOrigins:     []string{"https://jovial-mooncake-23a3d0.netlify.app", "http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5500"},
 		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions},
 		AllowHeaders:     []string{echo.HeaderAuthorization, echo.HeaderContentType, echo.HeaderAccept},
 		AllowCredentials: true,
@@ -114,11 +124,15 @@ func main() {
 
 	// Group Admin
 	adminGroup := e.Group("/admin", jwtMiddleware.HandlerAdmin)
-	routes.AdminManagementRoutes(adminGroup, adminControllerManagement, artikelController, consultationController)
+	routes.AdminManagementRoutes(adminGroup, adminControllerManagement, artikelController, consultationController, admincontroller)
 
 	// Group Doctor
 	doctorGroup := e.Group("/doctor", jwtMiddleware.HandlerDoctor)
 	routes.DoctorProfil(doctorGroup, doctorProfilController, artikelController, consultationController, userFiturController)
+
+	routes.UserCustServiceRoutes(e, cscontroller)
+
+	routes.WebhookRoutes(e, consultationController)
 
 	// Mulai server
 	log.Fatal(e.Start(":8000"))

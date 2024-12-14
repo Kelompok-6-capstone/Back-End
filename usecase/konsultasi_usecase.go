@@ -5,6 +5,7 @@ import (
 	"calmind/repository"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -28,6 +29,7 @@ type ConsultationUsecase interface {
 	ApprovePaymentAndConsultation(consultationID int, paymentStatus string) error
 	GetApprovedConsultations() ([]model.Consultation, error)
 	GetAllStatusConsultations() ([]model.Consultation, error)
+	UpdatePaymentStatus(orderID, transactionStatus string) error
 }
 
 type ConsultationUsecaseImpl struct {
@@ -39,7 +41,7 @@ func NewConsultationUsecaseImpl(repo *repository.ConsultationRepositoryImpl) *Co
 }
 
 func (uc *ConsultationUsecaseImpl) MarkExpiredConsultations() error {
-	consultations, err := uc.Repo.GetActiveConsultations()
+	consultations, err := uc.Repo.GetActiveConsultations() // Ambil semua konsultasi dengan status approved
 	if err != nil {
 		return fmt.Errorf("failed to fetch active consultations: %v", err)
 	}
@@ -48,10 +50,12 @@ func (uc *ConsultationUsecaseImpl) MarkExpiredConsultations() error {
 	for _, consultation := range consultations {
 		endTime := consultation.StartTime.Add(time.Duration(consultation.Duration) * time.Minute)
 		if now.After(endTime) {
-			consultation.Status = "expired"
+			consultation.Status = "expired" // Tandai konsultasi sebagai expired
 			err := uc.Repo.UpdateConsultation(&consultation)
 			if err != nil {
-				return fmt.Errorf("failed to update consultation %d: %v", consultation.ID, err)
+				log.Printf("Failed to update consultation %d to expired: %v", consultation.ID, err)
+			} else {
+				log.Printf("Consultation %d marked as expired", consultation.ID)
 			}
 		}
 	}
@@ -72,19 +76,40 @@ func (uc *ConsultationUsecaseImpl) ApprovePaymentAndConsultation(consultationID 
 
 	// Perbarui status konsultasi dan pembayaran
 	consultation.Status = "approved"
-	consultation.PaymentStatus = "paid" // Pastikan ini juga diperbarui
-
+	consultation.IsApproved = true
+	consultation.StartTime = time.Now()
 	// Simpan perubahan ke database
 	err = uc.Repo.UpdateConsultation(consultation)
 	if err != nil {
 		return fmt.Errorf("failed to update consultation: %w", err)
 	}
 
+	go uc.StartTimerForConsultation(consultation)
 	return nil
+}
+
+func (uc *ConsultationUsecaseImpl) StartTimerForConsultation(consultation *model.Consultation) {
+	duration := time.Duration(consultation.Duration) * time.Minute
+	time.Sleep(duration) // Tunggu hingga durasi selesai
+
+	// Setelah timer selesai, perbarui status konsultasi menjadi expired
+	consultation.Status = "expired"
+	err := uc.Repo.UpdateConsultation(consultation)
+	if err != nil {
+		log.Printf("Failed to update consultation %d to expired: %v", consultation.ID, err)
+	} else {
+		log.Printf("Consultation %d has expired", consultation.ID)
+	}
 }
 
 // Membuat konsultasi baru
 func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, title, description, email string) (string, *model.Consultation, error) {
+	// Validasi user dan dokter
+	err := uc.Repo.ValidateUserAndDoctor(userID, doctorID)
+	if err != nil {
+		return "", nil, err
+	}
+
 	doctor, err := uc.Repo.GetDoctorByID(doctorID)
 	if err != nil {
 		return "", nil, fmt.Errorf("doctor not found: %w", err)
@@ -94,25 +119,33 @@ func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, titl
 		return "", nil, errors.New("doctor price is invalid")
 	}
 
-	// Generate unique Order ID
-	orderID := fmt.Sprintf("CONSULT-%d-%d", userID, time.Now().Unix())
-
+	// Buat konsultasi tanpa order_id
 	consultation := &model.Consultation{
 		UserID:      userID,
 		DoctorID:    doctorID,
 		Title:       title,
 		Description: description,
 		Status:      "pending",
-		OrderID:     orderID, // Assign generated Order ID
 		StartTime:   time.Now(),
 	}
 
+	// Simpan ke database untuk mendapatkan consultationID
 	consultationID, err := uc.Repo.CreateConsultation(consultation)
 	if err != nil {
-		return "", nil, errors.New("failed to create consultation")
+		return "", nil, fmt.Errorf("failed to create consultation: %w", err)
 	}
 
-	paymentURL, err := uc.CreateMidtransPayment(consultationID, doctor.Price, email)
+	// Buat order_id berdasarkan consultationID
+	consultation.OrderID = fmt.Sprintf("consultation-%d-jj", consultationID)
+
+	// Perbarui database dengan order_id
+	err = uc.Repo.UpdateConsultation(consultation)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to update order_id: %w", err)
+	}
+
+	// Buat URL pembayaran menggunakan Midtrans
+	paymentURL, err := uc.CreateMidtransPayment(consultation.OrderID, doctor.Price, email)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to create midtrans payment: %w", err)
 	}
@@ -120,15 +153,6 @@ func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, titl
 	return paymentURL, consultation, nil
 }
 
-// Mendapatkan konsultasi berdasarkan nama user
-func (u *ConsultationUsecaseImpl) SearchConsultationsByName(doctorID int, searchName string) (*[]model.Consultation, error) {
-	var consultations *[]model.Consultation
-	err := u.Repo.FindConsultationsByDoctorAndName(doctorID, searchName, consultations)
-	if err != nil {
-		return nil, err
-	}
-	return consultations, nil
-}
 // Mendapatkan konsultasi berdasarkan ID
 func (uc *ConsultationUsecaseImpl) GetConsultationByID(consultationID int) (*model.Consultation, error) {
 	return uc.Repo.GetConsultationByID(consultationID)
@@ -195,15 +219,51 @@ func (uc *ConsultationUsecaseImpl) GetApprovedConsultations() ([]model.Consultat
 func (uc *ConsultationUsecaseImpl) GetAllStatusConsultations() ([]model.Consultation, error) {
 	return uc.Repo.GetAllStatusConsultations()
 }
+func (uc *ConsultationUsecaseImpl) UpdatePaymentStatus(orderID, transactionStatus string) error {
+	// Ambil data konsultasi berdasarkan orderID
+	consultation, err := uc.Repo.GetConsultationByOrderID(orderID)
+	if err != nil {
+		log.Printf("Consultation not found for order_id=%s: %v", orderID, err)
+		return fmt.Errorf("consultation not found: %w", err)
+	}
+
+	// Validasi status lama agar tidak mengubah status paid menjadi pending atau failed
+	if consultation.PaymentStatus == "paid" {
+		log.Printf("Payment already completed for order_id=%s", orderID)
+		return nil
+	}
+
+	// Update payment status sesuai status transaksi
+	switch transactionStatus {
+	case "settlement":
+		consultation.PaymentStatus = "paid"
+	case "pending":
+		consultation.PaymentStatus = "pending"
+	case "cancel", "deny", "expire":
+		consultation.PaymentStatus = "failed"
+	default:
+		log.Printf("Unknown transaction status: %s", transactionStatus)
+		return fmt.Errorf("unknown transaction status: %s", transactionStatus)
+	}
+
+	// Simpan perubahan ke database
+	if err := uc.Repo.UpdateConsultation(consultation); err != nil {
+		log.Printf("Failed to update consultation for order_id=%s: %v", orderID, err)
+		return fmt.Errorf("failed to update consultation: %w", err)
+	}
+
+	log.Printf("Payment status updated successfully for order_id=%s", orderID)
+	return nil
+}
 
 // Membuat pembayaran menggunakan Midtrans
-func (uc *ConsultationUsecaseImpl) CreateMidtransPayment(consultationID int, amount float64, email string) (string, error) {
+func (uc *ConsultationUsecaseImpl) CreateMidtransPayment(orderID string, amount float64, email string) (string, error) {
 	client := snap.Client{}
 	client.New(os.Getenv("MIDTRANS_SERVER_KEY"), midtrans.Sandbox)
 
 	snapReq := &snap.Request{
 		TransactionDetails: midtrans.TransactionDetails{
-			OrderID:  fmt.Sprintf("consultation-%d-%d", consultationID, time.Now().Unix()),
+			OrderID:  orderID, // Gunakan orderID langsung
 			GrossAmt: int64(amount),
 		},
 		CustomerDetail: &midtrans.CustomerDetails{

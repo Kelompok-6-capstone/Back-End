@@ -1,7 +1,7 @@
 package helper
 
 import (
-	"fmt"
+	"log"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -12,19 +12,17 @@ type ExpiredJob struct {
 }
 
 func StartExpiredConsultationJob(markExpiredFunc func() error) {
-	job := ExpiredJob{MarkExpiredFunc: markExpiredFunc}
-
 	c := cron.New()
 
 	// Jalankan setiap 1 menit
 	_, err := c.AddFunc("@every 1m", func() {
-		fmt.Printf("Marking expired consultations at %v\n", time.Now())
-		if err := job.MarkExpiredFunc(); err != nil {
-			fmt.Printf("Error marking expired consultations: %v\n", err)
+		log.Printf("Checking for expired consultations at %v", time.Now())
+		if err := markExpiredFunc(); err != nil {
+			log.Printf("Error checking expired consultations: %v", err)
 		}
 	})
 	if err != nil {
-		fmt.Printf("Failed to add cron job: %v\n", err)
+		log.Printf("Failed to add cron job: %v", err)
 		return
 	}
 

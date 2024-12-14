@@ -5,7 +5,6 @@ import (
 	"calmind/model"
 	"calmind/service"
 	"calmind/usecase"
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -187,7 +186,6 @@ func (c *DoctorProfileController) SetActiveStatus(ctx echo.Context) error {
 		"message": message,
 	})
 }
-
 func (c *DoctorProfileController) UploadAvatar(ctx echo.Context) error {
 	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
 	if !ok {
@@ -203,7 +201,7 @@ func (c *DoctorProfileController) UploadAvatar(ctx echo.Context) error {
 
 	// Validasi ukuran file (maksimal 10 MB)
 	if file.Size > 10*1024*1024 {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Ukuran file maksimal 5 MB")
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Ukuran file maksimal 10 MB")
 	}
 
 	// Validasi ekstensi file
@@ -212,36 +210,22 @@ func (c *DoctorProfileController) UploadAvatar(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Hanya file dengan format .jpg, .jpeg, atau .png yang diperbolehkan")
 	}
 
-	// Simpan file di direktori uploads
-	uploadDir := "uploads/avatars"
-	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
-		err = os.MkdirAll(uploadDir, os.ModePerm)
-		if err != nil {
-			return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat direktori upload")
-		}
-	}
-
-	filePath := fmt.Sprintf("%s/doctor_%d_%s", uploadDir, doctorID, file.Filename)
 	src, err := file.Open()
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuka file")
 	}
 	defer src.Close()
 
-	dst, err := os.Create(filePath)
+	// Upload gambar ke ImgBB
+	imageURL, deleteURL, err := helper.UploadToImgBB(os.Getenv("API_KEY_IMBB"), file.Filename, src)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
-	}
-	defer dst.Close()
-
-	if _, err := helper.CopyFile(src, dst); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengunggah avatar ke ImgBB: "+err.Error())
 	}
 
 	// Update URL avatar di database
-	avatarURL := fmt.Sprintf("https://%s/%s", ctx.Request().Host, filePath)
 	doctor := model.Doctor{
-		Avatar: avatarURL,
+		Avatar:    imageURL,
+		DeleteURL: deleteURL, // Pastikan kolom ini tersedia di model dan database
 	}
 	_, err = c.DoctorProfileUsecase.UpdateDoctorProfile(doctorID, &doctor)
 	if err != nil {
@@ -250,7 +234,7 @@ func (c *DoctorProfileController) UploadAvatar(ctx echo.Context) error {
 
 	return helper.JSONSuccessResponse(ctx, map[string]string{
 		"message":   "Avatar berhasil diupload",
-		"avatarUrl": avatarURL,
+		"avatarUrl": imageURL,
 	})
 }
 
@@ -261,24 +245,23 @@ func (c *DoctorProfileController) DeleteAvatar(ctx echo.Context) error {
 	}
 	doctorID := claims.UserID
 
-	// Ambil data dokter untuk mendapatkan URL avatar
+	// Ambil data dokter untuk mendapatkan URL avatar dan delete_url
 	doctor, err := c.DoctorProfileUsecase.GetDoctorProfile(doctorID)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil profil dokter: "+err.Error())
 	}
 
-	// Hapus file avatar
-	if doctor.Avatar != "" {
-		filePath := "." + doctor.Avatar // Tambahkan "." untuk path relatif
-		if _, err := os.Stat(filePath); err == nil {
-			if err := os.Remove(filePath); err != nil {
-				return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus file avatar: "+err.Error())
-			}
+	// Hapus avatar dari ImgBB
+	if doctor.DeleteURL != "" {
+		err := helper.DeleteFromImgBB(doctor.DeleteURL)
+		if err != nil {
+			return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus avatar dari ImgBB: "+err.Error())
 		}
 	}
 
 	// Update avatar menjadi kosong di database
 	doctor.Avatar = ""
+	doctor.DeleteURL = ""
 	_, err = c.DoctorProfileUsecase.UpdateDoctorProfile(doctorID, doctor)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate avatar di database: "+err.Error())

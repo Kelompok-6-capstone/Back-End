@@ -5,11 +5,9 @@ import (
 	"calmind/model"
 	"calmind/service"
 	"calmind/usecase"
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -92,7 +90,7 @@ func (c *ProfilController) UploadAvatar(ctx echo.Context) error {
 
 	// Validasi ukuran file (maksimal 10 MB)
 	if file.Size > 10*1024*1024 {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Ukuran file maksimal 5 MB")
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Ukuran file maksimal 10 MB")
 	}
 
 	// Validasi ekstensi file
@@ -101,37 +99,22 @@ func (c *ProfilController) UploadAvatar(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Hanya file dengan format .jpg, .jpeg, atau .png yang diperbolehkan")
 	}
 
-	// Simpan file di direktori uploads
-	uploadDir := "uploads"
-	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
-		err = os.MkdirAll(uploadDir, os.ModePerm)
-		if err != nil {
-			return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat direktori upload")
-		}
-	}
-
-	filePath := fmt.Sprintf("%s/%d_%s", uploadDir, userID, file.Filename)
 	src, err := file.Open()
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuka file")
 	}
 	defer src.Close()
 
-	dst, err := os.Create(filePath)
+	// Upload gambar ke ImgBB
+	imageURL, deleteURL, err := helper.UploadToImgBB(os.Getenv("API_KEY_IMBB"), file.Filename, src)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
-	}
-	defer dst.Close()
-
-	if _, err := helper.CopyFile(src, dst); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengunggah avatar ke ImgBB: "+err.Error())
 	}
 
-	// Update URL avatar di database
-	avatarURL := fmt.Sprintf("https://%s/%s?timestamp=%d", ctx.Request().Host, filePath, time.Now().Unix())
-
+	// Update URL avatar dan delete_url di database
 	user := model.User{
-		Avatar: avatarURL,
+		Avatar:    imageURL,
+		DeleteURL: deleteURL, // Pastikan kolom ini tersedia di model dan database
 	}
 	_, err = c.ProfilUsecase.UpdateUserProfile(userID, &user)
 	if err != nil {
@@ -140,7 +123,7 @@ func (c *ProfilController) UploadAvatar(ctx echo.Context) error {
 
 	return helper.JSONSuccessResponse(ctx, map[string]string{
 		"message":   "Avatar berhasil diupload",
-		"avatarUrl": avatarURL,
+		"avatarUrl": imageURL,
 	})
 }
 
@@ -152,24 +135,23 @@ func (c *ProfilController) DeleteAvatar(ctx echo.Context) error {
 	}
 	userID := claims.UserID
 
-	// Ambil data user untuk mendapatkan avatar URL
+	// Ambil data user untuk mendapatkan avatar URL dan delete_url
 	user, err := c.ProfilUsecase.GetUserProfile(userID)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil profil user: "+err.Error())
 	}
 
-	// Hapus file avatar
-	if user.Avatar != "" {
-		filePath := "." + user.Avatar // Tambahkan "." untuk path relatif
-		if _, err := os.Stat(filePath); err == nil {
-			if err := os.Remove(filePath); err != nil {
-				return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus file avatar: "+err.Error())
-			}
+	// Hapus avatar dari ImgBB
+	if user.DeleteURL != "" {
+		err := helper.DeleteFromImgBB(user.DeleteURL)
+		if err != nil {
+			return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus avatar dari ImgBB: "+err.Error())
 		}
 	}
 
 	// Update avatar menjadi kosong di database
 	user.Avatar = ""
+	user.DeleteURL = ""
 	_, err = c.ProfilUsecase.UpdateUserProfile(userID, user)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate avatar di database: "+err.Error())

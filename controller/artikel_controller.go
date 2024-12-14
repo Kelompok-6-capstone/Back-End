@@ -5,10 +5,8 @@ import (
 	"calmind/model"
 	"calmind/service"
 	"calmind/usecase"
-	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -199,65 +197,54 @@ func (c *ArtikelController) SearchArtikel(ctx echo.Context) error {
 	// Kirim respons sukses dengan data artikel yang diformat
 	return helper.JSONSuccessResponse(ctx, responses)
 }
-
 func (c *ArtikelController) UploadArtikelImage(ctx echo.Context) error {
-	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
-	if !ok {
-		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
-	}
-	adminID := claims.UserID
-
-	// Ambil file dari form
 	file, err := ctx.FormFile("gambar")
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan file: "+err.Error())
 	}
 
-	// Validasi ukuran file (maksimal 5 MB)
-	if file.Size > 10*1024*1024 {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Ukuran file maksimal 5 MB")
-	}
-
-	// Validasi ekstensi file
-	ext := filepath.Ext(file.Filename)
-	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Hanya file dengan format .jpg, .jpeg, atau .png yang diperbolehkan")
-	}
-
-	// Simpan file di direktori uploads
-	uploadDir := "uploads/artikel"
-	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
-		err = os.MkdirAll(uploadDir, os.ModePerm)
-		if err != nil {
-			return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat direktori upload")
-		}
-	}
-
-	filePath := fmt.Sprintf("%s/%d_%s", uploadDir, adminID, file.Filename)
 	src, err := file.Open()
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuka file")
 	}
 	defer src.Close()
 
-	dst, err := os.Create(filePath)
+	// Unggah gambar ke ImgBB dan dapatkan URL serta delete_url
+	imageURL, deleteURL, err := helper.UploadToImgBB(os.Getenv("API_KEY_IMBB"), file.Filename, src)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
-	}
-	defer dst.Close()
-
-	if _, err := helper.CopyFile(src, dst); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengunggah gambar: "+err.Error())
 	}
 
-	// Buat URL gambar
-	imageURL := fmt.Sprintf("https://%s/uploads/artikel/%d_%s", ctx.Request().Host, adminID, file.Filename)
+	// Simpan URL gambar dan delete_url ke database
+	artikelIDStr := ctx.QueryParam("artikel_id")
+	if artikelIDStr == "" {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Artikel ID diperlukan")
+	}
+
+	artikelID, err := strconv.Atoi(artikelIDStr)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Artikel ID tidak valid")
+	}
+
+	artikel, err := c.Usecase.GetArtikelByID(artikelID)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "Artikel tidak ditemukan: "+err.Error())
+	}
+
+	artikel.Gambar = imageURL
+	artikel.DeleteURL = deleteURL // Tambahkan kolom `DeleteURL` di model Artikel
+
+	err = c.Usecase.UpdateArtikel(artikel)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan URL gambar di database: "+err.Error())
+	}
 
 	return helper.JSONSuccessResponse(ctx, map[string]string{
 		"message":  "Gambar artikel berhasil diupload",
 		"imageUrl": imageURL,
 	})
 }
+
 func (c *ArtikelController) DeleteArtikelImage(ctx echo.Context) error {
 	// Ambil ID artikel dari parameter
 	artikelIDStr := ctx.QueryParam("artikel_id")
@@ -270,24 +257,23 @@ func (c *ArtikelController) DeleteArtikelImage(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Artikel ID tidak valid")
 	}
 
-	// Ambil artikel dari database untuk mendapatkan URL gambar
+	// Ambil artikel dari database untuk mendapatkan URL gambar dan delete_url
 	artikel, err := c.Usecase.GetArtikelByID(artikelID)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "Artikel tidak ditemukan: "+err.Error())
 	}
 
-	// Hapus file gambar artikel
-	if artikel.Gambar != "" {
-		filePath := "." + artikel.Gambar // Path relatif ke file
-		if _, err := os.Stat(filePath); err == nil {
-			if err := os.Remove(filePath); err != nil {
-				return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus file gambar artikel: "+err.Error())
-			}
+	// Hapus file gambar dari ImgBB
+	if artikel.DeleteURL != "" { // Menggunakan delete_url untuk penghapusan
+		err := helper.DeleteFromImgBB(artikel.DeleteURL)
+		if err != nil {
+			return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus gambar dari ImgBB: "+err.Error())
 		}
 	}
 
 	// Update URL gambar menjadi kosong di database
 	artikel.Gambar = ""
+	artikel.DeleteURL = ""
 	err = c.Usecase.UpdateArtikel(artikel) // Menggunakan variabel `artikel` secara langsung
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate gambar artikel di database: "+err.Error())

@@ -26,36 +26,56 @@ func InitDB() (*gorm.DB, error) {
 		Name:     os.Getenv("DATABASE_NAME"),
 	}
 
-	dsn := fmt.Sprintf("%v:%v@tcp(%v:%v)/%v?charset=utf8mb4&parseTime=True&loc=Local",
+	if configDB.Host == "" || configDB.User == "" || configDB.Password == "" || configDB.Port == "" || configDB.Name == "" {
+		return nil, fmt.Errorf("konfigurasi database tidak lengkap, periksa file .env Anda")
+	}
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		configDB.User,
 		configDB.Password,
 		configDB.Host,
 		configDB.Port,
-		configDB.Name)
+		configDB.Name,
+	)
 
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("gagal membuka koneksi ke database: %w", err)
 	}
+	fmt.Println("Koneksi database berhasil.")
 
-	db.Exec("SET FOREIGN_KEY_CHECKS=0;")
-	err = db.AutoMigrate(&model.User{}, &model.Admin{}, &model.Doctor{}, &model.Otp{}, &model.Consultation{}, &model.Tags{}, &model.Artikel{}, &model.ChatLog{}, &model.Rekomendasi{})
-	db.Exec("SET FOREIGN_KEY_CHECKS=1;")
-	if err != nil {
-		return nil, fmt.Errorf("gagal melakukan migrasi: %w", err)
+	models := []interface{}{
+		&model.User{},
+		&model.Admin{},
+		&model.Doctor{},
+		&model.Otp{},
+		&model.Consultation{},
+		&model.Tags{},
+		&model.Artikel{},
+		&model.ChatLog{},
+		&model.Rekomendasi{},
+	}
+
+	for _, model := range models {
+		if !db.Migrator().HasTable(model) {
+			if err := db.AutoMigrate(model); err != nil {
+				return nil, fmt.Errorf("gagal melakukan migrasi untuk model %T: %w", model, err)
+			}
+			fmt.Printf("Migrasi berhasil untuk model: %T\n", model)
+		} else {
+			fmt.Printf("Tabel untuk model %T sudah ada, tidak dilakukan migrasi.\n", model)
+		}
 	}
 
 	if err := SeedTitles(db); err != nil {
 		fmt.Println("Error seeding titles:", err)
-	} else {
-		fmt.Println("Titles seeded successfully.")
 	}
 
-	// Seed Tags (Specialties)
 	if err := SeedSpecialties(db); err != nil {
 		fmt.Println("Error seeding specialties:", err)
-	} else {
-		fmt.Println("Specialties seeded successfully.")
 	}
+
 	return db, nil
 }

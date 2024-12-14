@@ -1,10 +1,14 @@
 package model
 
+import "time"
+
 // DTO untuk User
 type UserDTO struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Avatar   string `json:"avatar,omitempty"`
+	Avatar    string `gorm:"" json:"avatar"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	TglLahir  string `gorm:"" json:"tgl_lahir"`
+	Pekerjaan string `gorm:"" json:"pekerjaan"`
 }
 
 type DoctorDTO struct {
@@ -12,6 +16,7 @@ type DoctorDTO struct {
 	Email    string  `json:"email"`
 	Avatar   string  `json:"avatar,omitempty"`
 	Price    float64 `json:"price,omitempty"`
+	About    string  `json:"about"`
 }
 
 type RecommendationDTO struct {
@@ -22,26 +27,30 @@ type RecommendationDTO struct {
 }
 
 type ConsultationDTO struct {
-	ID          int                 `json:"id"`
-	Title       string              `json:"title"`
-	Description string              `json:"description"`
-	Duration    int                 `json:"duration"`
-	Status      string              `json:"status"`
-	StartTime   string              `json:"start_time,omitempty"`
-	OrderID     string              `json:"order_id,omitempty"`
-	User        *UserDTO            `json:"user,omitempty"`
-	Doctor      *DoctorDTO          `json:"doctor,omitempty"`
-	PaymentURL  string              `json:"payment_url,omitempty"`
-	Rekomendasi []RecommendationDTO `json:"rekomendasi,omitempty"`
+	ID            int                 `json:"id"`
+	Title         string              `json:"title"`
+	Description   string              `json:"description"`
+	Duration      int                 `json:"duration"`
+	Status        string              `json:"status"`
+	StartTime     string              `json:"start_time,omitempty"`
+	OrderID       string              `json:"order_id,omitempty"`
+	User          *UserDTO            `json:"user,omitempty"`
+	Doctor        *DoctorDTO          `json:"doctor,omitempty"`
+	PaymentStatus string              `json:"payment_status" gorm:"type:varchar(20)"` // pending, completed, failed
+	PaymentURL    string              `json:"payment_url,omitempty"`
+	CreatedAt     time.Time           `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt     time.Time           `json:"updated_at" gorm:"autoUpdateTime"`
+	Rekomendasi   []RecommendationDTO `json:"rekomendasi,omitempty"`
 }
 
 type SimpleConsultationDTO struct {
-	ID          int    `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Duration    int    `json:"duration"`
-	Status      string `json:"status"`
-	StartTime   string `json:"start_time"`
-	OrderID     string `json:"order_id"`
-	PaymentURL  string `json:"payment_url"`
+	ID            int    `json:"id"`
+	Title         string `json:"title"`
+	Description   string `json:"description"`
+	Duration      int    `json:"duration"`
+	Status        string `json:"status"`
+	PaymentStatus string `json:"payment_status" gorm:"type:varchar(20)"` // pending, completed, failed
+	StartTime     string `json:"start_time"`
+	OrderID       string `json:"order_id"`
+	PaymentURL    string `json:"payment_url"`
 }
