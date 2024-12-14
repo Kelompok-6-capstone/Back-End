@@ -26,28 +26,28 @@ func (uc *ChatUsecaseImpl) SendMessage(userID, doctorID, senderID int, message s
 		return err
 	}
 
-	// Jika tidak ada konsultasi valid
 	if len(consultations) == 0 {
 		log.Printf("No valid consultations found for user_id=%d, doctor_id=%d", userID, doctorID)
 		return errors.New("no valid consultation found between user and doctor")
 	}
 
-	// Hitung total waktu durasi dan waktu berakhir
+	// Inisialisasi durasi total dan waktu mulai
 	var totalDuration time.Duration
 	var startTime time.Time
 
-	for i, consultation := range consultations {
+	// Waktu mulai adalah waktu dari konsultasi pertama
+	startTime = consultations[0].StartTime
+
+	// Hitung total durasi dari semua konsultasi
+	for _, consultation := range consultations {
 		totalDuration += time.Duration(consultation.Duration) * time.Minute
-		if i == 0 {
-			startTime = consultation.StartTime
-		}
 	}
 
-	// Waktu akhir dari total durasi
+	// Hitung waktu akhir
 	endTime := startTime.Add(totalDuration)
 
 	log.Printf("Start Time: %v", startTime)
-	log.Printf("Total Duration: %v", totalDuration)
+	log.Printf("Total Duration: %v minutes", totalDuration.Minutes())
 	log.Printf("End Time: %v", endTime)
 	log.Printf("Current Time: %v", time.Now())
 
