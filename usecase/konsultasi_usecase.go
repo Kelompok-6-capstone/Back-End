@@ -41,7 +41,7 @@ func NewConsultationUsecaseImpl(repo *repository.ConsultationRepositoryImpl) *Co
 }
 
 func (uc *ConsultationUsecaseImpl) MarkExpiredConsultations() error {
-	consultations, err := uc.Repo.GetActiveConsultations() // Ambil semua konsultasi yang masih aktif
+	consultations, err := uc.Repo.GetActiveConsultations() // Ambil semua konsultasi dengan status approved
 	if err != nil {
 		return fmt.Errorf("failed to fetch active consultations: %v", err)
 	}
@@ -50,7 +50,7 @@ func (uc *ConsultationUsecaseImpl) MarkExpiredConsultations() error {
 	for _, consultation := range consultations {
 		endTime := consultation.StartTime.Add(time.Duration(consultation.Duration) * time.Minute)
 		if now.After(endTime) {
-			consultation.Status = "expired"
+			consultation.Status = "expired" // Tandai konsultasi sebagai expired
 			err := uc.Repo.UpdateConsultation(&consultation)
 			if err != nil {
 				log.Printf("Failed to update consultation %d to expired: %v", consultation.ID, err)

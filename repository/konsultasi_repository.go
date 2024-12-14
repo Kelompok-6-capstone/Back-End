@@ -11,7 +11,6 @@ import (
 
 type ConsultationRepository interface {
 	CreateConsultation(*model.Consultation) (int, error)
-	FindConsultationsByDoctorAndName(doctorID int, searchName string, consultations *[]model.Consultation) error
 	GetConsultationsForDoctor(doctorID int) ([]model.Consultation, error)
 	GetConsultationDetails(consultationID, doctorID int) (*model.Consultation, error)
 	AddRecommendation(recommendation *model.Rekomendasi) error
@@ -38,14 +37,13 @@ func NewConsultationRepositoryImpl(db *gorm.DB) *ConsultationRepositoryImpl {
 
 func (r *ConsultationRepositoryImpl) GetValidConsultations(userID, doctorID int) ([]model.Consultation, error) {
 	var consultations []model.Consultation
-	err := r.DB.Where("user_id = ? AND doctor_id = ? AND status = 'approved' AND payment_status = 'paid'", userID, doctorID).
+	err := r.DB.Where("user_id = ? AND doctor_id = ? AND status = ? AND payment_status = ?", userID, doctorID, "approved", "paid").
 		Order("start_time").
 		Find(&consultations).Error
 
 	if err != nil {
 		return nil, err
 	}
-
 	return consultations, nil
 }
 
@@ -110,7 +108,7 @@ func (r *ConsultationRepositoryImpl) AddRecommendation(recommendation *model.Rek
 // Mendapatkan konsultasi berdasarkan ID
 func (r *ConsultationRepositoryImpl) GetActiveConsultations() ([]model.Consultation, error) {
 	var consultations []model.Consultation
-	err := r.DB.Where("status = ? AND start_time <= ?", "active", time.Now()).
+	err := r.DB.Where("status = ? AND start_time <= ?", "approved", time.Now()).
 		Find(&consultations).Error
 	if err != nil {
 		return nil, err
@@ -120,18 +118,6 @@ func (r *ConsultationRepositoryImpl) GetActiveConsultations() ([]model.Consultat
 
 func (r *ConsultationRepositoryImpl) UpdateConsultation(consultation *model.Consultation) error {
 	return r.DB.Save(consultation).Error
-}
-
-// Mendapatkan konsultasi berdasarkan doctorID dan nama user
-func (r *ConsultationRepositoryImpl) FindConsultationsByDoctorAndName(doctorID int, searchName string, consultations *[]model.Consultation) error {
-	query := r.DB.Preload("User").Where("doctor_id = ?", doctorID)
-
-	// Filter berdasarkan nama user jika searchName tidak kosong
-	if searchName != "" {
-		query = query.Where("users.username LIKE ?", "%"+searchName+"%")
-	}
-
-	return query.Find(consultations).Error
 }
 
 func (r *ConsultationRepositoryImpl) GetConsultationByID(consultationID int) (*model.Consultation, error) {
