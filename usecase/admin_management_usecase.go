@@ -23,19 +23,18 @@ func NewAdminManagementUsecase(repo repository.AdminManagementRepo) AdminManagem
 
 // DTO Struct untuk User
 type UserDTO struct {
-	ID                 int                       `json:"id"`
-	Username           string                    `json:"username"`
-	Email              string                    `json:"email"`
-	NoHp               string                    `json:"no_hp"`
-	Alamat             string                    `json:"alamat"`
-	TglLahir           string                    `json:"tgl_lahir"`
-	JenisKelamin       string                    `json:"jenis_kelamin"`
-	Pekerjaan          string                    `json:"pekerjaan"`
-	IsVerified         bool                      `json:"is_verified"`
-	CreatedAt          time.Time                 `json:"created_at"`
-	UpdatedAt          time.Time                 `json:"updated_at"`
-	LastConsultation   *ConsultationSummaryDTO   `json:"last_consultation"`
-	LastRecommendation *RecommendationSummaryDTO `json:"last_recommendation"`
+	ID               int                     `json:"id"`
+	Username         string                  `json:"username"`
+	Email            string                  `json:"email"`
+	NoHp             string                  `json:"no_hp"`
+	Alamat           string                  `json:"alamat"`
+	TglLahir         string                  `json:"tgl_lahir"`
+	JenisKelamin     string                  `json:"jenis_kelamin"`
+	Pekerjaan        string                  `json:"pekerjaan"`
+	IsVerified       bool                    `json:"is_verified"`
+	CreatedAt        time.Time               `json:"created_at"`
+	UpdatedAt        time.Time               `json:"updated_at"`
+	LastConsultation *ConsultationSummaryDTO `json:"last_consultation"`
 }
 
 // DTO Struct untuk Doctor
@@ -93,30 +92,19 @@ func (au *AdminManagementUsecaseImpl) GetAllUsers() ([]UserDTO, error) {
 			}
 		}
 
-		var lastRecommendation *RecommendationSummaryDTO
-		if len(user.Recommendations) > 0 {
-			recommendation := user.Recommendations[0]
-			lastRecommendation = &RecommendationSummaryDTO{
-				ID:          recommendation.DoctorID,
-				Rekomendasi: recommendation.Rekomendasi,
-				CreatedAt:   recommendation.CreatedAt,
-			}
-		}
-
 		result = append(result, UserDTO{
-			ID:                 user.ID,
-			Username:           user.Username,
-			Email:              user.Email,
-			NoHp:               user.NoHp,
-			Alamat:             user.Alamat,
-			TglLahir:           user.TglLahir,
-			JenisKelamin:       user.JenisKelamin,
-			Pekerjaan:          user.Pekerjaan,
-			IsVerified:         user.IsVerified,
-			CreatedAt:          user.CreatedAt,
-			UpdatedAt:          user.UpdatedAt,
-			LastConsultation:   lastConsultation,
-			LastRecommendation: lastRecommendation,
+			ID:               user.ID,
+			Username:         user.Username,
+			Email:            user.Email,
+			NoHp:             user.NoHp,
+			Alamat:           user.Alamat,
+			TglLahir:         user.TglLahir,
+			JenisKelamin:     user.JenisKelamin,
+			Pekerjaan:        user.Pekerjaan,
+			IsVerified:       user.IsVerified,
+			CreatedAt:        user.CreatedAt,
+			UpdatedAt:        user.UpdatedAt,
+			LastConsultation: lastConsultation,
 		})
 	}
 
