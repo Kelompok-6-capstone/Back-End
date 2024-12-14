@@ -51,9 +51,6 @@ func (ar *AdminManagementRepoImpl) FindAllUsersWithLastConsultation() ([]*model.
 		Preload("Consultations", func(db *gorm.DB) *gorm.DB {
 			return db.Order("created_at DESC").Limit(1)
 		}).
-		Preload("Recommendations", func(db *gorm.DB) *gorm.DB {
-			return db.Order("created_at DESC").Limit(1)
-		}).
 		Find(&users).Error
 	if err != nil {
 		return nil, err
