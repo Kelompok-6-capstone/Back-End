@@ -12,6 +12,7 @@ type ConsultationRepository interface {
 	CreateConsultation(*model.Consultation) (int, error)
 	FindConsultationsByDoctorAndName(doctorID int, searchName string, consultations *[]model.Consultation) error
 	GetConsultationsForDoctor(doctorID int) ([]model.Consultation, error)
+	FindConsultationsByDoctorAndName(doctorID int, searchName string, consultations *[]model.Consultation) error
 	GetConsultationDetails(consultationID, doctorID int) (*model.Consultation, error)
 	AddRecommendation(recommendation *model.Rekomendasi) error
 	GetConsultationByID(consultationID int) (*model.Consultation, error)
@@ -59,6 +60,24 @@ func (r *ConsultationRepositoryImpl) GetConsultationsForDoctor(doctorID int) ([]
 	}
 	fmt.Printf("Consultations found: %+v\n", consultations) // Logging untuk debug
 	return consultations, nil
+}
+
+// Mendapatkan konsultasi berdasarkan doctorID dan nama user
+func (r *ConsultationRepositoryImpl) FindConsultationsByDoctorAndName(doctorID int, searchName string, consultations *[]model.Consultation) error {
+	query := r.DB.Preload("User").Preload("Doctor").
+		Where("doctor_id = ?", doctorID)
+
+	// Gunakan sub-query atau join untuk mencocokkan nama user
+	if searchName != "" {
+		query = query.Joins("JOIN users ON users.id = consultations.user_id").
+			Where("users.username LIKE ?", "%"+searchName+"%")
+	}
+
+	err := query.Find(consultations).Error
+	if err != nil {
+		log.Printf("Query error in FindConsultationsByDoctorAndName: %v", err) // Logging untuk debug
+	}
+	return err
 }
 
 // Mendapatkan detail konsultasi tertentu untuk dokter
