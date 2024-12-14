@@ -30,18 +30,10 @@ func (uc *ChatUsecaseImpl) SendMessage(userID, doctorID, senderID int, message s
 		return errors.New("no valid consultation found between user and doctor")
 	}
 
-	// Tambahkan logging waktu konsultasi
-	log.Printf("Start Time: %v", consultation.StartTime)
-	log.Printf("Duration: %d minutes", consultation.Duration)
-	log.Printf("End Time: %v", consultation.StartTime.Add(time.Duration(consultation.Duration)*time.Minute))
-	log.Printf("Current Time: %v", time.Now())
-	log.Printf("Is consultation expired: %v", time.Now().After(consultation.StartTime.Add(time.Duration(consultation.Duration)*time.Minute)))
-
 	log.Printf("Valid consultation found: %+v", consultation)
 
 	// Validasi status konsultasi
-	if consultation.Status != "approved" || consultation.PaymentStatus != "paid" ||
-		time.Now().After(consultation.StartTime.Add(time.Duration(consultation.Duration)*time.Minute)) {
+	if consultation.Status != "approved" || time.Now().After(consultation.StartTime.Add(time.Duration(consultation.Duration)*time.Minute)) {
 		return errors.New("consultation is not valid for chat")
 	}
 
@@ -65,12 +57,6 @@ func (uc *ChatUsecaseImpl) GetMessages(userID, doctorID int) ([]model.ChatMessag
 	if consultation == nil {
 		return nil, errors.New("no valid consultation found between user and doctor")
 	}
-
-	log.Printf("Start Time: %v", consultation.StartTime)
-	log.Printf("Duration: %d minutes", consultation.Duration)
-	log.Printf("End Time: %v", consultation.StartTime.Add(time.Duration(consultation.Duration)*time.Minute))
-	log.Printf("Current Time: %v", time.Now())
-	log.Printf("Is consultation expired: %v", time.Now().After(consultation.StartTime.Add(time.Duration(consultation.Duration)*time.Minute)))
 
 	// Validasi status konsultasi
 	if consultation.Status != "approved" || consultation.PaymentStatus != "paid" ||
