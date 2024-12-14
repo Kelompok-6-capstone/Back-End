@@ -9,6 +9,7 @@ import (
 	"calmind/routes"
 	"calmind/service"
 	"calmind/usecase"
+	"calmind/websocket"
 	"log"
 	"net/http"
 
@@ -106,6 +107,16 @@ func main() {
 	e.OPTIONS("/*", func(c echo.Context) error {
 		return c.NoContent(http.StatusOK)
 	})
+
+	// Repositori, usecase, dan controller untuk Chat
+	chatRepo := repository.ChatRepositoryImpl{DB: DB}
+	chatUsecase := usecase.ChatUsecaseImpl{
+		ChatRepo:         &chatRepo,
+		ConsultationRepo: consultationRepo,
+	}
+	webSocketServer := websocket.NewWebSocketServer(&chatUsecase)
+
+	e.GET("/ws", webSocketServer.HandleWebSocket)
 
 	// routes auth
 	routes.UserAuthRoutes(e, userController)               // user

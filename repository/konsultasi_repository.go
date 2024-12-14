@@ -25,6 +25,7 @@ type ConsultationRepository interface {
 	GetApprovedConsultations() ([]model.Consultation, error)
 	ValidateUserAndDoctor(userID, doctorID int) error
 	GetConsultationByOrderID(orderID string) (*model.Consultation, error)
+	GetConsultationBetweenUserAndDoctor(userID, doctorID int) (*model.Consultation, error)
 }
 
 type ConsultationRepositoryImpl struct {
@@ -33,6 +34,19 @@ type ConsultationRepositoryImpl struct {
 
 func NewConsultationRepositoryImpl(db *gorm.DB) *ConsultationRepositoryImpl {
 	return &ConsultationRepositoryImpl{DB: db}
+}
+
+func (r *ConsultationRepositoryImpl) GetConsultationBetweenUserAndDoctor(userID, doctorID int) (*model.Consultation, error) {
+	var consultation model.Consultation
+	err := r.DB.Where("user_id = ? AND doctor_id = ? AND status = 'approved' AND payment_status = 'paid'", userID, doctorID).
+		First(&consultation).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil // Tidak ada konsultasi yang valid
+		}
+		return nil, err
+	}
+	return &consultation, nil
 }
 
 func (r *ConsultationRepositoryImpl) CreateConsultation(consultation *model.Consultation) (int, error) {
