@@ -158,6 +158,25 @@ func (uc *ConsultationUsecaseImpl) GetConsultationByID(consultationID int) (*mod
 	return uc.Repo.GetConsultationByID(consultationID)
 }
 
+// Mendapatkan konsultasi berdasarkan nama user
+func (uc *ConsultationUsecaseImpl) SearchConsultationsByName(doctorID int, searchName string) ([]model.Consultation, error) {
+	// Validasi input searchName kosong
+	if searchName == "" {
+		return nil, errors.New("search name cannot be empty")
+	}
+
+	var consultations []model.Consultation
+	err := uc.Repo.FindConsultationsByDoctorAndName(doctorID, searchName, &consultations)
+	if err != nil {
+		log.Printf("Error in SearchConsultationsByName: %v", err)
+		return nil, err
+	}
+	return consultations, nil
+}
+
+
+
+
 // Mendapatkan daftar konsultasi untuk dokter
 func (uc *ConsultationUsecaseImpl) GetConsultationsForDoctor(doctorID int) ([]model.Consultation, error) {
 	consultations, err := uc.Repo.GetConsultationsForDoctor(doctorID)

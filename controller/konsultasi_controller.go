@@ -127,6 +127,35 @@ func (c *ConsultationController) GetConsultationsForDoctor(ctx echo.Context) err
 	return helper.JSONSuccessResponse(ctx, response)
 }
 
+// Mendapatkan daftar konsultasi untuk dokter (search by name)
+func (c *ConsultationController) SearchConsultationsByName(ctx echo.Context) error {
+	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
+	if !ok || claims == nil {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Doctor is not authorized.")
+	}
+
+	doctorID := claims.UserID
+	searchName := ctx.QueryParam("nama") // Query param untuk nama user
+
+	// Validasi parameter kosong
+	if searchName == "" {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Query parameter 'nama' is required.")
+	}
+
+	consultations, err := c.ConsultationUsecase.SearchConsultationsByName(doctorID, searchName)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to retrieve consultations.")
+	}
+
+	// Konversi ke DTO sebelum dikembalikan
+	var response []model.ConsultationDTO
+	for _, cons := range consultations {
+		response = append(response, mapConsultationToDTO(cons))
+	}
+
+	return helper.JSONSuccessResponse(ctx, response)
+}
+
 // Melihat detail konsultasi pasien
 func (c *ConsultationController) ViewConsultationDetails(ctx echo.Context) error {
 	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
