@@ -19,22 +19,42 @@ type ChatUsecaseImpl struct {
 }
 
 func (uc *ChatUsecaseImpl) SendMessage(userID, doctorID, senderID int, message string) error {
-	// Validasi konsultasi valid
-	consultation, err := uc.ConsultationRepo.GetConsultationBetweenUserAndDoctor(userID, doctorID)
+	// Ambil semua konsultasi valid
+	consultations, err := uc.ConsultationRepo.GetValidConsultations(userID, doctorID)
 	if err != nil {
-		log.Printf("Error fetching consultation: %v", err)
+		log.Printf("Error fetching consultations: %v", err)
 		return err
 	}
-	if consultation == nil {
-		log.Printf("No valid consultation found for user_id=%d, doctor_id=%d", userID, doctorID)
+
+	// Jika tidak ada konsultasi valid
+	if len(consultations) == 0 {
+		log.Printf("No valid consultations found for user_id=%d, doctor_id=%d", userID, doctorID)
 		return errors.New("no valid consultation found between user and doctor")
 	}
 
-	log.Printf("Valid consultation found: %+v", consultation)
+	// Hitung total waktu durasi dan waktu berakhir
+	var totalDuration time.Duration
+	var startTime time.Time
 
-	// Validasi status konsultasi
-	if consultation.Status != "approved" || time.Now().After(consultation.StartTime.Add(time.Duration(consultation.Duration)*time.Minute)) {
-		return errors.New("consultation is not valid for chat")
+	for i, consultation := range consultations {
+		totalDuration += time.Duration(consultation.Duration) * time.Minute
+		if i == 0 {
+			startTime = consultation.StartTime
+		}
+	}
+
+	// Waktu akhir dari total durasi
+	endTime := startTime.Add(totalDuration)
+
+	log.Printf("Start Time: %v", startTime)
+	log.Printf("Total Duration: %v", totalDuration)
+	log.Printf("End Time: %v", endTime)
+	log.Printf("Current Time: %v", time.Now())
+
+	// Validasi apakah total waktu sudah habis
+	if time.Now().After(endTime) {
+		log.Printf("Consultation time expired for user_id=%d, doctor_id=%d", userID, doctorID)
+		return errors.New("consultation time has expired")
 	}
 
 	// Simpan pesan
@@ -49,19 +69,33 @@ func (uc *ChatUsecaseImpl) SendMessage(userID, doctorID, senderID int, message s
 }
 
 func (uc *ChatUsecaseImpl) GetMessages(userID, doctorID int) ([]model.ChatMessage, error) {
-	// Validasi konsultasi valid
-	consultation, err := uc.ConsultationRepo.GetConsultationBetweenUserAndDoctor(userID, doctorID)
+	// Ambil semua konsultasi valid
+	consultations, err := uc.ConsultationRepo.GetValidConsultations(userID, doctorID)
 	if err != nil {
-		return nil, err // Error dari database
+		log.Printf("Error fetching consultations: %v", err)
+		return nil, err
 	}
-	if consultation == nil {
+
+	if len(consultations) == 0 {
 		return nil, errors.New("no valid consultation found between user and doctor")
 	}
 
-	// Validasi status konsultasi
-	if consultation.Status != "approved" || consultation.PaymentStatus != "paid" ||
-		time.Now().After(consultation.StartTime.Add(time.Duration(consultation.Duration)*time.Minute)) {
-		return nil, errors.New("consultation is not valid for chat")
+	// Hitung total waktu durasi dan waktu berakhir
+	var totalDuration time.Duration
+	var startTime time.Time
+
+	for i, consultation := range consultations {
+		totalDuration += time.Duration(consultation.Duration) * time.Minute
+		if i == 0 {
+			startTime = consultation.StartTime
+		}
+	}
+
+	// Waktu akhir dari total durasi
+	endTime := startTime.Add(totalDuration)
+
+	if time.Now().After(endTime) {
+		return nil, errors.New("consultation time has expired")
 	}
 
 	// Ambil pesan
