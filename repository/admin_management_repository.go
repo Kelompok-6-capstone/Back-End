@@ -44,23 +44,36 @@ func (ar *AdminManagementRepoImpl) FindAllDoctors() ([]*model.Doctor, error) {
 }
 
 // Find all users with their last consultation
+// Find all users with their last consultation and recommendation
 func (ar *AdminManagementRepoImpl) FindAllUsersWithLastConsultation() ([]*model.User, error) {
 	var users []*model.User
-	err := ar.DB.Preload("Consultations", func(db *gorm.DB) *gorm.DB {
-		return db.Order("created_at DESC").Limit(1)
-	}).Find(&users).Error
+	err := ar.DB.
+		Preload("Consultations", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at DESC").Limit(1)
+		}).
+		Preload("Recommendations", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at DESC").Limit(1)
+		}).
+		Find(&users).Error
 	if err != nil {
 		return nil, err
 	}
 	return users, nil
 }
 
-// Find all doctors with their last consultation
+// Find all doctors with their last consultation and recommendation
 func (ar *AdminManagementRepoImpl) FindAllDoctorsWithLastConsultation() ([]*model.Doctor, error) {
 	var doctors []*model.Doctor
-	err := ar.DB.Preload("Consultations", func(db *gorm.DB) *gorm.DB {
-		return db.Order("created_at DESC").Limit(1)
-	}).Preload("Title").Preload("Tags").Find(&doctors).Error
+	err := ar.DB.
+		Preload("Consultations", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at DESC").Limit(1)
+		}).
+		Preload("Recommendations", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at DESC").Limit(1)
+		}).
+		Preload("Title").
+		Preload("Tags").
+		Find(&doctors).Error
 	if err != nil {
 		return nil, err
 	}

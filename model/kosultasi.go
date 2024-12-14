@@ -22,8 +22,10 @@ type Consultation struct {
 }
 
 type Rekomendasi struct {
-	ID             int    `json:"id" gorm:"primaryKey;autoIncrement"`
-	ConsultationID int    `json:"consultation_id" gorm:"not null;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
-	DoctorID       int    `json:"doctor_id" gorm:"not null;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
-	Rekomendasi    string `json:"rekomendasi" gorm:"type:text;not null"`
+	ID             int       `json:"id" gorm:"primaryKey;autoIncrement"`
+	UserID         int       `gorm:"not null"` // Foreign key ke User
+	ConsultationID int       `json:"consultation_id" gorm:"not null;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
+	DoctorID       int       `json:"doctor_id" gorm:"not null;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
+	Rekomendasi    string    `json:"rekomendasi" gorm:"type:text;not null"`
+	CreatedAt      time.Time `json:"created_at" gorm:"autoCreateTime"`
 }
