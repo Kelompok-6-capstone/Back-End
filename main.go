@@ -9,7 +9,6 @@ import (
 	"calmind/routes"
 	"calmind/service"
 	"calmind/usecase"
-	"calmind/websocket"
 	"log"
 	"net/http"
 
@@ -87,6 +86,11 @@ func main() {
 	chatbotUsecase := usecase.NewChatbotUsecase(chatbotRepo)
 	chatbotController := controller.NewChatbotController(chatbotUsecase)
 
+	//    Repositori, usecase, dan controller untuk profil admin
+	adminprofil := repository.NewAdminProfileRepository(DB)
+	adminusecase := usecase.NewAdminProfileUseCase(adminprofil)
+	admincontroller := controller.NewAdminController(adminusecase)
+
 	// customer service
 	cs := repository.NewCustServiceRepository(DB)
 	csusecase := usecase.NewCustServiceUsecase(cs)
@@ -108,16 +112,6 @@ func main() {
 		return c.NoContent(http.StatusOK)
 	})
 
-	// Repositori, usecase, dan controller untuk Chat
-	chatRepo := repository.ChatRepositoryImpl{DB: DB}
-	chatUsecase := usecase.ChatUsecaseImpl{
-		ChatRepo:         &chatRepo,
-		ConsultationRepo: consultationRepo,
-	}
-	webSocketServer := websocket.NewWebSocketServer(&chatUsecase)
-
-	e.GET("/ws", webSocketServer.HandleWebSocket)
-
 	// routes auth
 	routes.UserAuthRoutes(e, userController)               // user
 	routes.AdminAuthRoutes(e, adminController)             // admin
@@ -130,7 +124,7 @@ func main() {
 
 	// Group Admin
 	adminGroup := e.Group("/admin", jwtMiddleware.HandlerAdmin)
-	routes.AdminManagementRoutes(adminGroup, adminControllerManagement, artikelController, consultationController)
+	routes.AdminManagementRoutes(adminGroup, adminControllerManagement, artikelController, consultationController, admincontroller)
 
 	// Group Doctor
 	doctorGroup := e.Group("/doctor", jwtMiddleware.HandlerDoctor)

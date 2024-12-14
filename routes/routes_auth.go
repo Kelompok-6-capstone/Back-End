@@ -90,10 +90,14 @@ func AdminAuthRoutes(e *echo.Echo, authController *controller.AdminAuthControlle
 	e.GET("/admin/logout", authController.LogoutAdmin) // Logout Admin
 }
 
-func AdminManagementRoutes(e *echo.Group, adminManagement *controller.AdminManagementController, artikelController *controller.ArtikelController, consultationController *controller.ConsultationController) {
+func AdminManagementRoutes(e *echo.Group, adminManagement *controller.AdminManagementController, artikelController *controller.ArtikelController, consultationController *controller.ConsultationController, profil *controller.AdminController) {
 	// user
 	e.GET("/allusers", adminManagement.GetAllUsers)    // Ambil Semua Data User
 	e.DELETE("/users/:id", adminManagement.DeleteUser) // Hapus User berdasarkan ID
+
+	e.GET("/profile", profil.GetAdminProfile)           // Mendapatkan profil dokter
+	e.POST("/upload-image", profil.UploadAdminAvatar)   // Upload avatar dokter
+	e.DELETE("/delete-image", profil.DeleteAdminAvatar) // Hapus avatar dokter
 
 	// dokter
 	e.GET("/alldocters", adminManagement.GetAllDoctors)    // Ambil Semua Data Dokter
