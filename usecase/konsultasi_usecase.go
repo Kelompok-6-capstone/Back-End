@@ -76,6 +76,7 @@ func (uc *ConsultationUsecaseImpl) ApprovePaymentAndConsultation(consultationID 
 
 	// Perbarui status konsultasi dan pembayaran
 	consultation.Status = "approved"
+	consultation.IsApproved = true
 	consultation.StartTime = time.Now()
 	// Simpan perubahan ke database
 	err = uc.Repo.UpdateConsultation(consultation)
