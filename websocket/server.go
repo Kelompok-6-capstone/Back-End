@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
 
@@ -37,16 +38,20 @@ func (s *WebSocketServer) HandleWebSocket(c echo.Context) error {
 	doctorID := c.QueryParam("doctor_id")
 
 	if userID == "" || doctorID == "" {
+		log.Println("Missing user_id or doctor_id")
 		return echo.NewHTTPError(http.StatusBadRequest, "user_id and doctor_id are required")
 	}
 
 	ws, err := s.Upgrader.Upgrade(c.Response().Writer, c.Request(), nil)
 	if err != nil {
+		log.Printf("WebSocket upgrade failed: %v", err)
 		return err
 	}
 	defer ws.Close()
 
 	roomID := fmt.Sprintf("%s-%s", userID, doctorID)
+	log.Printf("WebSocket connection established for room %s", roomID)
+
 	s.Mutex.Lock()
 	s.Clients[roomID] = ws
 	s.Mutex.Unlock()
@@ -55,7 +60,7 @@ func (s *WebSocketServer) HandleWebSocket(c echo.Context) error {
 		var msg model.ChatMessage
 		err := ws.ReadJSON(&msg)
 		if err != nil {
-			fmt.Printf("Disconnected from room %s\n", roomID)
+			log.Printf("Disconnected from room %s: %v", roomID, err)
 			s.Mutex.Lock()
 			delete(s.Clients, roomID)
 			s.Mutex.Unlock()
@@ -63,9 +68,13 @@ func (s *WebSocketServer) HandleWebSocket(c echo.Context) error {
 		}
 
 		// Validasi dan kirim pesan
+		log.Printf("Received message: %+v", msg)
 		err = s.ChatUsecase.SendMessage(msg.UserID, msg.DoctorID, msg.SenderID, msg.Message)
 		if err != nil {
-			fmt.Println("Error:", err)
+			log.Printf("Error sending message: %v", err)
+			ws.WriteJSON(map[string]string{
+				"error": "Failed to send message: " + err.Error(),
+			})
 			continue
 		}
 

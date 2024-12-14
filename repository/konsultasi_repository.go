@@ -39,13 +39,18 @@ func NewConsultationRepositoryImpl(db *gorm.DB) *ConsultationRepositoryImpl {
 func (r *ConsultationRepositoryImpl) GetConsultationBetweenUserAndDoctor(userID, doctorID int) (*model.Consultation, error) {
 	var consultation model.Consultation
 	err := r.DB.Where("user_id = ? AND doctor_id = ? AND status = 'approved' AND payment_status = 'paid'", userID, doctorID).
+		Order("id").
 		First(&consultation).Error
+
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, nil // Tidak ada konsultasi yang valid
+			// Tidak ada konsultasi valid
+			return nil, nil
 		}
+		// Error lain
 		return nil, err
 	}
+
 	return &consultation, nil
 }
 
