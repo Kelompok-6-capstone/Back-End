@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"calmind/model"
 	"calmind/usecase"
@@ -56,8 +57,12 @@ func (s *WebSocketServer) HandleWebSocket(c echo.Context) error {
 	s.Clients[roomID] = ws
 	s.Mutex.Unlock()
 
+	// Heartbeat interval
+	go s.heartbeat(ws, roomID)
+
 	for {
 		var msg model.ChatMessage
+		ws.SetReadDeadline(time.Now().Add(30 * time.Second)) // Timeout 30 detik
 		err := ws.ReadJSON(&msg)
 		if err != nil {
 			log.Printf("Disconnected from room %s: %v", roomID, err)
@@ -67,7 +72,15 @@ func (s *WebSocketServer) HandleWebSocket(c echo.Context) error {
 			break
 		}
 
-		// Validasi dan kirim pesan
+		// Handle heartbeat messages
+		if msg.Message == "ping" {
+			ws.WriteJSON(map[string]string{
+				"message": "pong",
+			})
+			continue
+		}
+
+		// Log and send message
 		log.Printf("Received message: %+v", msg)
 		err = s.ChatUsecase.SendMessage(msg.UserID, msg.DoctorID, msg.SenderID, msg.Message)
 		if err != nil {
@@ -78,7 +91,7 @@ func (s *WebSocketServer) HandleWebSocket(c echo.Context) error {
 			continue
 		}
 
-		// Broadcast pesan
+		// Broadcast message
 		s.BroadcastMessage(roomID, msg)
 	}
 	return nil
@@ -90,5 +103,31 @@ func (s *WebSocketServer) BroadcastMessage(roomID string, msg model.ChatMessage)
 
 	if client, ok := s.Clients[roomID]; ok {
 		client.WriteJSON(msg)
+	}
+}
+
+func (s *WebSocketServer) heartbeat(ws *websocket.Conn, roomID string) {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		<-ticker.C
+		s.Mutex.Lock()
+		conn, ok := s.Clients[roomID]
+		s.Mutex.Unlock()
+
+		if !ok {
+			return
+		}
+
+		// Send ping
+		if err := conn.WriteJSON(map[string]string{"message": "ping"}); err != nil {
+			log.Printf("Heartbeat failed for room %s: %v", roomID, err)
+			s.Mutex.Lock()
+			delete(s.Clients, roomID)
+			s.Mutex.Unlock()
+			conn.Close()
+			return
+		}
 	}
 }
