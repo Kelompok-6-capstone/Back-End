@@ -41,7 +41,7 @@ func NewConsultationUsecaseImpl(repo *repository.ConsultationRepositoryImpl) *Co
 }
 
 func (uc *ConsultationUsecaseImpl) MarkExpiredConsultations() error {
-	consultations, err := uc.Repo.GetActiveConsultations()
+	consultations, err := uc.Repo.GetActiveConsultations() // Ambil semua konsultasi yang masih aktif
 	if err != nil {
 		return fmt.Errorf("failed to fetch active consultations: %v", err)
 	}
@@ -53,7 +53,9 @@ func (uc *ConsultationUsecaseImpl) MarkExpiredConsultations() error {
 			consultation.Status = "expired"
 			err := uc.Repo.UpdateConsultation(&consultation)
 			if err != nil {
-				return fmt.Errorf("failed to update consultation %d: %v", consultation.ID, err)
+				log.Printf("Failed to update consultation %d to expired: %v", consultation.ID, err)
+			} else {
+				log.Printf("Consultation %d marked as expired", consultation.ID)
 			}
 		}
 	}
@@ -74,15 +76,29 @@ func (uc *ConsultationUsecaseImpl) ApprovePaymentAndConsultation(consultationID 
 
 	// Perbarui status konsultasi dan pembayaran
 	consultation.Status = "approved"
-	consultation.PaymentStatus = "paid" // Pastikan ini juga diperbarui
-
+	consultation.StartTime = time.Now()
 	// Simpan perubahan ke database
 	err = uc.Repo.UpdateConsultation(consultation)
 	if err != nil {
 		return fmt.Errorf("failed to update consultation: %w", err)
 	}
 
+	go uc.StartTimerForConsultation(consultation)
 	return nil
+}
+
+func (uc *ConsultationUsecaseImpl) StartTimerForConsultation(consultation *model.Consultation) {
+	duration := time.Duration(consultation.Duration) * time.Minute
+	time.Sleep(duration) // Tunggu hingga durasi selesai
+
+	// Setelah timer selesai, perbarui status konsultasi menjadi expired
+	consultation.Status = "expired"
+	err := uc.Repo.UpdateConsultation(consultation)
+	if err != nil {
+		log.Printf("Failed to update consultation %d to expired: %v", consultation.ID, err)
+	} else {
+		log.Printf("Consultation %d has expired", consultation.ID)
+	}
 }
 
 // Membuat konsultasi baru
@@ -134,16 +150,6 @@ func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, titl
 	}
 
 	return paymentURL, consultation, nil
-}
-
-// Mendapatkan konsultasi berdasarkan nama user
-func (u *ConsultationUsecaseImpl) SearchConsultationsByName(doctorID int, searchName string) (*[]model.Consultation, error) {
-	var consultations *[]model.Consultation
-	err := u.Repo.FindConsultationsByDoctorAndName(doctorID, searchName, consultations)
-	if err != nil {
-		return nil, err
-	}
-	return consultations, nil
 }
 
 // Mendapatkan konsultasi berdasarkan ID
