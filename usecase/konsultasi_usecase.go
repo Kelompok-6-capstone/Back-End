@@ -136,7 +136,7 @@ func (uc *ConsultationUsecaseImpl) CreateConsultation(userID, doctorID int, titl
 	}
 
 	// Buat order_id berdasarkan consultationID
-	consultation.OrderID = fmt.Sprintf("consultation-%d-%d", consultationID)
+	consultation.OrderID = fmt.Sprintf("consultation-%d-jj", consultationID)
 
 	// Perbarui database dengan order_id
 	err = uc.Repo.UpdateConsultation(consultation)
