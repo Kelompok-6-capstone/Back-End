@@ -21,7 +21,7 @@ func NewAdminController(adminUsecase usecase.AdminProfileUseCase) *AdminControll
 
 // Get Admin Profile
 func (c *AdminController) GetAdminProfile(ctx echo.Context) error {
-	claims, _ := ctx.Get("user").(*service.JwtCustomClaims)
+	claims, _ := ctx.Get("admin").(*service.JwtCustomClaims)
 
 	admin, err := c.AdminUsecase.GetAdminProfile(claims.UserID)
 	if err != nil {
@@ -45,7 +45,7 @@ func (c *AdminController) GetAdminProfile(ctx echo.Context) error {
 
 // Upload Admin Avatar
 func (c *AdminController) UploadAdminAvatar(ctx echo.Context) error {
-	claims, _ := ctx.Get("user").(*service.JwtCustomClaims)
+	claims, _ := ctx.Get("admin").(*service.JwtCustomClaims)
 
 	// Ambil file dari form
 	file, err := ctx.FormFile("avatar")
@@ -90,7 +90,7 @@ func (c *AdminController) UploadAdminAvatar(ctx echo.Context) error {
 
 // Delete Admin Avatar
 func (c *AdminController) DeleteAdminAvatar(ctx echo.Context) error {
-	claims, _ := ctx.Get("user").(*service.JwtCustomClaims)
+	claims, _ := ctx.Get("admin").(*service.JwtCustomClaims)
 
 	err := c.AdminUsecase.DeleteAdminAvatar(claims.UserID)
 	if err != nil {

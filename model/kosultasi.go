@@ -23,7 +23,7 @@ type Consultation struct {
 
 type Rekomendasi struct {
 	ID             int       `json:"id" gorm:"primaryKey;autoIncrement"`
-	UserID         int       `gorm:"not null"` // Foreign key ke User
+	UserID         int       `json:"user_id" gorm:"not null"` // Foreign key ke User
 	ConsultationID int       `json:"consultation_id" gorm:"not null;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
 	DoctorID       int       `json:"doctor_id" gorm:"not null;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
 	Rekomendasi    string    `json:"rekomendasi" gorm:"type:text;not null"`

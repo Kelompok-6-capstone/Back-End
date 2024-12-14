@@ -95,7 +95,7 @@ func AdminManagementRoutes(e *echo.Group, adminManagement *controller.AdminManag
 	e.GET("/allusers", adminManagement.GetAllUsers)    // Ambil Semua Data User
 	e.DELETE("/users/:id", adminManagement.DeleteUser) // Hapus User berdasarkan ID
 
-	e.GET("/profile", profil.GetAdminProfile)           // Mendapatkan profil dokter
+	e.GET("/profil", profil.GetAdminProfile)            // Mendapatkan profil dokter
 	e.POST("/upload-image", profil.UploadAdminAvatar)   // Upload avatar dokter
 	e.DELETE("/delete-image", profil.DeleteAdminAvatar) // Hapus avatar dokter
 
