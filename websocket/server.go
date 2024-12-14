@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
+	"time"
 
 	"calmind/model"
 	"calmind/usecase"
@@ -34,12 +36,25 @@ func NewWebSocketServer(chatUsecase usecase.ChatUsecase) *WebSocketServer {
 }
 
 func (s *WebSocketServer) HandleWebSocket(c echo.Context) error {
-	userID := c.QueryParam("user_id")
-	doctorID := c.QueryParam("doctor_id")
+	userIDStr := c.QueryParam("user_id")
+	doctorIDStr := c.QueryParam("doctor_id")
 
-	if userID == "" || doctorID == "" {
+	if userIDStr == "" || doctorIDStr == "" {
 		log.Println("Missing user_id or doctor_id")
 		return echo.NewHTTPError(http.StatusBadRequest, "user_id and doctor_id are required")
+	}
+
+	// Convert user_id and doctor_id to integers
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		log.Printf("Invalid user_id format: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "user_id must be a valid integer")
+	}
+
+	doctorID, err := strconv.Atoi(doctorIDStr)
+	if err != nil {
+		log.Printf("Invalid doctor_id format: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "doctor_id must be a valid integer")
 	}
 
 	ws, err := s.Upgrader.Upgrade(c.Response().Writer, c.Request(), nil)
@@ -47,15 +62,23 @@ func (s *WebSocketServer) HandleWebSocket(c echo.Context) error {
 		log.Printf("WebSocket upgrade failed: %v", err)
 		return err
 	}
-	defer ws.Close()
+	defer func() {
+		log.Printf("Closing WebSocket connection for room %s-%s", userIDStr, doctorIDStr)
+		ws.Close()
+	}()
 
-	roomID := fmt.Sprintf("%s-%s", userID, doctorID)
+	roomID := fmt.Sprintf("%d-%d", userID, doctorID)
 	log.Printf("WebSocket connection established for room %s", roomID)
 
+	// Register client connection
 	s.Mutex.Lock()
 	s.Clients[roomID] = ws
 	s.Mutex.Unlock()
 
+	// Heartbeat handler
+	go s.handleHeartbeat(ws, roomID)
+
+	// Read messages
 	for {
 		var msg model.ChatMessage
 		err := ws.ReadJSON(&msg)
@@ -67,8 +90,17 @@ func (s *WebSocketServer) HandleWebSocket(c echo.Context) error {
 			break
 		}
 
-		// Validasi dan kirim pesan
+		// Log received message
 		log.Printf("Received message: %+v", msg)
+
+		// Validate message fields
+		if msg.UserID == 0 || msg.DoctorID == 0 || msg.Message == "" {
+			log.Printf("Invalid message data: %+v", msg)
+			ws.WriteJSON(map[string]string{"error": "Invalid message data"})
+			continue
+		}
+
+		// Process and send the message using usecase
 		err = s.ChatUsecase.SendMessage(msg.UserID, msg.DoctorID, msg.SenderID, msg.Message)
 		if err != nil {
 			log.Printf("Error sending message: %v", err)
@@ -78,7 +110,7 @@ func (s *WebSocketServer) HandleWebSocket(c echo.Context) error {
 			continue
 		}
 
-		// Broadcast pesan
+		// Broadcast the message
 		s.BroadcastMessage(roomID, msg)
 	}
 	return nil
@@ -89,6 +121,25 @@ func (s *WebSocketServer) BroadcastMessage(roomID string, msg model.ChatMessage)
 	defer s.Mutex.Unlock()
 
 	if client, ok := s.Clients[roomID]; ok {
-		client.WriteJSON(msg)
+		err := client.WriteJSON(msg)
+		if err != nil {
+			log.Printf("Error broadcasting message to room %s: %v", roomID, err)
+		}
+	}
+}
+
+func (s *WebSocketServer) handleHeartbeat(ws *websocket.Conn, roomID string) {
+	for {
+		err := ws.WriteMessage(websocket.PingMessage, nil)
+		if err != nil {
+			log.Printf("Heartbeat failed for room %s: %v", roomID, err)
+			s.Mutex.Lock()
+			delete(s.Clients, roomID)
+			s.Mutex.Unlock()
+			break
+		}
+		log.Printf("Heartbeat sent to room %s", roomID)
+		// Delay between heartbeats
+		time.Sleep(30 * time.Second)
 	}
 }
