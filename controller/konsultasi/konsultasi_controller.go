@@ -326,11 +326,13 @@ func mapConsultationToDTO(consultation model.Consultation) model.ConsultationDTO
 		CreatedAt:     consultation.CreatedAt,
 		UpdatedAt:     consultation.UpdatedAt,
 		User: &model.UserDTO{
-			Avatar:    consultation.User.Avatar,
-			Username:  consultation.User.Username,
-			Email:     consultation.User.Email,
-			Pekerjaan: consultation.User.Pekerjaan, // Pastikan ini benar
-			TglLahir:  consultation.User.TglLahir,
+			Avatar:       consultation.User.Avatar,
+			Username:     consultation.User.Username,
+			Email:        consultation.User.Email,
+			Pekerjaan:    consultation.User.Pekerjaan, // Pastikan ini benar
+			JenisKelamin: consultation.User.JenisKelamin,
+			NoHp:         consultation.User.NoHp,
+			TglLahir:     consultation.User.TglLahir,
 		},
 		Doctor: &model.DoctorDTO{
 			Avatar:   consultation.User.Avatar,

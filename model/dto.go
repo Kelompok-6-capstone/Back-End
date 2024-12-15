@@ -4,11 +4,13 @@ import "time"
 
 // DTO untuk User
 type UserDTO struct {
-	Avatar    string `gorm:"" json:"avatar"`
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	TglLahir  string `gorm:"" json:"tgl_lahir"`
-	Pekerjaan string `gorm:"" json:"pekerjaan"`
+	Avatar       string `gorm:"" json:"avatar"`
+	Username     string `json:"username"`
+	Email        string `json:"email"`
+	JenisKelamin string `json:"jenis_kelamin"`
+	NoHp         string `json:"no_hp"`
+	TglLahir     string `gorm:"" json:"tgl_lahir"`
+	Pekerjaan    string `gorm:"" json:"pekerjaan"`
 }
 
 type DoctorDTO struct {
