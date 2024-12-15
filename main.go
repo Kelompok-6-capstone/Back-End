@@ -140,6 +140,8 @@ func main() {
 		return c.NoContent(http.StatusOK)
 	})
 
+	http.HandleFunc("/ws", helper.HandleConnections)
+
 	// routes auth
 	routes.UserAuthRoutes(e, userController)               // user
 	routes.AdminAuthRoutes(e, adminController)             // admin
