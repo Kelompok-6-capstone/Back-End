@@ -5,6 +5,8 @@ import (
 	"calmind/model"
 	"calmind/service"
 	usecase "calmind/usecase/profile"
+	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -73,8 +75,6 @@ func (c *ProfilController) UpdateProfile(ctx echo.Context) error {
 
 	return helper.JSONSuccessResponse(ctx, "berhasil update profil")
 }
-
-// Upload Avatar
 func (c *ProfilController) UploadAvatar(ctx echo.Context) error {
 	claims, ok := ctx.Get("user").(*service.JwtCustomClaims)
 	if !ok {
@@ -99,35 +99,50 @@ func (c *ProfilController) UploadAvatar(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Hanya file dengan format .jpg, .jpeg, atau .png yang diperbolehkan")
 	}
 
+	// Buka file
 	src, err := file.Open()
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuka file")
 	}
 	defer src.Close()
 
-	// Upload gambar ke ImgBB
-	imageURL, deleteURL, err := helper.UploadToImgBB(os.Getenv("API_KEY_IMBB"), file.Filename, src)
+	// Path direktori penyimpanan avatar
+	uploadDir := "/app/uploads/avatars"
+	err = os.MkdirAll(uploadDir, 0777) // Pastikan direktori ada
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengunggah avatar ke ImgBB: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat direktori upload: "+err.Error())
 	}
 
-	// Update URL avatar dan delete_url di database
+	// Path file avatar
+	filePath := fmt.Sprintf("%s/%d%s", uploadDir, userID, ext)
+
+	// Simpan file avatar
+	dst, err := os.Create(filePath)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat file avatar: "+err.Error())
+	}
+	defer dst.Close()
+
+	// Salin konten file
+	if _, err = io.Copy(dst, src); err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file avatar: "+err.Error())
+	}
+
+	// Update URL avatar di database
 	user := model.User{
-		Avatar:    imageURL,
-		DeleteURL: deleteURL, // Pastikan kolom ini tersedia di model dan database
+		Avatar: fmt.Sprintf("/uploads/avatars/%d%s", userID, ext), // URL relatif ke file
 	}
 	_, err = c.ProfilUsecase.UpdateUserProfile(userID, &user)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate avatar: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate avatar di database: "+err.Error())
 	}
 
 	return helper.JSONSuccessResponse(ctx, map[string]string{
 		"message":   "Avatar berhasil diupload",
-		"avatarUrl": imageURL,
+		"avatarUrl": user.Avatar,
 	})
 }
 
-// Delete Avatar
 func (c *ProfilController) DeleteAvatar(ctx echo.Context) error {
 	claims, ok := ctx.Get("user").(*service.JwtCustomClaims)
 	if !ok {
@@ -135,23 +150,27 @@ func (c *ProfilController) DeleteAvatar(ctx echo.Context) error {
 	}
 	userID := claims.UserID
 
-	// Ambil data user untuk mendapatkan avatar URL dan delete_url
+	// Ambil data user untuk mendapatkan avatar URL
 	user, err := c.ProfilUsecase.GetUserProfile(userID)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil profil user: "+err.Error())
 	}
 
-	// Hapus avatar dari ImgBB
-	if user.DeleteURL != "" {
-		err := helper.DeleteFromImgBB(user.DeleteURL)
-		if err != nil {
-			return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus avatar dari ImgBB: "+err.Error())
+	// Path file avatar
+	avatarPath := fmt.Sprintf("/app%s", user.Avatar) // Pastikan path sesuai lokasi file
+
+	// Hapus file avatar jika ada
+	if user.Avatar != "" {
+		if _, err := os.Stat(avatarPath); err == nil {
+			err := os.Remove(avatarPath)
+			if err != nil {
+				return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus avatar: "+err.Error())
+			}
 		}
 	}
 
 	// Update avatar menjadi kosong di database
 	user.Avatar = ""
-	user.DeleteURL = ""
 	_, err = c.ProfilUsecase.UpdateUserProfile(userID, user)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate avatar di database: "+err.Error())

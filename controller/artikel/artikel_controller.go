@@ -5,6 +5,8 @@ import (
 	"calmind/model"
 	"calmind/service"
 	usecase "calmind/usecase/artikel"
+	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -210,31 +212,62 @@ func (c *ArtikelController) UploadArtikelImage(ctx echo.Context) error {
 	}
 	defer src.Close()
 
-	// Unggah gambar ke ImgBB
-	imageURL, deleteURL, err := helper.UploadToImgBB(os.Getenv("API_KEY_IMBB"), file.Filename, src)
+	// Tentukan direktori tujuan
+	uploadDir := "/app/uploads"
+	err = os.MkdirAll(uploadDir, 0777) // Pastikan direktori ada
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengunggah gambar: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat direktori upload: "+err.Error())
 	}
 
-	// Kembalikan URL gambar dan URL hapus
+	// Path tempat menyimpan gambar
+	filePath := fmt.Sprintf("%s/%s", uploadDir, file.Filename)
+
+	// Simpan file ke direktori uploads
+	dst, err := os.Create(filePath)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat file: "+err.Error())
+	}
+	defer dst.Close()
+
+	// Salin konten file
+	if _, err = io.Copy(dst, src); err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file: "+err.Error())
+	}
+
+	// Kembalikan respons sukses
 	return helper.JSONSuccessResponse(ctx, map[string]string{
-		"message":   "Gambar berhasil diupload",
-		"imageUrl":  imageURL,
-		"deleteUrl": deleteURL,
+		"message": "Gambar berhasil diupload",
+		"path":    filePath,
 	})
 }
 
 func (c *ArtikelController) DeleteArtikelImage(ctx echo.Context) error {
-	// Ambil deleteURL dari parameter query
-	deleteURL := ctx.QueryParam("delete_url")
-	if deleteURL == "" {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Delete URL diperlukan")
+	// Ambil nama file dari body request (misalnya, melalui JSON payload)
+	req := struct {
+		FileName string `json:"file_name"`
+	}{}
+
+	if err := ctx.Bind(&req); err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal membaca request: "+err.Error())
 	}
 
-	// Hapus file gambar dari ImgBB
-	err := helper.DeleteFromImgBB(deleteURL)
+	// Validasi apakah file_name ada
+	if req.FileName == "" {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Nama file diperlukan")
+	}
+
+	// Path file yang akan dihapus
+	filePath := fmt.Sprintf("/app/uploads/%s", req.FileName)
+
+	// Periksa apakah file ada
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "File tidak ditemukan")
+	}
+
+	// Hapus file
+	err := os.Remove(filePath)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus gambar dari ImgBB: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus file: "+err.Error())
 	}
 
 	return helper.JSONSuccessResponse(ctx, "Gambar berhasil dihapus")

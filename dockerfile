@@ -22,6 +22,12 @@ COPY .env .env
 
 RUN apk update && apk add --no-cache ca-certificates
 
+# Buat direktori untuk penyimpanan gambar
+RUN mkdir -p /app/uploads
+
+# Berikan izin penuh ke direktori uploads
+RUN chmod -R 777 /app/uploads
+
 EXPOSE 8000
 
 CMD ["./main"]

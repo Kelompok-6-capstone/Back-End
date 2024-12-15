@@ -5,6 +5,8 @@ import (
 	"calmind/model"
 	"calmind/service"
 	usecase "calmind/usecase/profile"
+	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -216,25 +218,40 @@ func (c *DoctorProfileController) UploadAvatar(ctx echo.Context) error {
 	}
 	defer src.Close()
 
-	// Upload gambar ke ImgBB
-	imageURL, deleteURL, err := helper.UploadToImgBB(os.Getenv("API_KEY_IMBB"), file.Filename, src)
+	// Path direktori penyimpanan avatar
+	uploadDir := "/app/uploads/avatars"
+	err = os.MkdirAll(uploadDir, 0777) // Membuat direktori jika belum ada
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengunggah avatar ke ImgBB: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat direktori upload: "+err.Error())
+	}
+
+	// Path file avatar
+	filePath := fmt.Sprintf("%s/%d%s", uploadDir, doctorID, ext)
+
+	// Simpan file avatar
+	dst, err := os.Create(filePath)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat file avatar: "+err.Error())
+	}
+	defer dst.Close()
+
+	// Salin konten file
+	if _, err = io.Copy(dst, src); err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file avatar: "+err.Error())
 	}
 
 	// Update URL avatar di database
 	doctor := model.Doctor{
-		Avatar:    imageURL,
-		DeleteURL: deleteURL, // Pastikan kolom ini tersedia di model dan database
+		Avatar: fmt.Sprintf("/uploads/avatars/%d%s", doctorID, ext), // URL relatif ke file
 	}
 	_, err = c.DoctorProfileUsecase.UpdateDoctorProfile(doctorID, &doctor)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate avatar: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate avatar di database: "+err.Error())
 	}
 
 	return helper.JSONSuccessResponse(ctx, map[string]string{
 		"message":   "Avatar berhasil diupload",
-		"avatarUrl": imageURL,
+		"avatarUrl": doctor.Avatar,
 	})
 }
 
@@ -245,23 +262,27 @@ func (c *DoctorProfileController) DeleteAvatar(ctx echo.Context) error {
 	}
 	doctorID := claims.UserID
 
-	// Ambil data dokter untuk mendapatkan URL avatar dan delete_url
+	// Ambil data dokter untuk mendapatkan URL avatar
 	doctor, err := c.DoctorProfileUsecase.GetDoctorProfile(doctorID)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil profil dokter: "+err.Error())
 	}
 
-	// Hapus avatar dari ImgBB
-	if doctor.DeleteURL != "" {
-		err := helper.DeleteFromImgBB(doctor.DeleteURL)
-		if err != nil {
-			return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus avatar dari ImgBB: "+err.Error())
+	// Path file avatar
+	avatarPath := fmt.Sprintf("/app%s", doctor.Avatar) // Pastikan path sesuai lokasi file
+
+	// Hapus file avatar jika ada
+	if doctor.Avatar != "" {
+		if _, err := os.Stat(avatarPath); err == nil {
+			err := os.Remove(avatarPath)
+			if err != nil {
+				return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus avatar: "+err.Error())
+			}
 		}
 	}
 
 	// Update avatar menjadi kosong di database
 	doctor.Avatar = ""
-	doctor.DeleteURL = ""
 	_, err = c.DoctorProfileUsecase.UpdateDoctorProfile(doctorID, doctor)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate avatar di database: "+err.Error())
