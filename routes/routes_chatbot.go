@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"calmind/controller"
+	controller "calmind/controller/chatbot_ai"
 
 	"github.com/labstack/echo/v4"
 )

@@ -2,13 +2,38 @@ package main
 
 import (
 	"calmind/config"
-	"calmind/controller"
 	"calmind/helper"
 	"calmind/middlewares"
-	"calmind/repository"
+	repository_management "calmind/repository/admin_management"
+	repository_artikel "calmind/repository/artikel"
+	repository_authentikasi "calmind/repository/authentikasi"
+	repository_chatbot_ai "calmind/repository/chatbot_ai"
+	repository_customer_service "calmind/repository/customer_service"
+	repository_konsultasi "calmind/repository/konsultasi"
+	repository_profile "calmind/repository/profile"
+	repository_user_fitur "calmind/repository/user_fitur"
+
+	usecase_management "calmind/usecase/admin_management"
+	usecase_artikel "calmind/usecase/artikel"
+	usecase_authentikasi "calmind/usecase/authentikasi"
+	usecase_chatbot_ai "calmind/usecase/chatbot_ai"
+	usecase_customer_service "calmind/usecase/customer_service"
+	usecase_konsultasi "calmind/usecase/konsultasi"
+	usecase_profile "calmind/usecase/profile"
+	usecase_user_fitur "calmind/usecase/user_fitur"
+
+	controller_management "calmind/controller/admin_management"
+	controller_artikel "calmind/controller/artikel"
+	controller_authentikasi "calmind/controller/authentikasi"
+	controller_chatbot_ai "calmind/controller/chatbot_ai"
+	controller_customer_service "calmind/controller/customer_service"
+	controller_konsultasi "calmind/controller/konsultasi"
+	controller_notifikasi "calmind/controller/midtrans_notifikasi"
+	controller_profile "calmind/controller/profile"
+	controller_user_fitur "calmind/controller/user_fitur"
+
 	"calmind/routes"
 	"calmind/service"
-	"calmind/usecase"
 	"log"
 	"net/http"
 
@@ -34,67 +59,70 @@ func main() {
 	otpService := service.NewOtpService()
 
 	// Repositori, usecase, dan controller untuk User
-	userRepo := repository.NewAuthRepository(DB)
-	otpRepo := repository.NewOtpRepository(DB)
-	userUsecase := usecase.NewAuthUsecase(userRepo, jwtService, otpRepo, otpService)
-	userController := controller.NewAuthController(userUsecase)
+	userRepo := repository_authentikasi.NewAuthRepository(DB)
+	otpRepo := repository_authentikasi.NewOtpRepository(DB)
+	userUsecase := usecase_authentikasi.NewAuthUsecase(userRepo, jwtService, otpRepo, otpService)
+	userController := controller_authentikasi.NewAuthController(userUsecase)
 
 	// Repositori, usecase, dan controller untuk Admin
-	adminRepo := repository.NewAdminAuthRepository(DB)
-	adminUsecase := usecase.NewAdminAuthUsecase(adminRepo, jwtService)
-	adminController := controller.NewAdminAuthController(adminUsecase)
+	adminRepo := repository_authentikasi.NewAdminAuthRepository(DB)
+	adminUsecase := usecase_authentikasi.NewAdminAuthUsecase(adminRepo, jwtService)
+	adminController := controller_authentikasi.NewAdminAuthController(adminUsecase)
 
 	// Repositori, usecase, dan controller untuk Admin management
-	adminRepoManagement := repository.NewAdminManagementRepo(DB)
-	adminUsecaseManagement := usecase.NewAdminManagementUsecase(adminRepoManagement)
-	adminControllerManagement := controller.NewAdminManagementController(adminUsecaseManagement)
+	adminRepoManagement := repository_management.NewAdminManagementRepo(DB)
+	adminUsecaseManagement := usecase_management.NewAdminManagementUsecase(adminRepoManagement)
+	adminControllerManagement := controller_management.NewAdminManagementController(adminUsecaseManagement)
 
 	// Repositori, usecase, dan controller untuk dokter
-	doctorRepoManagement := repository.NewDoctorAuthRepository(DB)
-	doctorUsecaseManagement := usecase.NewDoctorAuthUsecase(doctorRepoManagement, jwtService, otpRepo, otpService)
-	doctorControllerManagement := controller.NewDoctorAuthController(doctorUsecaseManagement)
+	doctorRepoManagement := repository_authentikasi.NewDoctorAuthRepository(DB)
+	doctorUsecaseManagement := usecase_authentikasi.NewDoctorAuthUsecase(doctorRepoManagement, jwtService, otpRepo, otpService)
+	doctorControllerManagement := controller_authentikasi.NewDoctorAuthController(doctorUsecaseManagement)
 
 	//	Repositori, usecase, dan controller untuk Profil User
-	userProfilRepo := repository.NewUserProfilRepository(DB)
-	userProfilUsecase := usecase.NewUserProfileUseCase(userProfilRepo)
-	userProfilController := controller.NewProfilController(userProfilUsecase)
+	userProfilRepo := repository_profile.NewUserProfilRepository(DB)
+	userProfilUsecase := usecase_profile.NewUserProfileUseCase(userProfilRepo)
+	userProfilController := controller_profile.NewProfilController(userProfilUsecase)
 
 	//	Repositori, usecase, dan controller untuk Fitur User
-	userFiturRepo := repository.NewUserFiturRepository(DB)
-	userFiturUsecase := usecase.NewUserFiturUsecase(userFiturRepo)
-	userFiturController := controller.NewUserFiturController(userFiturUsecase)
+	userFiturRepo := repository_user_fitur.NewUserFiturRepository(DB)
+	userFiturUsecase := usecase_user_fitur.NewUserFiturUsecase(userFiturRepo)
+	userFiturController := controller_user_fitur.NewUserFiturController(userFiturUsecase)
 
 	//	Repositori, usecase, dan controller untuk Profil doctor
-	doctorProfilRepo := repository.NewDoctorProfilRepository(DB)
-	doctorProfilUsecase := usecase.NewDoctorProfileUseCase(doctorProfilRepo)
-	doctorProfilController := controller.NewDoctorProfileController(doctorProfilUsecase)
+	doctorProfilRepo := repository_profile.NewDoctorProfilRepository(DB)
+	doctorProfilUsecase := usecase_profile.NewDoctorProfileUseCase(doctorProfilRepo)
+	doctorProfilController := controller_profile.NewDoctorProfileController(doctorProfilUsecase)
 
 	//    Repositori, usecase, dan controller untuk Consultasi
-	consultationRepo := repository.NewConsultationRepositoryImpl(DB)
-	consultationUsecase := usecase.NewConsultationUsecaseImpl(consultationRepo)
-	consultationController := controller.NewConsultationController(consultationUsecase)
+	consultationRepo := repository_konsultasi.NewConsultationRepositoryImpl(DB)
+	consultationUsecase := usecase_konsultasi.NewConsultationUsecaseImpl(consultationRepo)
+	consultationController := controller_konsultasi.NewConsultationController(consultationUsecase)
 
 	helper.StartExpiredConsultationJob(consultationUsecase.MarkExpiredConsultations)
 
 	//    Repositori, usecase, dan controller untuk Consultasi
-	artikelonRepo := repository.NewArtikelRepository(DB)
-	artikelUsecase := usecase.NewArtikelUsecase(artikelonRepo)
-	artikelController := controller.NewArtikelController(artikelUsecase)
+	artikelonRepo := repository_artikel.NewArtikelRepository(DB)
+	artikelUsecase := usecase_artikel.NewArtikelUsecase(artikelonRepo)
+	artikelController := controller_artikel.NewArtikelController(artikelUsecase)
 
 	//    Repositori, usecase, dan controller untuk chatbot ai
-	chatbotRepo := repository.NewChatLogRepository(DB)
-	chatbotUsecase := usecase.NewChatbotUsecase(chatbotRepo)
-	chatbotController := controller.NewChatbotController(chatbotUsecase)
+	chatbotRepo := repository_chatbot_ai.NewChatLogRepository(DB)
+	chatbotUsecase := usecase_chatbot_ai.NewChatbotUsecase(chatbotRepo)
+	chatbotController := controller_chatbot_ai.NewChatbotController(chatbotUsecase)
 
 	//    Repositori, usecase, dan controller untuk profil admin
-	adminprofil := repository.NewAdminProfileRepository(DB)
-	adminusecase := usecase.NewAdminProfileUseCase(adminprofil)
-	admincontroller := controller.NewAdminController(adminusecase)
+	adminprofil := repository_profile.NewAdminProfileRepository(DB)
+	adminusecase := usecase_profile.NewAdminProfileUseCase(adminprofil)
+	admincontroller := controller_profile.NewAdminController(adminusecase)
 
 	// customer service
-	cs := repository.NewCustServiceRepository(DB)
-	csusecase := usecase.NewCustServiceUsecase(cs)
-	cscontroller := controller.NewCustServiceController(csusecase)
+	cs := repository_customer_service.NewCustServiceRepository(DB)
+	csusecase := usecase_customer_service.NewCustServiceUsecase(cs)
+	cscontroller := controller_customer_service.NewCustServiceController(csusecase)
+
+	// notifikasi midtrans
+	midtrans_notifikasi := controller_notifikasi.NewMidtransNotificationController(consultationUsecase)
 
 	// Middleware
 	jwtMiddleware := middlewares.NewJWTMiddleware(jwtSecret)
@@ -132,7 +160,7 @@ func main() {
 
 	routes.UserCustServiceRoutes(e, cscontroller)
 
-	routes.WebhookRoutes(e, consultationController)
+	routes.WebhookRoutes(e, midtrans_notifikasi)
 
 	// Mulai server
 	log.Fatal(e.Start(":8000"))

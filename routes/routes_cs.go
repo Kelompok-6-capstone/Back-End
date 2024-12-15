@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"calmind/controller"
+	controller "calmind/controller/customer_service"
 
 	"github.com/labstack/echo/v4"
 )
