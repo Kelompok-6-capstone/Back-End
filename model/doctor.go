@@ -18,7 +18,6 @@ type Doctor struct {
 	Price           float64        `json:"price" gorm:"default:100000"`
 	Experience      int            `json:"experience"`
 	STRNumber       string         `json:"str_number"`
-	Income          float64        `gorm:"default:0"`
 	About           string         `json:"about"`
 	JenisKelamin    string         `gorm:"type:enum('Laki-laki', 'Perempuan')" json:"jenis_kelamin"`
 	TitleID         int            `json:"title_id"`
