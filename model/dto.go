@@ -17,7 +17,7 @@ type DoctorDTO struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Avatar   string `json:"avatar,omitempty"`
-	Title    Title  `json:"title" gorm:"foreignKey:TitleID"`
+	Title    string `json:"title"`
 	About    string `json:"about"`
 }
 
