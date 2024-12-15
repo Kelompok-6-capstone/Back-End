@@ -6,7 +6,6 @@ import (
 	"calmind/service"
 	usecase "calmind/usecase/profile"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -201,9 +200,9 @@ func (c *DoctorProfileController) UploadAvatar(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan file: "+err.Error())
 	}
 
-	// Validasi ukuran file (maksimal 10 MB)
-	if file.Size > 10*1024*1024 {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Ukuran file maksimal 10 MB")
+	// Validasi ukuran file (maksimal 5 MB)
+	if file.Size > 5*1024*1024 {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Ukuran file maksimal 5 MB")
 	}
 
 	// Validasi ekstensi file
@@ -212,46 +211,45 @@ func (c *DoctorProfileController) UploadAvatar(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Hanya file dengan format .jpg, .jpeg, atau .png yang diperbolehkan")
 	}
 
+	// Simpan file di direktori uploads
+	uploadDir := "uploads/avatars"
+	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
+		err = os.MkdirAll(uploadDir, os.ModePerm)
+		if err != nil {
+			return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat direktori upload")
+		}
+	}
+
+	filePath := fmt.Sprintf("%s/doctor_%d_%s", uploadDir, doctorID, file.Filename)
 	src, err := file.Open()
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuka file")
 	}
 	defer src.Close()
 
-	// Path direktori penyimpanan avatar
-	uploadDir := "/app/uploads/avatars"
-	err = os.MkdirAll(uploadDir, 0777) // Membuat direktori jika belum ada
-	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat direktori upload: "+err.Error())
-	}
-
-	// Path file avatar
-	filePath := fmt.Sprintf("%s/%d%s", uploadDir, doctorID, ext)
-
-	// Simpan file avatar
 	dst, err := os.Create(filePath)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat file avatar: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
 	}
 	defer dst.Close()
 
-	// Salin konten file
-	if _, err = io.Copy(dst, src); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file avatar: "+err.Error())
+	if _, err := helper.CopyFile(src, dst); err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
 	}
 
 	// Update URL avatar di database
+	avatarURL := fmt.Sprintf("https://%s/%s", ctx.Request().Host, filePath)
 	doctor := model.Doctor{
-		Avatar: fmt.Sprintf("/uploads/avatars/%d%s", doctorID, ext), // URL relatif ke file
+		Avatar: avatarURL,
 	}
 	_, err = c.DoctorProfileUsecase.UpdateDoctorProfile(doctorID, &doctor)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate avatar di database: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate avatar: "+err.Error())
 	}
 
 	return helper.JSONSuccessResponse(ctx, map[string]string{
 		"message":   "Avatar berhasil diupload",
-		"avatarUrl": doctor.Avatar,
+		"avatarUrl": avatarURL,
 	})
 }
 
@@ -268,15 +266,12 @@ func (c *DoctorProfileController) DeleteAvatar(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil profil dokter: "+err.Error())
 	}
 
-	// Path file avatar
-	avatarPath := fmt.Sprintf("/app%s", doctor.Avatar) // Pastikan path sesuai lokasi file
-
-	// Hapus file avatar jika ada
+	// Hapus file avatar
 	if doctor.Avatar != "" {
-		if _, err := os.Stat(avatarPath); err == nil {
-			err := os.Remove(avatarPath)
-			if err != nil {
-				return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus avatar: "+err.Error())
+		filePath := "." + doctor.Avatar // Tambahkan "." untuk path relatif
+		if _, err := os.Stat(filePath); err == nil {
+			if err := os.Remove(filePath); err != nil {
+				return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus file avatar: "+err.Error())
 			}
 		}
 	}

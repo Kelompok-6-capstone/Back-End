@@ -45,9 +45,12 @@ func (c *AdminController) GetAdminProfile(ctx echo.Context) error {
 
 	return helper.JSONSuccessResponse(ctx, adminProfile)
 }
-
 func (c *AdminController) UploadAdminAvatar(ctx echo.Context) error {
-	claims, _ := ctx.Get("admin").(*service.JwtCustomClaims)
+	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
+	if !ok {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
+	}
+	adminID := claims.UserID
 
 	// Ambil file dari form
 	file, err := ctx.FormFile("avatar")
@@ -55,9 +58,9 @@ func (c *AdminController) UploadAdminAvatar(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan file: "+err.Error())
 	}
 
-	// Validasi ukuran file (maksimal 10 MB)
-	if file.Size > 10*1024*1024 {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Ukuran file maksimal 10 MB")
+	// Validasi ukuran file (maksimal 5 MB)
+	if file.Size > 5*1024*1024 {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Ukuran file maksimal 5 MB")
 	}
 
 	// Validasi ekstensi file
@@ -66,73 +69,75 @@ func (c *AdminController) UploadAdminAvatar(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Hanya file dengan format .jpg, .jpeg, atau .png yang diperbolehkan")
 	}
 
+	// Simpan file di direktori uploads
+	uploadDir := "uploads/admin_avatars"
+	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
+		err = os.MkdirAll(uploadDir, os.ModePerm)
+		if err != nil {
+			return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat direktori upload")
+		}
+	}
+
+	// Buat path untuk file avatar
+	filePath := fmt.Sprintf("%s/admin_%d_%s", uploadDir, adminID, file.Filename)
 	src, err := file.Open()
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuka file")
 	}
 	defer src.Close()
 
-	// Path direktori penyimpanan avatar
-	uploadDir := "/app/uploads/admin_avatars"
-	err = os.MkdirAll(uploadDir, 0777) // Membuat direktori jika belum ada
-	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat direktori upload: "+err.Error())
-	}
-
-	// Path file avatar
-	filePath := fmt.Sprintf("%s/%d%s", uploadDir, claims.UserID, ext)
-
-	// Simpan file avatar
 	dst, err := os.Create(filePath)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat file avatar: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
 	}
 	defer dst.Close()
 
-	// Salin konten file
-	if _, err = io.Copy(dst, src); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file avatar: "+err.Error())
+	// Salin isi file dari sumber ke tujuan
+	if _, err := io.Copy(dst, src); err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
 	}
 
 	// URL file avatar yang disimpan
-	imageURL := fmt.Sprintf("/uploads/admin_avatars/%d%s", claims.UserID, ext)
+	avatarURL := fmt.Sprintf("https://%s/%s", ctx.Request().Host, filePath)
 
 	// Update URL avatar di database
-	err = c.AdminUsecase.UploadAdminAvatar(claims.UserID, imageURL, "")
+	err = c.AdminUsecase.UploadAdminAvatar(adminID, avatarURL, "")
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate avatar admin: "+err.Error())
 	}
 
 	return helper.JSONSuccessResponse(ctx, map[string]string{
 		"message":   "Avatar berhasil diupload",
-		"avatarUrl": imageURL,
+		"avatarUrl": avatarURL,
 	})
 }
 
 func (c *AdminController) DeleteAdminAvatar(ctx echo.Context) error {
-	claims, _ := ctx.Get("admin").(*service.JwtCustomClaims)
+	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
+	if !ok {
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
+	}
+	adminID := claims.UserID
 
-	// Ambil data admin dari database untuk mendapatkan URL avatar
-	admin, err := c.AdminUsecase.GetAdminProfile(claims.UserID)
+	// Ambil data admin untuk mendapatkan URL avatar
+	admin, err := c.AdminUsecase.GetAdminProfile(adminID)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil data admin: "+err.Error())
 	}
 
-	// Path file avatar
-	avatarPath := fmt.Sprintf("/app%s", admin.Avatar)
-
-	// Hapus file avatar jika ada
+	// Hapus file avatar
 	if admin.Avatar != "" {
-		if _, err := os.Stat(avatarPath); err == nil {
-			err := os.Remove(avatarPath)
-			if err != nil {
-				return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus avatar: "+err.Error())
+		filePath := "." + admin.Avatar // Tambahkan "." untuk path relatif
+		if _, err := os.Stat(filePath); err == nil {
+			if err := os.Remove(filePath); err != nil {
+				return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus file avatar: "+err.Error())
 			}
 		}
 	}
 
 	// Update avatar menjadi kosong di database
-	err = c.AdminUsecase.DeleteAdminAvatar(claims.UserID)
+	admin.Avatar = ""
+	err = c.AdminUsecase.DeleteAdminAvatar(adminID)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate avatar admin: "+err.Error())
 	}
