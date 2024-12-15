@@ -17,7 +17,7 @@ type DoctorDTO struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Avatar   string `json:"avatar,omitempty"`
-	Title    string `json:"title"`
+	Title    Title  `json:"title"`
 	About    string `json:"about"`
 }
 
