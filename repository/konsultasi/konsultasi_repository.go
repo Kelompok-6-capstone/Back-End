@@ -81,7 +81,7 @@ func (r *ConsultationRepositoryImpl) ValidateUserAndDoctor(userID, doctorID int)
 // Mendapatkan daftar konsultasi untuk dokter
 func (r *ConsultationRepositoryImpl) GetConsultationsForDoctor(doctorID int) ([]model.Consultation, error) {
 	var consultations []model.Consultation
-	if err := r.DB.Preload("User").Preload("Doctor").Preload("Title").Preload("Rekomendasi").
+	if err := r.DB.Preload("User").Preload("Doctor").Preload("Rekomendasi").
 		Where("doctor_id = ? AND status IN ?", doctorID, []string{"paid", "approved"}).
 		Find(&consultations).Error; err != nil {
 		return nil, err
@@ -111,7 +111,7 @@ func (r *ConsultationRepositoryImpl) FindConsultationsByDoctorAndName(doctorID i
 // Mendapatkan detail konsultasi tertentu untuk dokter
 func (r *ConsultationRepositoryImpl) GetConsultationDetails(consultationID, doctorID int) (*model.Consultation, error) {
 	var consultation model.Consultation
-	if err := r.DB.Preload("User").Preload("Doctor").Preload("Title").Preload("Rekomendasi").
+	if err := r.DB.Preload("User").Preload("Doctor.Title").Preload("Rekomendasi").
 		Where("id = ? AND doctor_id = ?", consultationID, doctorID).
 		First(&consultation).Error; err != nil {
 		return nil, err
@@ -141,7 +141,7 @@ func (r *ConsultationRepositoryImpl) UpdateConsultation(consultation *model.Cons
 
 func (r *ConsultationRepositoryImpl) GetConsultationByID(consultationID int) (*model.Consultation, error) {
 	var consultation model.Consultation
-	err := r.DB.Preload("User").Preload("Doctor").Preload("Title").Preload("Title").First(&consultation, consultationID).Error
+	err := r.DB.Preload("User").Preload("Doctor.Title").First(&consultation, consultationID).Error
 	if err != nil {
 		return nil, err
 	}
@@ -152,9 +152,9 @@ func (r *ConsultationRepositoryImpl) GetConsultationByID(consultationID int) (*m
 func (r *ConsultationRepositoryImpl) GetConsultationsWithDoctors(userID int) ([]model.Consultation, error) {
 	var consultations []model.Consultation
 	if err := r.DB.
-		Preload("Doctor").      // Preload relasi Doctor
-		Preload("Rekomendasi"). // Preload rekomendasi
-		Preload("User").        // Preload relasi User
+		Preload("Doctor.Title"). // Preload relasi Doctor
+		Preload("Rekomendasi").  // Preload rekomendasi
+		Preload("User").         // Preload relasi User
 		Where("user_id = ?", userID).
 		Find(&consultations).Error; err != nil {
 		return nil, err
@@ -165,7 +165,7 @@ func (r *ConsultationRepositoryImpl) GetConsultationsWithDoctors(userID int) ([]
 // Mendapatkan konsultasi yang menunggu persetujuan admin
 func (r *ConsultationRepositoryImpl) GetPendingConsultations() ([]model.Consultation, error) {
 	var consultations []model.Consultation
-	if err := r.DB.Preload("User").Preload("Doctor").
+	if err := r.DB.Preload("User").Preload("Doctor.Title").
 		Where("status = ?", "pending").
 		Find(&consultations).Error; err != nil {
 		return nil, err
