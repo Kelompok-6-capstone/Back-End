@@ -141,7 +141,7 @@ func (r *ConsultationRepositoryImpl) UpdateConsultation(consultation *model.Cons
 
 func (r *ConsultationRepositoryImpl) GetConsultationByID(consultationID int) (*model.Consultation, error) {
 	var consultation model.Consultation
-	err := r.DB.Preload("User").Preload("Doctor").Preload("Title").First(&consultation, consultationID).Error
+	err := r.DB.Preload("User").Preload("Doctor").Preload("Title").Preload("Title").First(&consultation, consultationID).Error
 	if err != nil {
 		return nil, err
 	}
