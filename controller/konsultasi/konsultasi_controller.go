@@ -338,7 +338,7 @@ func mapConsultationToDTO(consultation model.Consultation) model.ConsultationDTO
 			Avatar:   consultation.User.Avatar,
 			Username: consultation.Doctor.Username,
 			Email:    consultation.Doctor.Email,
-			Price:    consultation.Doctor.Price,
+			Title:    consultation.Doctor.Title,
 			About:    consultation.Doctor.About, // Pastikan ini benar
 		},
 		Rekomendasi: mapRecommendationsToDTO(consultation.Rekomendasi),

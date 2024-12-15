@@ -22,6 +22,6 @@ COPY .env .env
 
 RUN apk update && apk add --no-cache ca-certificates
 
-EXPOSE 1323
+EXPOSE 8000
 
 CMD ["./main"]
