@@ -23,25 +23,22 @@ func (uc *StatsUsecaseImpl) GetStats() (int64, int64, int64, int64, int64, error
 	totalDoctors, err := uc.Repo.GetTotalDoctors()
 	if err != nil {
 		return 0, 0, 0, 0, 0, err
-
 	}
 
-	totalKonsultasi, err := uc.Repo.GetTotalConsultations()
+	totalConsultations, err := uc.Repo.GetTotalConsultations()
 	if err != nil {
 		return 0, 0, 0, 0, 0, err
-
 	}
+
 	totalPaid, err := uc.Repo.GetTotalConsultationsByPaymentStatus("paid")
 	if err != nil {
 		return 0, 0, 0, 0, 0, err
-
 	}
 
 	totalPending, err := uc.Repo.GetTotalConsultationsByPaymentStatus("pending")
 	if err != nil {
 		return 0, 0, 0, 0, 0, err
-
 	}
 
-	return totalUsers, totalDoctors, totalKonsultasi, totalPaid, totalPending, nil
+	return totalUsers, totalDoctors, totalConsultations, totalPaid, totalPending, nil
 }
