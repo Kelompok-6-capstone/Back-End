@@ -91,7 +91,7 @@ func (u *AuthUsecase) Register(user *model.User) error {
 	err = u.UserRepo.CreateUser(user)
 	if err != nil {
 		log.Printf("Gagal menyimpan data pengguna: %s", err.Error())
-		return errors.New("Gagal menyimpan data pengguna. Terjadi masalah saat menyimpan informasi Anda.")
+		return errors.New(err.Error())
 	}
 
 	// Generate OTP
