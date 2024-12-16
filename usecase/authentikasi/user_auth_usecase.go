@@ -42,125 +42,159 @@ func isValidPassword(password string) bool {
 }
 
 func (u *AuthUsecase) Register(user *model.User) error {
+	// Validasi input
 	if user.Email == "" {
-		return errors.New("email wajib diisi")
+		return errors.New("Email wajib diisi. Mohon masukkan alamat email Anda.")
 	}
 	if user.Password == "" {
-		return errors.New("password wajib diisi")
+		return errors.New("Password wajib diisi. Mohon masukkan kata sandi Anda.")
 	}
 	if user.Username == "" {
-		return errors.New("username wajib diisi")
+		return errors.New("Username wajib diisi. Mohon masukkan nama pengguna Anda.")
 	}
 
+	// Validasi username
 	if !isValidUsername(user.Username) {
-		return errors.New("username minimal 5 karakter dan hanya boleh mengandung huruf, angka, atau garis bawah (_)")
+		return errors.New("Username minimal 5 karakter dan hanya boleh mengandung huruf, angka, atau garis bawah (_).")
 	}
 
+	// Validasi password
 	if !isValidPassword(user.Password) {
-		return errors.New("password minimal 8 karakter dan harus mengandung huruf besar, huruf kecil, angka, dan simbol")
+		return errors.New("Password harus minimal 8 karakter dan mengandung huruf besar, huruf kecil, angka, dan simbol.")
 	}
 
+	// Menetapkan peran pengguna
 	user.Role = "user"
 
+	// Enkripsi password
 	hashPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return errors.New("gagal mengenkripsi password")
+		return errors.New("Gagal mengenkripsi password. Silakan coba lagi.")
 	}
 	user.Password = string(hashPassword)
 
+	// Simpan user ke database
 	err = u.UserRepo.CreateUser(user)
 	if err != nil {
-		return errors.New("gagal menyimpan data pengguna")
+		log.Printf("Gagal menyimpan data pengguna: %s", err.Error())
+		return errors.New("Gagal menyimpan data pengguna. Terjadi masalah saat menyimpan informasi Anda.")
 	}
 
+	// Generate OTP
 	otpCode := u.OtpService.GenerateOtp()
 	expiry := time.Now().Add(5 * time.Minute)
 
+	// Simpan OTP ke database
 	err = u.OtpRepo.GenerateOtp(user.Email, otpCode, expiry)
 	if err != nil {
-		return errors.New("gagal membuat kode OTP")
+		return errors.New("Gagal membuat kode OTP. Terjadi masalah saat menghasilkan kode OTP.")
 	}
 
+	// Kirim email dengan OTP
 	err = helper.SendEmail(user.Email, otpCode)
 	if err != nil {
 		log.Printf("Gagal mengirim email ke %s: %v", user.Email, err)
+		return errors.New("Gagal mengirim kode OTP. Pastikan koneksi internet Anda stabil dan coba lagi.")
 	}
 
-	log.Println("Proses registrasi selesai")
+	log.Println("Proses registrasi selesai.")
 	return nil
 }
 
 func (u *AuthUsecase) Login(email, password string) (string, error) {
+	// Ambil data user berdasarkan email
 	user, err := u.UserRepo.GetByUsername(email)
 	if err != nil || user == nil {
-		return "", errors.New("email atau password salah")
+		log.Printf("Login gagal: Email atau password salah untuk %s", email)
+		return "", errors.New("Email atau password salah. Mohon periksa kembali informasi Anda.")
 	}
 
+	// Periksa apakah akun sudah terverifikasi
 	if !user.IsVerified {
-		return "", errors.New("akun belum terverifikasi. Silakan verifikasi OTP terlebih dahulu")
+		return "", errors.New("Akun Anda belum terverifikasi. Silakan verifikasi akun dengan kode OTP terlebih dahulu.")
 	}
 
+	// Periksa password yang dimasukkan
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		return "", errors.New("email atau password salah")
+		log.Printf("Login gagal: Password tidak cocok untuk %s", email)
+		return "", errors.New("Email atau password salah. Mohon periksa kembali informasi Anda.")
 	}
 
+	// Generate token JWT
 	token, err := u.JWTService.GenerateJWT(user.Email, user.ID, user.Role, user.IsVerified)
 	if err != nil {
-		return "", errors.New("gagal membuat token akses")
+		log.Printf("Gagal membuat token akses untuk %s: %s", email, err.Error())
+		return "", errors.New("Gagal membuat token akses. Terjadi masalah dengan sistem kami. Coba lagi nanti.")
 	}
 
 	return token, nil
 }
 
 func (a *AuthUsecase) VerifyOtp(email string, code string) error {
+	// Ambil data OTP berdasarkan email
 	otp, err := a.OtpRepo.GetOtpByEmail(email)
 	if err != nil {
-		return errors.New("gagal mengambil data OTP")
+		log.Printf("Gagal mengambil data OTP untuk %s: %s", email, err.Error())
+		return errors.New("Terjadi kesalahan saat mengambil data OTP. Coba lagi nanti.")
 	}
 
+	// Pastikan OTP ditemukan
 	if otp == nil {
-		return errors.New("kode OTP tidak ditemukan")
+		return errors.New("Kode OTP tidak ditemukan. Pastikan Anda telah menerima kode OTP.")
 	}
 
+	// Validasi apakah OTP sudah kadaluarsa
 	if a.OtpService.IsOtpExpired(otp.ExpiresAt) {
-		return errors.New("kode OTP sudah kedaluwarsa")
+		return errors.New("Kode OTP sudah kedaluwarsa. Mohon minta ulang kode OTP.")
 	}
 
+	// Cek apakah kode OTP yang dimasukkan valid
 	if otp.Code != code {
-		return errors.New("kode OTP tidak valid")
+		return errors.New("Kode OTP yang Anda masukkan tidak valid. Mohon coba lagi.")
 	}
 
+	// Hapus OTP setelah berhasil diverifikasi
 	err = a.OtpRepo.DeleteOtpByEmail(email)
 	if err != nil {
-		return errors.New("gagal menghapus kode OTP")
+		log.Printf("Gagal menghapus OTP untuk %s: %s", email, err.Error())
+		return errors.New("Gagal menghapus kode OTP. Silakan coba lagi.")
 	}
 
+	// Update status verifikasi pengguna
 	err = a.UserRepo.UpdateUserVerificationStatus(email, true)
 	if err != nil {
-		return errors.New("gagal memperbarui status verifikasi pengguna")
+		log.Printf("Gagal memperbarui status verifikasi untuk %s: %s", email, err.Error())
+		return errors.New("Gagal memperbarui status verifikasi akun Anda. Coba lagi nanti.")
 	}
 
 	return nil
 }
 
 func (u *AuthUsecase) ResendOtp(email string) error {
+	// Ambil user berdasarkan email
 	user, err := u.UserRepo.GetByUsername(email)
 	if err != nil || user == nil {
-		return errors.New("email tidak terdaftar")
+		log.Printf("Email tidak terdaftar: %s", email)
+		return errors.New("Email tidak terdaftar. Pastikan Anda sudah melakukan registrasi.")
 	}
 
+	// Generate ulang OTP
 	otpCode := u.OtpService.GenerateOtp()
 	expiry := time.Now().Add(5 * time.Minute)
 
+	// Perbarui OTP
 	err = u.OtpRepo.ResendOtp(email, otpCode, expiry)
 	if err != nil {
-		return errors.New("gagal memperbarui kode OTP")
+		log.Printf("Gagal memperbarui kode OTP untuk %s: %s", email, err.Error())
+		return errors.New("Gagal memperbarui kode OTP. Coba lagi nanti.")
 	}
 
+	// Kirim email dengan OTP yang baru
 	err = helper.SendEmail(email, otpCode)
 	if err != nil {
-		return errors.New("gagal mengirim kode OTP")
+		log.Printf("Gagal mengirim OTP ke %s: %v", email, err)
+		return errors.New("Gagal mengirim kode OTP. Mohon periksa koneksi internet Anda dan coba lagi.")
 	}
 
 	return nil
