@@ -23,13 +23,15 @@ func NewAuthRepository(db *gorm.DB) UserRepository {
 
 func (r *userRepositorystate) CreateUser(user *model.User) error {
 	var existingUser model.User
+
 	err := r.DB.Where("email = ?", user.Email).First(&existingUser).Error
 	if err == nil {
-		return errors.New("email already registered")
+		return errors.New("Email sudah terdaftar, gunakan email lain.")
 	}
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
+		return errors.New("Terjadi kesalahan saat memeriksa email.")
 	}
+
 	return r.DB.Create(user).Error
 }
 
