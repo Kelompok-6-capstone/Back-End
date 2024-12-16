@@ -39,9 +39,6 @@ func (r *AdminProfileRepositoryImpl) UpdateAvatarByID(adminID int, avatarURL str
 }
 
 func (r *AdminProfileRepositoryImpl) ClearAvatarByID(id int) error {
-	err := r.DB.Model(&model.Admin{}).Where("id = ?", id).Updates(map[string]interface{}{
-		"avatar":     "",
-		"delete_url": "",
-	}).Error
+	err := r.DB.Model(&model.Admin{}).Where("id = ?", id).Update("avatar", nil).Error
 	return err
 }
