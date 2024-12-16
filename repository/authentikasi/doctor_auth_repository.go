@@ -30,10 +30,10 @@ func (r *doctorRepositoryState) CreateDoctor(doctor *model.Doctor) error {
 	var existingDoctor model.Doctor
 	err := r.DB.Where("email = ?", doctor.Email).First(&existingDoctor).Error
 	if err == nil {
-		return errors.New("email already registered")
+		return errors.New("Email sudah terdaftar, gunakan email lain.")
 	}
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
+		return errors.New("Terjadi kesalahan saat memeriksa email.")
 	}
 
 	return r.DB.Create(doctor).Error

@@ -31,16 +31,20 @@ func (c *DoctorAuthController) RegisterDoctor(ctx echo.Context) error {
 		if err.Error() == "invalid title_id" {
 			return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "title_id tidak valid. Silakan pilih title yang tersedia.")
 		}
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal register dokter: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal registrasi pengguna: "+err.Error())
 	}
 
-	return helper.JSONSuccessResponse(ctx, "Berhasil Register Dokter")
+	return helper.JSONSuccessResponse(ctx, "Berhasil registrasi pengguna, silakan verifikasi email Anda.")
 }
 
 func (c *DoctorAuthController) LoginDoctor(ctx echo.Context) error {
 	var doctor model.Doctor
 	if err := ctx.Bind(&doctor); err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan data: "+err.Error())
+	}
+
+	if doctor.Email == "" || doctor.Password == "" {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Email dan password wajib diisi.")
 	}
 
 	token, err := c.DoctorUsecase.Login(doctor.Email, doctor.Password)
@@ -57,15 +61,19 @@ func (c *DoctorAuthController) LoginDoctor(ctx echo.Context) error {
 func (c *DoctorAuthController) VerifyOtp(ctx echo.Context) error {
 	var otp model.Otp
 	if err := ctx.Bind(&otp); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid input: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Input tidak valid: "+err.Error())
+	}
+
+	if otp.Email == "" || otp.Code == "" {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Email dan kode OTP wajib diisi.")
 	}
 
 	err := c.DoctorUsecase.VerifyOtp(otp.Email, otp.Code)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "OTP verification failed: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Verifikasi OTP gagal: "+err.Error())
 	}
 
-	return helper.JSONSuccessResponse(ctx, "OTP verified successfully")
+	return helper.JSONSuccessResponse(ctx, "OTP berhasil diverifikasi.")
 }
 
 func (c *DoctorAuthController) LogoutDoctor(ctx echo.Context) error {
@@ -77,21 +85,18 @@ func (c *DoctorAuthController) ResendOtp(ctx echo.Context) error {
 		Email string `json:"email"`
 	}
 
-	// Bind data input
 	if err := ctx.Bind(&request); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Invalid input: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Input tidak valid: "+err.Error())
 	}
 
-	// Validasi input email
 	if request.Email == "" {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Email is required")
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Email wajib diisi.")
 	}
 
-	// Resend OTP
 	err := c.DoctorUsecase.ResendOtp(request.Email)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to resend OTP: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengirim ulang OTP: "+err.Error())
 	}
 
-	return helper.JSONSuccessResponse(ctx, "OTP sent successfully")
+	return helper.JSONSuccessResponse(ctx, "Kode OTP berhasil dikirim ulang.")
 }
