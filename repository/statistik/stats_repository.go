@@ -1,44 +1,46 @@
-package usecase
+package repository
 
-import repository "calmind/repository/statistik"
+import (
+	"gorm.io/gorm"
+)
 
-type StatsUsecase interface {
-	GetStats() (int64, int64, int64, int64, int64, error)
+type StatsRepository interface {
+	GetTotalUsers() (int64, error)
+	GetTotalDoctors() (int64, error)
+	GetTotalConsultations() (int64, error)
+	GetTotalConsultationsByPaymentStatus(paymentStatus string) (int64, error)
 }
 
-type StatsUsecaseImpl struct {
-	Repo repository.StatsRepository
+type StatsRepositoryImpl struct {
+	DB *gorm.DB
 }
 
-func NewStatsUsecase(repo repository.StatsRepository) StatsUsecase {
-	return &StatsUsecaseImpl{Repo: repo}
+func NewStatsRepository(db *gorm.DB) StatsRepository {
+	return &StatsRepositoryImpl{DB: db}
 }
 
-func (uc *StatsUsecaseImpl) GetStats() (int64, int64, int64, int64, int64, error) {
-	totalUsers, err := uc.Repo.GetTotalUsers()
-	if err != nil {
-		return 0, 0, 0, 0, 0, err
-	}
+func (r *StatsRepositoryImpl) GetTotalUsers() (int64, error) {
+	var totalUsers int64
+	err := r.DB.Table("users").Count(&totalUsers).Error
+	return totalUsers, err
+}
 
-	totalDoctors, err := uc.Repo.GetTotalDoctors()
-	if err != nil {
-		return 0, 0, 0, 0, 0, err
-	}
+func (r *StatsRepositoryImpl) GetTotalDoctors() (int64, error) {
+	var totalDoctors int64
+	err := r.DB.Table("doctors").Count(&totalDoctors).Error
+	return totalDoctors, err
+}
 
-	totalConsultations, err := uc.Repo.GetTotalConsultations()
-	if err != nil {
-		return 0, 0, 0, 0, 0, err
-	}
+func (r *StatsRepositoryImpl) GetTotalConsultations() (int64, error) {
+	var totalConsultations int64
+	err := r.DB.Table("consultations").Count(&totalConsultations).Error
+	return totalConsultations, err
+}
 
-	totalPaid, err := uc.Repo.GetTotalConsultationsByPaymentStatus("paid")
-	if err != nil {
-		return 0, 0, 0, 0, 0, err
-	}
-
-	totalPending, err := uc.Repo.GetTotalConsultationsByPaymentStatus("pending")
-	if err != nil {
-		return 0, 0, 0, 0, 0, err
-	}
-
-	return totalUsers, totalDoctors, totalConsultations, totalPaid, totalPending, nil
+func (r *StatsRepositoryImpl) GetTotalConsultationsByPaymentStatus(paymentStatus string) (int64, error) {
+	var count int64
+	err := r.DB.Table("consultations").
+		Where("payment_status = ?", paymentStatus).
+		Count(&count).Error
+	return count, err
 }
