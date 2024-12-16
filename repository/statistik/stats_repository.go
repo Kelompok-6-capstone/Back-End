@@ -8,6 +8,7 @@ type StatsRepository interface {
 	GetTotalUsers() (int64, error)
 	GetTotalDoctors() (int64, error)
 	GetTotalConsultations() (int64, error)
+	GetTotalConsultationsByPaymentStatus(paymentStatus string) (int64, error)
 }
 
 type StatsRepositoryImpl struct {
@@ -34,4 +35,12 @@ func (r *StatsRepositoryImpl) GetTotalConsultations() (int64, error) {
 	var totalConsultations int64
 	err := r.DB.Table("consultations").Count(&totalConsultations).Error
 	return totalConsultations, err
+}
+
+func (r *StatsRepositoryImpl) GetTotalConsultationsByPaymentStatus(paymentStatus string) (int64, error) {
+	var count int64
+	err := r.DB.Table("consultations").
+		Where("payment_status = ?", paymentStatus).
+		Count(&count).Error
+	return count, err
 }
