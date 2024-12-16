@@ -3,34 +3,36 @@ package helper
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
+	"os"
+	"strings"
 )
 
-// UploadToImgBB mengunggah gambar ke ImgBB dan mengembalikan URL gambar serta delete_url
-func UploadToImgBB(apiKey string, filePath string, file multipart.File) (string, string, error) {
-	url := "https://api.imgbb.com/1/upload?key=" + apiKey
+// UploadFileToCloudinary mengunggah file ke Cloudinary
+func UploadFileToCloudinary(file multipart.File, fileName string) (string, string, error) {
+	cloudinaryURL := fmt.Sprintf("https://api.cloudinary.com/v1_1/%s/image/upload", os.Getenv("CLOUDINARY_CLOUD_NAME"))
+	uploadPreset := os.Getenv("CLOUDINARY_UPLOAD_PRESET")
 
-	// Buat multipart writer
-	var b bytes.Buffer
-	writer := multipart.NewWriter(&b)
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	_ = writer.WriteField("upload_preset", uploadPreset)
 
 	// Tambahkan file ke form data
-	part, err := writer.CreateFormFile("image", filePath)
+	part, err := writer.CreateFormFile("file", fileName)
 	if err != nil {
 		return "", "", err
 	}
-	_, err = io.Copy(part, file)
-	if err != nil {
+	if _, err := io.Copy(part, file); err != nil {
 		return "", "", err
 	}
-
 	writer.Close()
 
-	// Kirim permintaan POST ke ImgBB
-	req, err := http.NewRequest("POST", url, &b)
+	// Kirim request
+	req, err := http.NewRequest("POST", cloudinaryURL, body)
 	if err != nil {
 		return "", "", err
 	}
@@ -38,55 +40,38 @@ func UploadToImgBB(apiKey string, filePath string, file multipart.File) (string,
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
-	if err != nil {
-		return "", "", err
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return "", "", fmt.Errorf("Gagal upload ke Cloudinary")
 	}
 	defer resp.Body.Close()
 
-	// Decode respons JSON
+	// Parse response
 	var result map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return "", "", err
 	}
 
-	// Periksa apakah upload berhasil
-	if result["status"].(float64) != 200 {
-		return "", "", errors.New("Gagal mengunggah ke ImgBB")
-	}
-
-	// Ambil URL gambar dan delete_url
-	data := result["data"].(map[string]interface{})
-	imageURL := data["url"].(string)
-	deleteURL := data["delete_url"].(string)
-
-	return imageURL, deleteURL, nil
+	return result["secure_url"].(string), result["public_id"].(string), nil
 }
 
-// DeleteFromImgBB menghapus gambar dari ImgBB menggunakan delete_url
-func DeleteFromImgBB(deleteURL string) error {
-	// Kirim permintaan DELETE ke ImgBB
-	req, err := http.NewRequest("DELETE", deleteURL, nil)
+// DeleteFileFromCloudinary menghapus file dari Cloudinary
+func DeleteFileFromCloudinary(publicID string) error {
+	cloudinaryURL := fmt.Sprintf("https://api.cloudinary.com/v1_1/%s/image/destroy", os.Getenv("CLOUDINARY_CLOUD_NAME"))
+	payload := url.Values{"public_id": {publicID}}
+
+	req, err := http.NewRequest("POST", cloudinaryURL, strings.NewReader(payload.Encode()))
 	if err != nil {
 		return err
 	}
+	req.SetBasicAuth(os.Getenv("CLOUDINARY_API_KEY"), os.Getenv("CLOUDINARY_API_SECRET"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
-	if err != nil {
-		return err
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Gagal menghapus file di Cloudinary")
 	}
 	defer resp.Body.Close()
-
-	// Decode respons JSON
-	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return err
-	}
-
-	// Periksa apakah penghapusan berhasil
-	if result["status"].(float64) != 200 {
-		return errors.New("Gagal menghapus gambar dari ImgBB")
-	}
 
 	return nil
 }

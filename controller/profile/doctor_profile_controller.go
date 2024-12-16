@@ -7,8 +7,8 @@ import (
 	usecase "calmind/usecase/profile"
 	"fmt"
 	"net/http"
-	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 )
@@ -196,60 +196,39 @@ func (c *DoctorProfileController) UploadAvatar(ctx echo.Context) error {
 
 	// Ambil file dari form
 	file, err := ctx.FormFile("avatar")
-	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Gagal mendapatkan file: "+err.Error())
+	if err != nil || file.Size > 5*1024*1024 {
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "File tidak valid atau ukuran melebihi 5 MB")
 	}
 
-	// Validasi ukuran file (maksimal 5 MB)
-	if file.Size > 5*1024*1024 {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Ukuran file maksimal 5 MB")
-	}
-
-	// Validasi ekstensi file
 	ext := filepath.Ext(file.Filename)
 	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
-		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Hanya file dengan format .jpg, .jpeg, atau .png yang diperbolehkan")
+		return helper.JSONErrorResponse(ctx, http.StatusBadRequest, "Format file tidak didukung")
 	}
 
-	// Simpan file di direktori uploads
-	uploadDir := "uploads/avatars"
-	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
-		err = os.MkdirAll(uploadDir, os.ModePerm)
-		if err != nil {
-			return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat direktori upload")
-		}
-	}
-
-	filePath := fmt.Sprintf("%s/doctor_%d_%s", uploadDir, doctorID, file.Filename)
 	src, err := file.Open()
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuka file")
 	}
 	defer src.Close()
 
-	dst, err := os.Create(filePath)
+	// Upload ke Cloudinary
+	fileName := fmt.Sprintf("doctor_%d_avatar%s", doctorID, ext)
+	avatarURL, publicID, err := helper.UploadFileToCloudinary(src, fileName)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
-	}
-	defer dst.Close()
-
-	if _, err := helper.CopyFile(src, dst); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyimpan file")
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal upload ke Cloudinary")
 	}
 
-	// Update URL avatar di database
-	avatarURL := fmt.Sprintf("https://%s/%s", ctx.Request().Host, filePath)
-	doctor := model.Doctor{
-		Avatar: avatarURL,
-	}
+	// Update database
+	doctor := model.Doctor{Avatar: avatarURL}
 	_, err = c.DoctorProfileUsecase.UpdateDoctorProfile(doctorID, &doctor)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate avatar: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate profil dokter")
 	}
 
 	return helper.JSONSuccessResponse(ctx, map[string]string{
 		"message":   "Avatar berhasil diupload",
 		"avatarUrl": avatarURL,
+		"publicID":  publicID,
 	})
 }
 
@@ -260,27 +239,26 @@ func (c *DoctorProfileController) DeleteAvatar(ctx echo.Context) error {
 	}
 	doctorID := claims.UserID
 
-	// Ambil data dokter untuk mendapatkan URL avatar
+	// Ambil data dokter
 	doctor, err := c.DoctorProfileUsecase.GetDoctorProfile(doctorID)
-	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil profil dokter: "+err.Error())
+	if err != nil || doctor.Avatar == "" {
+		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "Avatar tidak ditemukan")
 	}
 
-	// Hapus file avatar
-	if doctor.Avatar != "" {
-		filePath := "." + doctor.Avatar // Tambahkan "." untuk path relatif
-		if _, err := os.Stat(filePath); err == nil {
-			if err := os.Remove(filePath); err != nil {
-				return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus file avatar: "+err.Error())
-			}
-		}
+	// Ekstrak public_id dari URL
+	parts := strings.Split(doctor.Avatar, "/")
+	publicID := strings.TrimSuffix(parts[len(parts)-1], filepath.Ext(doctor.Avatar))
+
+	// Hapus dari Cloudinary
+	if err := helper.DeleteFileFromCloudinary(publicID); err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus avatar di Cloudinary")
 	}
 
-	// Update avatar menjadi kosong di database
+	// Update database
 	doctor.Avatar = ""
 	_, err = c.DoctorProfileUsecase.UpdateDoctorProfile(doctorID, doctor)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate avatar di database: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate profil dokter")
 	}
 
 	return helper.JSONSuccessResponse(ctx, "Avatar berhasil dihapus")
