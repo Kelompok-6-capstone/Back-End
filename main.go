@@ -11,6 +11,7 @@ import (
 	repository_customer_service "calmind/repository/customer_service"
 	repository_konsultasi "calmind/repository/konsultasi"
 	repository_profile "calmind/repository/profile"
+	repository_statistik "calmind/repository/statistik"
 	repository_user_fitur "calmind/repository/user_fitur"
 
 	usecase_management "calmind/usecase/admin_management"
@@ -20,6 +21,7 @@ import (
 	usecase_customer_service "calmind/usecase/customer_service"
 	usecase_konsultasi "calmind/usecase/konsultasi"
 	usecase_profile "calmind/usecase/profile"
+	usecase_statistik "calmind/usecase/statistik"
 	usecase_user_fitur "calmind/usecase/user_fitur"
 
 	controller_management "calmind/controller/admin_management"
@@ -30,6 +32,7 @@ import (
 	controller_konsultasi "calmind/controller/konsultasi"
 	controller_notifikasi "calmind/controller/midtrans_notifikasi"
 	controller_profile "calmind/controller/profile"
+	controller_statistik "calmind/controller/statistik"
 	controller_user_fitur "calmind/controller/user_fitur"
 
 	"calmind/routes"
@@ -124,6 +127,11 @@ func main() {
 	// notifikasi midtrans
 	midtrans_notifikasi := controller_notifikasi.NewMidtransNotificationController(consultationUsecase)
 
+	// stast
+	statsRepo := repository_statistik.NewStatsRepo(DB)
+	statsUsecase := usecase_statistik.NewStatsUsecase(statsRepo)
+	statsController := controller_statistik.NewStatsController(statsUsecase)
+
 	// Middleware
 	jwtMiddleware := middlewares.NewJWTMiddleware(jwtSecret)
 
@@ -152,7 +160,7 @@ func main() {
 
 	// Group Admin
 	adminGroup := e.Group("/admin", jwtMiddleware.HandlerAdmin)
-	routes.AdminManagementRoutes(adminGroup, adminControllerManagement, artikelController, consultationController, admincontroller)
+	routes.AdminManagementRoutes(adminGroup, adminControllerManagement, artikelController, consultationController, admincontroller, statsController)
 
 	// Group Doctor
 	doctorGroup := e.Group("/doctor", jwtMiddleware.HandlerDoctor)

@@ -6,6 +6,7 @@ import (
 	controller_auth "calmind/controller/authentikasi"
 	controller_konsultasi "calmind/controller/konsultasi"
 	controller_profil "calmind/controller/profile"
+	controller_statistik "calmind/controller/statistik"
 
 	"github.com/labstack/echo/v4"
 )
@@ -16,7 +17,7 @@ func AdminAuthRoutes(e *echo.Echo, authController *controller_auth.AdminAuthCont
 	e.GET("/admin/logout", authController.LogoutAdmin) // Logout Admin
 }
 
-func AdminManagementRoutes(e *echo.Group, adminManagement *controller_management.AdminManagementController, artikelController *controller_artikel.ArtikelController, consultationController *controller_konsultasi.ConsultationController, profil *controller_profil.AdminController) {
+func AdminManagementRoutes(e *echo.Group, adminManagement *controller_management.AdminManagementController, artikelController *controller_artikel.ArtikelController, consultationController *controller_konsultasi.ConsultationController, profil *controller_profil.AdminController, statsController *controller_statistik.StatsControllerImpl) {
 	// user
 	e.GET("/allusers", adminManagement.GetAllUsers)    // Ambil Semua Data User
 	e.DELETE("/users/:id", adminManagement.DeleteUser) // Hapus User berdasarkan ID
@@ -44,4 +45,7 @@ func AdminManagementRoutes(e *echo.Group, adminManagement *controller_management
 	e.GET("/consultations/pending", consultationController.GetPendingConsultations)
 	e.GET("/consultations/approve", consultationController.GetAproveConsultations)
 	e.PUT("/consultations/:id/approve", consultationController.ApprovePaymentAndConsultation)
+
+	// statistik
+	e.GET("/statistik", statsController.GetStats)
 }
