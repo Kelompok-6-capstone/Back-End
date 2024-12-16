@@ -36,9 +36,23 @@ func isValidUsername(username string) bool {
 	return re.MatchString(username)
 }
 
+// Memperbaiki fungsi isValidPassword dengan ekspresi reguler yang lebih kompatibel
 func isValidPassword(password string) bool {
-	re := regexp.MustCompile(`^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$`)
-	return re.MatchString(password)
+	// Memastikan password memiliki minimal 8 karakter
+	if len(password) < 8 {
+		return false
+	}
+	// Memeriksa apakah ada huruf besar
+	hasUpper := regexp.MustCompile(`[A-Z]`).MatchString(password)
+	// Memeriksa apakah ada huruf kecil
+	hasLower := regexp.MustCompile(`[a-z]`).MatchString(password)
+	// Memeriksa apakah ada angka
+	hasDigit := regexp.MustCompile(`[0-9]`).MatchString(password)
+	// Memeriksa apakah ada simbol atau karakter khusus
+	hasSpecial := regexp.MustCompile(`[\W_]`).MatchString(password)
+
+	// Semua kondisi harus terpenuhi
+	return hasUpper && hasLower && hasDigit && hasSpecial
 }
 
 func (u *AuthUsecase) Register(user *model.User) error {
