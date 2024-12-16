@@ -31,37 +31,32 @@ func (u *AdminProfileUseCaseImpl) GetAdminProfile(adminID int) (*model.Admin, er
 	return admin, nil
 }
 
-func (u *AdminProfileUseCaseImpl) UploadAdminAvatar(adminID int, avatar string, deleteURL string) error {
-	err := u.AdminProfileRepo.UpdateAvatarByID(adminID, avatar, deleteURL)
+func (u *AdminProfileUseCaseImpl) UploadAdminAvatar(adminID int, avatarURL string, _ string) error {
+	err := u.AdminProfileRepo.UpdateAvatarByID(adminID, avatarURL)
 	if err != nil {
-		return errors.New("failed to upload avatar")
+		return errors.New("failed to update avatar in database")
 	}
 	return nil
 }
-
 func (u *AdminProfileUseCaseImpl) DeleteAdminAvatar(adminID int) error {
-	// Ambil data admin berdasarkan ID
 	admin, err := u.AdminProfileRepo.GetByID(adminID)
 	if err != nil {
 		return errors.New("admin not found")
 	}
 
-	// Hapus avatar dari Cloudinary jika ada
 	if admin.Avatar != "" {
-		// Ekstrak public_id dari URL avatar
+		// Ekstrak public ID dari Cloudinary URL
 		parts := strings.Split(admin.Avatar, "/")
 		publicID := strings.TrimSuffix(parts[len(parts)-1], filepath.Ext(admin.Avatar))
 
 		// Hapus file dari Cloudinary
-		err = helper.DeleteFileFromCloudinary(publicID)
-		if err != nil {
+		if err := helper.DeleteFileFromCloudinary(publicID); err != nil {
 			return errors.New("failed to delete avatar from Cloudinary")
 		}
 	}
 
-	// Kosongkan kolom avatar di database
-	err = u.AdminProfileRepo.ClearAvatarByID(adminID)
-	if err != nil {
+	// Clear kolom avatar di database
+	if err := u.AdminProfileRepo.ClearAvatarByID(adminID); err != nil {
 		return errors.New("failed to clear avatar in database")
 	}
 

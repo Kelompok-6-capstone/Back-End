@@ -2,13 +2,14 @@ package repository
 
 import (
 	"calmind/model"
+	"fmt"
 
 	"gorm.io/gorm"
 )
 
 type AdminProfileRepository interface {
 	GetByID(id int) (*model.Admin, error)
-	UpdateAvatarByID(id int, avatar string, deleteURL string) error
+	UpdateAvatarByID(id int, avatarURL string) error
 	ClearAvatarByID(id int) error
 }
 
@@ -29,12 +30,12 @@ func (r *AdminProfileRepositoryImpl) GetByID(id int) (*model.Admin, error) {
 	return &admin, nil
 }
 
-func (r *AdminProfileRepositoryImpl) UpdateAvatarByID(id int, avatar string, deleteURL string) error {
-	err := r.DB.Model(&model.Admin{}).Where("id = ?", id).Updates(map[string]interface{}{
-		"avatar":     avatar,
-		"delete_url": deleteURL,
-	}).Error
-	return err
+func (r *AdminProfileRepositoryImpl) UpdateAvatarByID(adminID int, avatarURL string) error {
+	err := r.DB.Model(&model.Admin{}).Where("id = ?", adminID).Update("avatar", avatarURL).Error
+	if err != nil {
+		return fmt.Errorf("failed to update avatar: %v", err)
+	}
+	return nil
 }
 
 func (r *AdminProfileRepositoryImpl) ClearAvatarByID(id int) error {

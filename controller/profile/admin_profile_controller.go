@@ -5,7 +5,6 @@ import (
 	"calmind/service"
 	usecase "calmind/usecase/profile"
 	"fmt"
-	"strings"
 
 	"net/http"
 	"path/filepath"
@@ -70,14 +69,14 @@ func (c *AdminController) UploadAdminAvatar(ctx echo.Context) error {
 
 	// Upload ke Cloudinary
 	fileName := fmt.Sprintf("admin_%d_avatar%s", adminID, ext)
-	avatarURL, publicID, err := helper.UploadFileToCloudinary(src, fileName)
+	avatarURL, _, err := helper.UploadFileToCloudinary(src, fileName)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal upload ke Cloudinary")
 	}
 
 	// Update database
-	if err := c.AdminUsecase.UploadAdminAvatar(adminID, avatarURL, publicID); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate database: "+err.Error())
+	if err := c.AdminUsecase.UploadAdminAvatar(adminID, avatarURL, ""); err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate database")
 	}
 
 	return helper.JSONSuccessResponse(ctx, map[string]string{
@@ -93,24 +92,9 @@ func (c *AdminController) DeleteAdminAvatar(ctx echo.Context) error {
 	}
 	adminID := claims.UserID
 
-	// Ambil data admin
-	admin, err := c.AdminUsecase.GetAdminProfile(adminID)
-	if err != nil || admin.Avatar == "" {
-		return helper.JSONErrorResponse(ctx, http.StatusNotFound, "Avatar tidak ditemukan")
-	}
-
-	// Ekstrak public_id dari URL
-	parts := strings.Split(admin.Avatar, "/")
-	publicID := strings.TrimSuffix(parts[len(parts)-1], filepath.Ext(admin.Avatar))
-
-	// Hapus dari Cloudinary
-	if err := helper.DeleteFileFromCloudinary(publicID); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus file dari Cloudinary")
-	}
-
-	// Update database
+	// Hapus avatar dari Cloudinary dan database
 	if err := c.AdminUsecase.DeleteAdminAvatar(adminID); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate database: "+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 	}
 
 	return helper.JSONSuccessResponse(ctx, "Avatar berhasil dihapus")
