@@ -7,29 +7,28 @@ type StatsUsecase interface {
 }
 
 type StatsUsecaseImpl struct {
-	Repo repository.StatsRepo
+	Repo repository.StatsRepository
 }
 
-func NewStatsUsecase(repo repository.StatsRepo) StatsUsecase {
+func NewStatsUsecase(repo repository.StatsRepository) StatsUsecase {
 	return &StatsUsecaseImpl{Repo: repo}
 }
 
-// GetStats method to retrieve total visitors, users, and doctors
-func (s *StatsUsecaseImpl) GetStats() (int64, int64, int64, error) {
-
-	totalUsers, err := s.Repo.GetTotalUsers()
+func (uc *StatsUsecaseImpl) GetStats() (int64, int64, int64, error) {
+	totalUsers, err := uc.Repo.GetTotalUsers()
 	if err != nil {
 		return 0, 0, 0, err
 	}
 
-	totalDoctors, err := s.Repo.GetTotalDoctors()
-	if err != nil {
-		return 0, 0, 0, err
-	}
-	totalKonsultasi, err := s.Repo.GetTotalKonsultasi()
+	totalDoctors, err := uc.Repo.GetTotalDoctors()
 	if err != nil {
 		return 0, 0, 0, err
 	}
 
-	return totalKonsultasi, totalUsers, totalDoctors, nil
+	totalConsultations, err := uc.Repo.GetTotalConsultations()
+	if err != nil {
+		return 0, 0, 0, err
+	}
+
+	return totalUsers, totalDoctors, totalConsultations, nil
 }

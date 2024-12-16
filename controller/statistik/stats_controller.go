@@ -17,13 +17,14 @@ func NewStatsController(usecase usecase.StatsUsecase) *StatsControllerImpl {
 }
 
 func (sc *StatsControllerImpl) GetStats(ctx echo.Context) error {
-	totalUsers, totalDoctors, totalkonsultasi, err := sc.Usecase.GetStats()
+	totalUsers, totalDoctors, totalConsultations, err := sc.Usecase.GetStats()
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "err :"+err.Error())
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "error"+err.Error())
 	}
-	return helper.JSONSuccessResponse(ctx, map[string]interface{}{
-		"totalUsers":      totalUsers,
-		"totalDoctors":    totalDoctors,
-		"totalKonsultasi": totalkonsultasi,
+
+	return helper.JSONSuccessResponse(ctx, map[string]any{
+		"totalUsers":         totalUsers,
+		"totalDoctors":       totalDoctors,
+		"totalConsultations": totalConsultations,
 	})
 }

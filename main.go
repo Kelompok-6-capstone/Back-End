@@ -128,7 +128,7 @@ func main() {
 	midtrans_notifikasi := controller_notifikasi.NewMidtransNotificationController(consultationUsecase)
 
 	// stast
-	statsRepo := repository_statistik.NewStatsRepo(DB)
+	statsRepo := repository_statistik.NewStatsRepository(DB)
 	statsUsecase := usecase_statistik.NewStatsUsecase(statsRepo)
 	statsController := controller_statistik.NewStatsController(statsUsecase)
 
