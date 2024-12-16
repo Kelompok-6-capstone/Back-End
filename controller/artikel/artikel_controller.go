@@ -1,19 +1,15 @@
 package controller
 
 import (
-	"bytes"
 	"calmind/helper"
 	"calmind/model"
 	"calmind/service"
 	usecase "calmind/usecase/artikel"
-	"encoding/json"
 	"fmt"
-	"io"
-	"mime/multipart"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 )
@@ -204,13 +200,12 @@ func (c *ArtikelController) SearchArtikel(ctx echo.Context) error {
 	return helper.JSONSuccessResponse(ctx, responses)
 }
 func (c *ArtikelController) UploadArtikelImage(ctx echo.Context) error {
-	// Ambil klaim admin dari JWT
 	claims, ok := ctx.Get("admin").(*service.JwtCustomClaims)
 	if !ok {
 		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
 	}
 
-	adminID := claims.UserID // Menggunakan UserID admin
+	adminID := claims.UserID
 
 	// Ambil file dari form input
 	file, err := ctx.FormFile("gambar")
@@ -236,50 +231,11 @@ func (c *ArtikelController) UploadArtikelImage(ctx echo.Context) error {
 	}
 	defer src.Close()
 
-	// Konfigurasi Cloudinary
-	cloudinaryURL := fmt.Sprintf("https://api.cloudinary.com/v1_1/%s/image/upload", os.Getenv("CLOUDINARY_CLOUD_NAME"))
-	uploadPreset := os.Getenv("CLOUDINARY_UPLOAD_PRESET")
-
-	// Siapkan form-data untuk Cloudinary
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-
-	// Tambahkan upload preset dan file
-	_ = writer.WriteField("upload_preset", uploadPreset)
-	newFileName := fmt.Sprintf("admin_%d_%s", adminID, file.Filename) // Penamaan unik dengan adminID
-	part, err := writer.CreateFormFile("file", newFileName)
+	// Gunakan helper untuk upload ke Cloudinary
+	newFileName := fmt.Sprintf("admin_%d_%s", adminID, file.Filename)
+	imageURL, _, err := helper.UploadFileToCloudinary(src, newFileName)
 	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat form data")
-	}
-	if _, err := io.Copy(part, src); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menyalin file")
-	}
-	writer.Close()
-
-	// Kirim request ke Cloudinary
-	req, err := http.NewRequest("POST", cloudinaryURL, body)
-	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membuat request")
-	}
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil || resp.StatusCode != http.StatusOK {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengunggah file ke Cloudinary")
-	}
-	defer resp.Body.Close()
-
-	// Parse respons dari Cloudinary
-	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal membaca respons dari Cloudinary")
-	}
-
-	// Ambil URL publik dari respons
-	imageURL, ok := result["secure_url"].(string)
-	if !ok {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mendapatkan URL gambar dari Cloudinary")
 	}
 
 	// Kirim respons sukses dengan URL gambar
@@ -301,20 +257,21 @@ func (c *ArtikelController) DeleteArtikelImage(ctx echo.Context) error {
 		return helper.JSONErrorResponse(ctx, http.StatusForbidden, "Akses ditolak atau artikel tidak ditemukan")
 	}
 
-	// Hapus dari Cloudinary
-	cloudinaryURL := fmt.Sprintf("https://api.cloudinary.com/v1_1/%s/image/destroy", os.Getenv("CLOUDINARY_CLOUD_NAME"))
-	payload := fmt.Sprintf("public_id=%s", filepath.Base(artikel.Gambar))
-	req, _ := http.NewRequest("POST", cloudinaryURL, bytes.NewBufferString(payload))
-	req.SetBasicAuth(os.Getenv("CLOUDINARY_API_KEY"), os.Getenv("CLOUDINARY_API_SECRET"))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	// Ekstrak public_id dari URL gambar
+	parts := strings.Split(artikel.Gambar, "/")
+	publicID := strings.TrimSuffix(parts[len(parts)-1], filepath.Ext(artikel.Gambar))
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil || resp.StatusCode != http.StatusOK {
+	// Hapus file dari Cloudinary menggunakan helper
+	if err := helper.DeleteFileFromCloudinary(publicID); err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal menghapus gambar di Cloudinary")
 	}
 
 	// Update database
 	artikel.Gambar = ""
-	c.Usecase.UpdateArtikel(artikel)
+	err = c.Usecase.UpdateArtikel(artikel)
+	if err != nil {
+		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate database")
+	}
+
 	return helper.JSONSuccessResponse(ctx, map[string]string{"message": "Gambar berhasil dihapus"})
 }
