@@ -30,6 +30,7 @@ type ConsultationUsecase interface {
 	GetApprovedConsultations() ([]model.Consultation, error)
 	GetAllStatusConsultations() ([]model.Consultation, error)
 	UpdatePaymentStatus(orderID, transactionStatus string) error
+	GetAllConsultationsForDoctor(doctorID int) ([]model.Consultation, error)
 }
 
 type ConsultationUsecaseImpl struct {
@@ -175,6 +176,16 @@ func (uc *ConsultationUsecaseImpl) SearchConsultationsByName(doctorID int, searc
 }
 
 // Mendapatkan daftar konsultasi untuk dokter
+func (uc *ConsultationUsecaseImpl) GetAllConsultationsForDoctor(doctorID int) ([]model.Consultation, error) {
+	consultations, err := uc.Repo.GetAllConsultationsForDoctor(doctorID)
+	if err != nil {
+		return nil, err
+	}
+	if len(consultations) == 0 {
+		fmt.Printf("No consultations found for doctor ID %d\n", doctorID) // Debugging tambahan
+	}
+	return consultations, nil
+}
 func (uc *ConsultationUsecaseImpl) GetConsultationsForDoctor(doctorID int) ([]model.Consultation, error) {
 	consultations, err := uc.Repo.GetConsultationsForDoctor(doctorID)
 	if err != nil {

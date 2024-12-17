@@ -26,6 +26,7 @@ type ConsultationRepository interface {
 	ValidateUserAndDoctor(userID, doctorID int) error
 	GetConsultationByOrderID(orderID string) (*model.Consultation, error)
 	GetValidConsultations(userID, doctorID int) ([]model.Consultation, error)
+	GetAllConsultationsForDoctor(doctorID int) ([]model.Consultation, error)
 }
 
 type ConsultationRepositoryImpl struct {
@@ -79,6 +80,16 @@ func (r *ConsultationRepositoryImpl) ValidateUserAndDoctor(userID, doctorID int)
 }
 
 // Mendapatkan daftar konsultasi untuk dokter
+func (r *ConsultationRepositoryImpl) GetAllConsultationsForDoctor(doctorID int) ([]model.Consultation, error) {
+	var consultations []model.Consultation
+	if err := r.DB.Preload("User").Preload("Doctor").Preload("Rekomendasi").
+		Where("doctor_id = ? AND status IN ?", doctorID, []string{"paid", "approved", "expired"}).
+		Find(&consultations).Error; err != nil {
+		return nil, err
+	}
+	fmt.Printf("Consultations found: %+v\n", consultations) // Logging untuk debug
+	return consultations, nil
+}
 func (r *ConsultationRepositoryImpl) GetConsultationsForDoctor(doctorID int) ([]model.Consultation, error) {
 	var consultations []model.Consultation
 	if err := r.DB.Preload("User").Preload("Doctor").Preload("Rekomendasi").

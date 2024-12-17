@@ -38,7 +38,8 @@ func DoctorProfil(
 	e.GET("/titles", fiturController.GetAllTitles) // Mendapatkan semua title
 
 	// Konsultasi
-	e.GET("/consultations", consultationController.GetConsultationsForDoctor)             // Mendapatkan semua konsultasi pasien dokter
+	e.GET("/consultations", consultationController.GetAllConsultationsForDoctor)          // Mendapatkan semua konsultasi pasien dokter
+	e.GET("/consultations/approved", consultationController.GetConsultationsForDoctor)    // Mendapatkan semua konsultasi pasien dokter
 	e.GET("/consultations/:id", consultationController.ViewConsultationDetails)           // Mendapatkan detail konsultasi tertentu
 	e.POST("/consultations/:id/recommendation", consultationController.AddRecommendation) // Menambahkan rekomendasi pada konsultasi
 	e.GET("/consultations/search", consultationController.SearchConsultationsByName)      // Melihat pasien sesuai nama dengan search
