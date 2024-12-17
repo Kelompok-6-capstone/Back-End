@@ -337,6 +337,7 @@ func mapConsultationToDTO(consultation model.Consultation) model.ConsultationDTO
 		Doctor: &model.DoctorDTO{
 			Avatar:   consultation.User.Avatar,
 			Username: consultation.Doctor.Username,
+			Price:    consultation.Doctor.Price,
 			Email:    consultation.Doctor.Email,
 			Title:    consultation.Doctor.Title.Name,
 			About:    consultation.Doctor.About, // Pastikan ini benar

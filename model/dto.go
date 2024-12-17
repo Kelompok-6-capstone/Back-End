@@ -14,11 +14,12 @@ type UserDTO struct {
 }
 
 type DoctorDTO struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Avatar   string `json:"avatar,omitempty"`
-	Title    string `json:"title"`
-	About    string `json:"about"`
+	Username string  `json:"username"`
+	Email    string  `json:"email"`
+	Avatar   string  `json:"avatar,omitempty"`
+	Price    float64 `json:"price"`
+	Title    string  `json:"title"`
+	About    string  `json:"about"`
 }
 
 type RecommendationDTO struct {
