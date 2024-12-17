@@ -105,27 +105,6 @@ func (c *ConsultationController) CreateConsultation(ctx echo.Context) error {
 	return helper.JSONSuccessResponse(ctx, response)
 }
 
-// Melihat semua konsultasi pasien
-func (c *ConsultationController) GetConsultationsForDoctor(ctx echo.Context) error {
-	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
-	if !ok || claims == nil {
-		return helper.JSONErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized access.")
-	}
-
-	consultations, err := c.ConsultationUsecase.GetConsultationsForDoctor(claims.UserID)
-	if err != nil {
-		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Failed to retrieve consultations.")
-	}
-
-	var response []model.ConsultationDTO
-	for _, cons := range consultations {
-		if cons.Status == "paid" || cons.Status == "approved" { // Tambahkan "approved"
-			response = append(response, mapConsultationToDTO(cons))
-		}
-	}
-
-	return helper.JSONSuccessResponse(ctx, response)
-}
 func (c *ConsultationController) GetAllConsultationsForDoctor(ctx echo.Context) error {
 	claims, ok := ctx.Get("doctor").(*service.JwtCustomClaims)
 	if !ok || claims == nil {
