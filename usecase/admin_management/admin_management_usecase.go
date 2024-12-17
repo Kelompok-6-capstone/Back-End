@@ -27,6 +27,10 @@ type DoctorDTO struct {
 	ID                 int                       `json:"id"`
 	Username           string                    `json:"username"`
 	Email              string                    `json:"email"`
+	NoHp               string                    `json:"no_hp"`
+	DateOfBirth        string                    `json:"date_of_birth"`
+	Address            string                    `json:"address"`
+	About              string                    `json:"about"`
 	Price              float64                   `json:"price"`
 	Experience         int                       `json:"experience"`
 	JenisKelamin       string                    `json:"jenis_kelamin"`
@@ -147,6 +151,10 @@ func (au *AdminManagementUsecaseImpl) GetAllDoctors() ([]DoctorDTO, error) {
 			Username:           doctor.Username,
 			Email:              doctor.Email,
 			Price:              doctor.Price,
+			NoHp:               doctor.NoHp,
+			DateOfBirth:        doctor.DateOfBirth,
+			Address:            doctor.Address,
+			About:              doctor.About,
 			Experience:         doctor.Experience,
 			JenisKelamin:       doctor.JenisKelamin,
 			IsVerified:         doctor.IsVerified,
