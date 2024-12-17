@@ -138,7 +138,7 @@ func main() {
 	e := echo.New()
 	e.Static("/uploads", "uploads")
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{"https://jovial-mooncake-23a3d0.netlify.app", "https://calmind6.netlify.app/", "http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5500"},
+		AllowOrigins:     []string{"https://jovial-mooncake-23a3d0.netlify.app", "https://calmind6.netlify.app", "http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5500"},
 		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions},
 		AllowHeaders:     []string{echo.HeaderAuthorization, echo.HeaderContentType, echo.HeaderAccept},
 		AllowCredentials: true,
