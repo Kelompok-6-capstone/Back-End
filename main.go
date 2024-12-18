@@ -8,6 +8,7 @@ import (
 	repository_artikel "calmind/repository/artikel"
 	repository_authentikasi "calmind/repository/authentikasi"
 	repository_chatbot_ai "calmind/repository/chatbot_ai"
+	repository_chatbot_ai_doctor "calmind/repository/chatbot_ai_doctor"
 	repository_customer_service "calmind/repository/customer_service"
 	repository_konsultasi "calmind/repository/konsultasi"
 	repository_profile "calmind/repository/profile"
@@ -18,6 +19,7 @@ import (
 	usecase_artikel "calmind/usecase/artikel"
 	usecase_authentikasi "calmind/usecase/authentikasi"
 	usecase_chatbot_ai "calmind/usecase/chatbot_ai"
+	usecase_chatbot_ai_doctor "calmind/usecase/chatbot_ai_doctor"
 	usecase_customer_service "calmind/usecase/customer_service"
 	usecase_konsultasi "calmind/usecase/konsultasi"
 	usecase_profile "calmind/usecase/profile"
@@ -28,6 +30,7 @@ import (
 	controller_artikel "calmind/controller/artikel"
 	controller_authentikasi "calmind/controller/authentikasi"
 	controller_chatbot_ai "calmind/controller/chatbot_ai"
+	controller_chatbot_ai_doctor "calmind/controller/chatbot_ai_doctor"
 	controller_customer_service "calmind/controller/customer_service"
 	controller_konsultasi "calmind/controller/konsultasi"
 	controller_notifikasi "calmind/controller/midtrans_notifikasi"
@@ -114,6 +117,11 @@ func main() {
 	chatbotUsecase := usecase_chatbot_ai.NewChatbotUsecase(chatbotRepo)
 	chatbotController := controller_chatbot_ai.NewChatbotController(chatbotUsecase)
 
+	// 	  Repository, usecase, dan controller untuk chatbot ai doctor
+	chatbotDoctorRepo := repository_chatbot_ai_doctor.NewDoctorChatbotRepository(DB)
+	chatbotDoctorUsecase := usecase_chatbot_ai_doctor.NewDoctorChatbotUsecase(chatbotDoctorRepo)
+	chatbotDoctorController := controller_chatbot_ai_doctor.NewDoctorChatbotController(chatbotDoctorUsecase)
+
 	//    Repositori, usecase, dan controller untuk profil admin
 	adminprofil := repository_profile.NewAdminProfileRepository(DB)
 	adminusecase := usecase_profile.NewAdminProfileUseCase(adminprofil)
@@ -165,6 +173,7 @@ func main() {
 	// Group Doctor
 	doctorGroup := e.Group("/doctor", jwtMiddleware.HandlerDoctor)
 	routes.DoctorProfil(doctorGroup, doctorProfilController, artikelController, consultationController, userFiturController)
+	routes.DoctorChatbotRoutes(doctorGroup, chatbotDoctorController)
 
 	routes.UserCustServiceRoutes(e, cscontroller)
 
