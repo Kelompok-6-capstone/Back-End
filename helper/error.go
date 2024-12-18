@@ -14,8 +14,8 @@ func JSONErrorResponse(ctx echo.Context, status int, message string) error {
 }
 
 func IsValidUsername(username string) bool {
-	re := regexp.MustCompile(`^[a-zA-Z0-9_]{5,}$`)
-	return re.MatchString(username)
+	re := regexp.MustCompile(`^[a-zA-Z0-9\s.]{5,}$`)
+	return len(username) >= 5 && re.MatchString(username)
 }
 
 func IsValidPassword(password string) bool {
