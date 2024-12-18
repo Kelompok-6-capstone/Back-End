@@ -149,13 +149,13 @@ func (c *DoctorProfileController) UpdateProfile(ctx echo.Context) error {
 	}
 
 	// Panggil Usecase untuk update profile
-	updatedDoctor, err := c.DoctorProfileUsecase.UpdateDoctorProfile(claims.UserID, doctor)
+	_, err := c.DoctorProfileUsecase.UpdateDoctorProfile(claims.UserID, doctor)
 	if err != nil {
 		return helper.JSONErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengupdate profil dokter: "+err.Error())
 	}
 
 	// Berikan response sukses
-	return helper.JSONSuccessResponse(ctx, updatedDoctor)
+	return helper.JSONSuccessResponse(ctx, "berhasil update")
 }
 
 // SetActiveStatus updates the active status of the logged-in doctor
